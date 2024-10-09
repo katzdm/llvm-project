@@ -1020,4 +1020,21 @@ static_assert(is_literal_operator_template(^^operator""_b));
 
 }  // namespace operators_and_conversion_functions
 
+                               // ===============
+                               // mutable_members
+                               // ===============
+
+namespace mutable_members {
+struct S {
+  int a;
+  mutable int b;
+  void fn();
+};
+
+static_assert(!is_mutable_member(^^S));
+static_assert(!is_mutable_member(^^S::a));
+static_assert(is_mutable_member(^^S::b));
+static_assert(!is_mutable_member(^^S::fn));
+}  // namespace mutable_members
+
 int main() { }

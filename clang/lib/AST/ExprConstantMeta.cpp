@@ -209,6 +209,11 @@ static bool is_volatile(APValue &Result, ASTContext &C, MetaActions &Meta,
                         EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
                         SourceRange Range, ArrayRef<Expr *> Args);
 
+static bool is_mutable_member(APValue &Result, ASTContext &C, MetaActions &Meta,
+                              EvalFn Evaluator, DiagFn Diagnoser,
+                              QualType ResultTy, SourceRange Range,
+                              ArrayRef<Expr *> Args);
+
 static bool is_lvalue_reference_qualified(APValue &Result, ASTContext &C,
                                           MetaActions &Meta, EvalFn Evaluator,
                                           DiagFn Diagnoser, QualType ResultTy,
@@ -611,6 +616,7 @@ static constexpr Metafunction Metafunctions[] = {
   { Metafunction::MFRK_bool, 1, 1, is_enumerator },
   { Metafunction::MFRK_bool, 1, 1, is_const },
   { Metafunction::MFRK_bool, 1, 1, is_volatile },
+  { Metafunction::MFRK_bool, 1, 1, is_mutable_member },
   { Metafunction::MFRK_bool, 1, 1, is_lvalue_reference_qualified },
   { Metafunction::MFRK_bool, 1, 1, is_rvalue_reference_qualified },
   { Metafunction::MFRK_bool, 1, 1, has_static_storage_duration },
@@ -3481,6 +3487,38 @@ bool is_volatile(APValue &Result, ASTContext &C, MetaActions &Meta,
   case ReflectionKind::Object:
   case ReflectionKind::Value: {
     bool result = isVolatileQualifiedType(RV.getTypeOfReflectedResult(C));
+
+    return SetAndSucceed(Result, makeBool(C, result));
+  }
+  }
+  llvm_unreachable("invalid reflection type");
+}
+
+bool is_mutable_member(APValue &Result, ASTContext &C, MetaActions &Meta,
+                       EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                       SourceRange Range, ArrayRef<Expr *> Args) {
+  assert(Args[0]->getType()->isReflectionType());
+  assert(ResultTy == C.BoolTy);
+
+  APValue RV;
+  if (!Evaluator(RV, Args[0], true))
+    return true;
+
+  switch (RV.getReflectionKind()) {
+  case ReflectionKind::Null:
+  case ReflectionKind::Template:
+  case ReflectionKind::Namespace:
+  case ReflectionKind::BaseSpecifier:
+  case ReflectionKind::DataMemberSpec:
+  case ReflectionKind::Annotation:
+  case ReflectionKind::Type:
+  case ReflectionKind::Object:
+  case ReflectionKind::Value:
+    return SetAndSucceed(Result, makeBool(C, false));
+  case ReflectionKind::Declaration: {
+    bool result = false;
+    if (auto *FD = dyn_cast<FieldDecl>(RV.getReflectedDecl()))
+      result = FD->isMutable();
 
     return SetAndSucceed(Result, makeBool(C, result));
   }
