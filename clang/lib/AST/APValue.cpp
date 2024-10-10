@@ -528,8 +528,8 @@ static void profileReflection(llvm::FoldingSetNodeID &ID, APValue V) {
   }
   case ReflectionKind::Declaration:
     if (auto *PVD = dyn_cast<ParmVarDecl>(V.getReflectedDecl())) {
-      auto *FD = cast<FunctionDecl>(PVD->getDeclContext())->getFirstDecl();
-      PVD = FD->getParamDecl(PVD->getFunctionScopeIndex());
+      if (auto *FD = dyn_cast<FunctionDecl>(PVD->getDeclContext()))
+        PVD = FD->getFirstDecl()->getParamDecl(PVD->getFunctionScopeIndex());
       ID.AddPointer(PVD);
     } else {
       ID.AddPointer(V.getReflectedDecl());
