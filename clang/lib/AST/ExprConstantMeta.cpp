@@ -2411,10 +2411,11 @@ bool template_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 static bool CanActAsTemplateArg(const APValue &RV) {
   switch (RV.getReflectionKind()) {
   case ReflectionKind::Type:
-  case ReflectionKind::Declaration:
   case ReflectionKind::Object:
   case ReflectionKind::Value:
     return true;
+  case ReflectionKind::Declaration:
+    return (!isa<FieldDecl>(RV.getReflectedDecl()));
   case ReflectionKind::Template: {
     TemplateDecl *TDecl = RV.getReflectedTemplate().getAsTemplateDecl();
     return isa<ClassTemplateDecl, TypeAliasTemplateDecl>(TDecl);
