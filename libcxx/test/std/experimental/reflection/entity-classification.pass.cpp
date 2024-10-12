@@ -58,6 +58,7 @@ static_assert(!is_value(null_reflection));
 static_assert(!is_object(null_reflection));
 static_assert(!is_enumerator(null_reflection));
 static_assert(!is_user_provided(null_reflection));
+static_assert(!is_user_declared(null_reflection));
 static_assert(!is_data_member_spec(null_reflection));
 
 static_assert(!is_type(std::meta::reflect_value(3)));
@@ -116,6 +117,7 @@ static_assert(!is_value(^^func));
 static_assert(!is_object(^^func));
 static_assert(!is_enumerator(^^func));
 static_assert(is_user_provided(^^func));
+static_assert(is_user_declared(^^func));
 static_assert(!is_data_member_spec(^^func));
 
 static_assert(is_type(^^alias));
@@ -268,6 +270,7 @@ static_assert(!is_base(^^TFn<int>));
 static_assert(!is_value(^^TFn<int>));
 static_assert(!is_object(^^TFn<int>));
 static_assert(is_user_provided(^^TFn<int>));
+static_assert(is_user_declared(^^TFn<int>));
 static_assert(!is_enumerator(^^TFn<int>));
 static_assert(!is_data_member_spec(^^TFn<int>));
 
@@ -617,13 +620,13 @@ static_assert(!is_structured_binding(^^var));
 static_assert(!is_structured_binding(std::meta::reflect_value(3)));
 } // namespace test_is_structured_binding_and_related_edge_cases
 
-                            // =====================
-                            // test_is_user_provided
-                            // =====================
+                     // ==================================
+                     // test_is_user_provided_and_declared
+                     // ==================================
 
-namespace test_is_user_provided {
+namespace test_is_user_provided_and_declared {
 struct S1 {};
-struct S2 { S2() = default; };
+struct S2 { S2() = default; S2(const S2&) = delete; };
 struct S3 { S3(); };
 S3::S3() {}
 
@@ -632,14 +635,26 @@ static_assert(
                        std::views::filter(std::meta::is_user_provided) |
                        std::ranges::to<std::vector>()).size() == 0);
 static_assert(
+    (members_of(^^S1) | std::views::filter(std::meta::is_constructor) |
+                       std::views::filter(std::meta::is_user_declared) |
+                       std::ranges::to<std::vector>()).size() == 0);
+static_assert(
     (members_of(^^S2) | std::views::filter(std::meta::is_constructor) |
                        std::views::filter(std::meta::is_user_provided) |
                        std::ranges::to<std::vector>()).size() == 0);
 static_assert(
+    (members_of(^^S2) | std::views::filter(std::meta::is_constructor) |
+                       std::views::filter(std::meta::is_user_declared) |
+                       std::ranges::to<std::vector>()).size() == 2);
+static_assert(
     (members_of(^^S3) | std::views::filter(std::meta::is_constructor) |
                        std::views::filter(std::meta::is_user_provided) |
                        std::ranges::to<std::vector>()).size() == 1);
-}  // namespace test_is_user_provided
+static_assert(
+    (members_of(^^S3) | std::views::filter(std::meta::is_constructor) |
+                       std::views::filter(std::meta::is_user_declared) |
+                       std::ranges::to<std::vector>()).size() == 1);
+}  // namespace test_is_user_provided_and_declared
 
 
 int main() { }

@@ -461,6 +461,11 @@ static bool is_user_provided(APValue &Result, ASTContext &C, MetaActions &Meta,
                              QualType ResultTy, SourceRange Range,
                              ArrayRef<Expr *> Args);
 
+static bool is_user_declared(APValue &Result, ASTContext &C, MetaActions &Meta,
+                             EvalFn Evaluator, DiagFn Diagnoser,
+                             QualType ResultTy, SourceRange Range,
+                             ArrayRef<Expr *> Args);
+
 static bool reflect_result(APValue &Result, ASTContext &C, MetaActions &Meta,
                            EvalFn Evaluator, DiagFn Diagnoser,
                            QualType ResultTy, SourceRange Range,
@@ -667,6 +672,7 @@ static constexpr Metafunction Metafunctions[] = {
   { Metafunction::MFRK_bool, 1, 1, is_destructor },
   { Metafunction::MFRK_bool, 1, 1, is_special_member_function },
   { Metafunction::MFRK_bool, 1, 1, is_user_provided },
+  { Metafunction::MFRK_bool, 1, 1, is_user_declared },
   { Metafunction::MFRK_metaInfo, 2, 2, reflect_result },
   { Metafunction::MFRK_metaInfo, 5, 5, reflect_invoke },
   { Metafunction::MFRK_metaInfo, 10, 10, data_member_spec },
@@ -4605,6 +4611,26 @@ bool is_user_provided(APValue &Result, ASTContext &C, MetaActions &Meta,
     }
 
   return SetAndSucceed(Result, makeBool(C, IsUserProvided));
+}
+
+bool is_user_declared(APValue &Result, ASTContext &C, MetaActions &Meta,
+                      EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                      SourceRange Range, ArrayRef<Expr *> Args) {
+  assert(Args[0]->getType()->isReflectionType());
+  assert(ResultTy == C.BoolTy);
+
+  APValue RV;
+  if (!Evaluator(RV, Args[0], true))
+    return true;
+
+  bool IsUserDeclared = false;
+  if (RV.isReflectedDecl())
+    if (auto *FD = dyn_cast<FunctionDecl>(RV.getReflectedDecl())) {
+      FD = cast<FunctionDecl>(FD->getFirstDecl());
+      IsUserDeclared = !(FD->isImplicit());
+    }
+
+  return SetAndSucceed(Result, makeBool(C, IsUserDeclared));
 }
 
 bool reflect_result(APValue &Result, ASTContext &C, MetaActions &Meta,

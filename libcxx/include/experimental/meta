@@ -193,6 +193,7 @@ consteval auto is_move_assignment(info) -> bool;
 consteval auto is_destructor(info) -> bool;
 consteval auto is_special_member_function(info) -> bool;
 consteval auto is_user_provided(info) -> bool;
+consteval auto is_user_declared(info) -> bool;
 
 // define_class
 struct data_member_options_t;
@@ -528,6 +529,7 @@ enum : unsigned {
   __metafn_is_destructor,
   __metafn_is_special_member_function,
   __metafn_is_user_provided,
+  __metafn_is_user_declared,
   __metafn_reflect_result,
   __metafn_reflect_invoke,
   __metafn_data_member_spec,
@@ -1420,6 +1422,11 @@ consteval auto is_special_member_function(info r) -> bool {
 // Returns whether the reflected entity is a user-provided function.
 consteval auto is_user_provided(info r) -> bool {
   return __metafunction(detail::__metafn_is_user_provided, r);
+}
+
+// Returns whether the reflected entity is a user-declared function.
+consteval auto is_user_declared(info r) -> bool {
+  return __metafunction(detail::__metafn_is_user_declared, r);
 }
 
 // Returns a reflection of the value held by the provided argument.
