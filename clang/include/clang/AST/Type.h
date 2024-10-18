@@ -6913,7 +6913,8 @@ class TypeWithKeyword : public Type {
 protected:
   TypeWithKeyword(ElaboratedTypeKeyword Keyword, TypeClass tc,
                   QualType Canonical, TypeDependence Dependence)
-      : Type(tc, Canonical, Dependence, /*ConstevalOnly=*/false) {
+      : Type(tc, Canonical, Dependence,
+             !Canonical.isNull() ? Canonical->isConstevalOnly() : false) {
     TypeWithKeywordBits.Keyword = llvm::to_underlying(Keyword);
   }
 

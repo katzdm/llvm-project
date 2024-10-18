@@ -797,15 +797,16 @@ consteval auto u8display_string_of(info r) -> u8string_view;
 enum class operators {
   op_new = 1, op_delete, op_array_new, op_array_delete, op_co_await,
   op_parentheses, op_square_brackets, op_arrow, op_arrow_star, op_tilde,
-  op_exclaim, op_plus, op_minus, op_star, op_slash, op_percent, op_caret,
+  op_exclamation, op_plus, op_minus, op_star, op_slash, op_percent, op_caret,
   op_ampersand, op_pipe, op_equals, op_plus_equals, op_minus_equals,
   op_star_equals, op_slash_equals, op_percent_equals, op_caret_equals,
-  op_ampersand_equals, op_pipe_equals, op_equals_equals, op_exclaim_equals,
-  op_less, op_greater, op_less_equals, op_greater_equals, op_three_way_compare,
+  op_ampersand_equals, op_pipe_equals, op_equals_equals, op_exclamation_equals,
+  op_less, op_greater, op_less_equals, op_greater_equals, op_spaceship,
   op_ampersand_ampersand, op_pipe_pipe, op_less_less, op_greater_greater,
   op_less_less_equals, op_greater_greater_equals, op_plus_plus, op_minus_minus,
   op_comma,
 };
+using enum operators;
 
 // Returns the operator overloaded by the represented operator function or
 // operator function template.
@@ -819,7 +820,7 @@ consteval auto has_identifier(info r) -> bool {
 }
 
 // Returns the string representation of the operator.
-consteval auto operator_symbol_of(operators op) -> string_view {
+consteval auto symbol_of(operators op) -> string_view {
   static constexpr string_view op_names[45] = {
       {}, "new", "delete", "new[]", "delete[]", "coawait", "()", "[]", "->",
       "->*", "~", "!", "+", "-", "*", "/", "%", "^", "&", "|", "=", "+=", "-=",
@@ -829,7 +830,7 @@ consteval auto operator_symbol_of(operators op) -> string_view {
   return op_names[int(op)];
 }
 
-consteval auto u8operator_symbol_of(operators op) -> u8string_view {
+consteval auto u8symbol_of(operators op) -> u8string_view {
   static constexpr u8string_view op_names[45] = {
       {}, u8"new", u8"delete", u8"new[]", u8"delete[]", u8"coawait", u8"()",
       u8"[]", u8"->", u8"->*", u8"~", u8"!", u8"+", u8"-", u8"*", u8"/", u8"%",
@@ -1508,6 +1509,9 @@ struct data_member_options_t {
 
     template <typename T> requires constructible_from<string, T>
     consteval name_type(T &&in) : impl(in_place_type<string>, in) {}
+
+    private:
+      info unused = ^^::;
   };
 
   optional<name_type> name = nullopt;
@@ -2342,9 +2346,9 @@ struct pretty_printer {
 
   static consteval auto operator_symbol_helper(operators Op) {
     if constexpr (IsUtf8)
-      return u8operator_symbol_of(Op);
+      return u8symbol_of(Op);
     else
-      return operator_symbol_of(Op);
+      return symbol_of(Op);
   }
 
   template <info R>

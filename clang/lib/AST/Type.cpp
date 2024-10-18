@@ -4178,7 +4178,7 @@ TagType::TagType(TypeClass TC, const TagDecl *D, QualType can)
     : Type(TC, can,
            D->isDependentType() ? TypeDependence::DependentInstantiation
                                 : TypeDependence::None,
-           /*ConstevalOnly=*/false),
+           isa<RecordDecl>(D) && cast<RecordDecl>(D)->isConstevalOnly()),
       decl(const_cast<TagDecl *>(D)) {}
 
 static TagDecl *getInterestingTagDecl(TagDecl *decl) {
@@ -4408,7 +4408,8 @@ TemplateSpecializationType::TemplateSpecializationType(
                 ? TypeDependence::DependentInstantiation
                 : toSemanticDependence(Canon->getDependence())) |
                (toTypeDependence(T.getDependence()) &
-                TypeDependence::UnexpandedPack), /*ConstevalOnly=*/false),
+                TypeDependence::UnexpandedPack),
+           !Canon.isNull() ? Canon->isConstevalOnly() : false),
       Template(T) {
   TemplateSpecializationTypeBits.NumArgs = Args.size();
   TemplateSpecializationTypeBits.TypeAlias = !AliasedType.isNull();
