@@ -333,6 +333,8 @@ Parser::ParseConceptDefinition(const ParsedTemplateInfo &TemplateInfo,
   if (!TryConsumeToken(tok::equal)) {
     Diag(Tok.getLocation(), diag::err_expected) << tok::equal;
     SkipUntil(tok::semi);
+    if (D)
+      D->setInvalidDecl();
     return nullptr;
   }
 
@@ -340,6 +342,8 @@ Parser::ParseConceptDefinition(const ParsedTemplateInfo &TemplateInfo,
       Actions.CorrectDelayedTyposInExpr(ParseConstraintExpression());
   if (ConstraintExprResult.isInvalid()) {
     SkipUntil(tok::semi);
+    if (D)
+      D->setInvalidDecl();
     return nullptr;
   }
 

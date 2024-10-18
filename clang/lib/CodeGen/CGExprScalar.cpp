@@ -536,6 +536,10 @@ public:
     return CGF.getOrCreateOpaqueRValueMapping(E).getScalarVal();
   }
 
+  Value *VisitOpenACCAsteriskSizeExpr(OpenACCAsteriskSizeExpr *E) {
+    llvm_unreachable("Codegen for this isn't defined/implemented");
+  }
+
   // l-values.
   Value *VisitDeclRefExpr(DeclRefExpr *E) {
     if (CodeGenFunction::ConstantEmission Constant = CGF.tryEmitAsConstant(E))
@@ -1818,7 +1822,7 @@ ScalarExprEmitter::VisitSYCLUniqueStableNameExpr(SYCLUniqueStableNameExpr *E) {
   ASTContext &Context = CGF.getContext();
   unsigned AddrSpace =
       Context.getTargetAddressSpace(CGF.CGM.GetGlobalConstantAddressSpace());
-  llvm::Constant *GlobalConstStr = Builder.CreateGlobalStringPtr(
+  llvm::Constant *GlobalConstStr = Builder.CreateGlobalString(
       E->ComputeName(Context), "__usn_str", AddrSpace);
 
   llvm::Type *ExprTy = ConvertType(E->getType());

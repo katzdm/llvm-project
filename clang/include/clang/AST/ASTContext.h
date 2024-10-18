@@ -257,7 +257,7 @@ class ASTContext : public RefCountedBase<ASTContext> {
   mutable llvm::FoldingSet<BitIntType> BitIntTypes;
   mutable llvm::ContextualFoldingSet<DependentBitIntType, ASTContext &>
       DependentBitIntTypes;
-  llvm::FoldingSet<BTFTagAttributedType> BTFTagAttributedTypes;
+  mutable llvm::FoldingSet<BTFTagAttributedType> BTFTagAttributedTypes;
   llvm::FoldingSet<HLSLAttributedResourceType> HLSLAttributedResourceTypes;
 
   mutable llvm::FoldingSet<CountAttributedType> CountAttributedTypes;
@@ -327,6 +327,14 @@ class ASTContext : public RefCountedBase<ASTContext> {
   ///
   /// This is lazily created.  This is intentionally not serialized.
   mutable llvm::StringMap<StringLiteral *> StringLiteralCache;
+
+  /// The next string literal "version" to allocate during constant evaluation.
+  /// This is used to distinguish between repeated evaluations of the same
+  /// string literal.
+  ///
+  /// We don't need to serialize this because constants get re-evaluated in the
+  /// current file before they are compared locally.
+  unsigned NextStringLiteralVersion = 0;
 
   /// A cache mapping a string value to a VarDecl object holding a generated
   /// immutable character array containing the same string.
@@ -413,6 +421,9 @@ class ASTContext : public RefCountedBase<ASTContext> {
 
   /// The identifier '__type_pack_element'.
   mutable IdentifierInfo *TypePackElementName = nullptr;
+
+  /// The identifier '__builtin_common_type'.
+  mutable IdentifierInfo *BuiltinCommonTypeName = nullptr;
 
   QualType ObjCConstantStringType;
   mutable RecordDecl *CFConstantStringTagDecl = nullptr;
@@ -621,6 +632,7 @@ private:
   mutable ExternCContextDecl *ExternCContext = nullptr;
   mutable BuiltinTemplateDecl *MakeIntegerSeqDecl = nullptr;
   mutable BuiltinTemplateDecl *TypePackElementDecl = nullptr;
+  mutable BuiltinTemplateDecl *BuiltinCommonTypeDecl = nullptr;
 
   /// The associated SourceManager object.
   SourceManager &SourceMgr;
@@ -1145,6 +1157,7 @@ public:
   ExternCContextDecl *getExternCContextDecl() const;
   BuiltinTemplateDecl *getMakeIntegerSeqDecl() const;
   BuiltinTemplateDecl *getTypePackElementDecl() const;
+  BuiltinTemplateDecl *getBuiltinCommonTypeDecl() const;
 
   // Builtin Types.
   CanQualType VoidTy;
@@ -1204,7 +1217,8 @@ public:
 #include "clang/Basic/RISCVVTypes.def"
 #define WASM_TYPE(Name, Id, SingletonId) CanQualType SingletonId;
 #include "clang/Basic/WebAssemblyReferenceTypes.def"
-#define AMDGPU_TYPE(Name, Id, SingletonId) CanQualType SingletonId;
+#define AMDGPU_TYPE(Name, Id, SingletonId, Width, Align)                       \
+  CanQualType SingletonId;
 #include "clang/Basic/AMDGPUTypes.def"
 #define HLSL_INTANGIBLE_TYPE(Name, Id, SingletonId) CanQualType SingletonId;
 #include "clang/Basic/HLSLIntangibleTypes.def"
@@ -1376,9 +1390,20 @@ public:
   /// calling T.withConst().
   QualType getConstType(QualType T) const { return T.withConst(); }
 
+  /// Rebuild a type, preserving any existing type sugar. For function types,
+  /// you probably want to just use \c adjustFunctionResultType and friends
+  /// instead.
+  QualType adjustType(QualType OldType,
+                      llvm::function_ref<QualType(QualType)> Adjust) const;
+
   /// Change the ExtInfo on a function type.
   const FunctionType *adjustFunctionType(const FunctionType *Fn,
                                          FunctionType::ExtInfo EInfo);
+
+  /// Change the result type of a function type, preserving sugar such as
+  /// attributed types.
+  QualType adjustFunctionResultType(QualType FunctionType,
+                                    QualType NewResultType);
 
   /// Adjust the given function result type.
   CanQualType getCanonicalFunctionResultType(QualType ResultType) const;
@@ -1709,7 +1734,7 @@ public:
                              QualType equivalentType) const;
 
   QualType getBTFTagAttributedType(const BTFTypeTagAttr *BTFAttr,
-                                   QualType Wrapped);
+                                   QualType Wrapped) const;
 
   QualType getHLSLAttributedResourceType(
       QualType Wrapped, QualType Contained,
@@ -2043,6 +2068,12 @@ public:
     if (!TypePackElementName)
       TypePackElementName = &Idents.get("__type_pack_element");
     return TypePackElementName;
+  }
+
+  IdentifierInfo *getBuiltinCommonTypeName() const {
+    if (!BuiltinCommonTypeName)
+      BuiltinCommonTypeName = &Idents.get("__builtin_common_type");
+    return BuiltinCommonTypeName;
   }
 
   /// Retrieve the Objective-C "instancetype" type, if already known;
@@ -3299,6 +3330,10 @@ public:
   /// function declaration or file name. Used by SourceLocExpr and
   /// PredefinedExpr to cache evaluated results.
   StringLiteral *getPredefinedStringLiteralFromCache(StringRef Key) const;
+
+  /// Return the next version number to be used for a string literal evaluated
+  /// as part of constant evaluation.
+  unsigned getNextStringLiteralVersion() { return NextStringLiteralVersion++; }
 
   /// Return a variable whose holding a generated immutable character array
   /// containing the same string.

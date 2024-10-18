@@ -1605,6 +1605,8 @@ CanThrowResult Sema::canThrow(const Stmt *S) {
 
   case Stmt::SYCLUniqueStableNameExprClass:
     return CT_Cannot;
+  case Stmt::OpenACCAsteriskSizeExprClass:
+    return CT_Cannot;
   case Stmt::NoStmtClass:
     llvm_unreachable("Invalid class for statement");
   }
