@@ -1511,7 +1511,7 @@ struct data_member_options_t {
     consteval name_type(T &&in) : impl(in_place_type<string>, in) {}
 
     private:
-      info unused = ^^::;
+      info unused = LIFT(::);
   };
 
   optional<name_type> name = nullopt;
