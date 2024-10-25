@@ -436,5 +436,15 @@ static_assert(substitute(^^member_pointer, {^^Test, ^^int}) !=
               substitute(^^member_pointer, {^^Test, ^^float}));
 }  // namespace bb_clang_p2996_issue_101_regression_test
 
+                        // ============================
+                        // non_type_ref_regression_test
+                        // ============================
+
+namespace non_type_ref_regression_test {
+class Cls { static constexpr int priv = 11; };
+template <auto &V> static constexpr auto &Value = V;
+
+static_assert([:substitute(^^Value, {members_of(^^Cls)[0]}):] == 11);
+}  // namespace non_type_ref_regression_test
 
 int main() { }

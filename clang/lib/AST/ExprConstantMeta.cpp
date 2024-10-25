@@ -2457,6 +2457,8 @@ static TemplateArgument TArgFromReflection(ASTContext &C, EvalFn Evaluator,
   }
   case ReflectionKind::Declaration: {
     ValueDecl *Decl = RV.getReflectedDecl();
+    if (Decl->isInvalidDecl())
+      break;
 
     // Don't worry about the cost of creating an expression here: The template
     // substitution machinery will otherwise create one from the argument
@@ -2465,15 +2467,6 @@ static TemplateArgument TArgFromReflection(ASTContext &C, EvalFn Evaluator,
         DeclRefExpr::Create(C, NestedNameSpecifierLoc(), SourceLocation(), Decl,
                             false, Loc, Decl->getType(), VK_LValue, Decl,
                             nullptr);
-
-    if (Decl->getType()->isIntegralOrEnumerationType()) {
-      APValue R;
-      if (!Evaluator(R, Synthesized, true))
-        break;
-
-      return TemplateArgument(C, R.getInt(),
-                              Synthesized->getType().getCanonicalType());
-    }
 
     return TemplateArgument(Synthesized);
   }
@@ -2537,7 +2530,7 @@ bool can_substitute(APValue &Result, ASTContext &C, MetaActions &Meta,
       TemplateArgument TArg = TArgFromReflection(C, Evaluator, Unwrapped,
                                                  Range.getBegin());
       if (TArg.isNull())
-        llvm_unreachable("could not form template argument?");
+        return true;
       TArgs.push_back(TArg);
     }
   }
@@ -2600,7 +2593,7 @@ bool substitute(APValue &Result, ASTContext &C, MetaActions &Meta,
       TemplateArgument TArg = TArgFromReflection(C, Evaluator, Unwrapped,
                                                  Range.getBegin());
       if (TArg.isNull())
-        llvm_unreachable("could not form template argument?");
+        return true;
       TArgs.push_back(TArg);
     }
   }
@@ -4801,7 +4794,7 @@ bool reflect_invoke(APValue &Result, ASTContext &C, MetaActions &Meta,
       TemplateArgument TArg = TArgFromReflection(C, Evaluator, RV,
                                                  Range.getBegin());
       if (TArg.isNull())
-        llvm_unreachable("could not form template argument?");
+        return true;
       TArgs.push_back(TArg);
     }
 
