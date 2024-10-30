@@ -539,8 +539,6 @@ enum : unsigned {
   __metafn_bit_offset_of,
   __metafn_bit_size_of,
   __metafn_alignment_of,
-  __metafn_define_static_string,
-  __metafn_define_static_array,
 
   // P3096 metafunctions
   __metafn_get_ith_parameter_of,
@@ -1438,7 +1436,7 @@ consteval auto reflect_value(T r) -> info {
   constexpr info Ty = type_of(LIFT(r));
 
   return __metafunction(detail::__metafn_reflect_result, Ty,
-                        static_cast<typename [:Ty:]>(r));
+                        static_cast<typename [:Ty:] &&>(r));
 }
 
 // Returns a reflection of the object designated by the provided argument.
@@ -1625,31 +1623,52 @@ consteval auto bit_size_of(info r) -> size_t {
   return __metafunction(detail::__metafn_bit_size_of, r);
 }
 
-// Returns a static string having the provided contents.
-consteval auto define_static_string(string_view in) -> const char * {
-  return __metafunction(detail::__metafn_define_static_string,
-                        LIFT(const char *), LIFT(char), in.size(), in.data(),
-                        /*IsUtf8=*/false);
-}
+namespace __define_static {
 
-consteval auto define_static_string(u8string_view in) -> const char8_t * {
-  return __metafunction(detail::__metafn_define_static_string,
-                        LIFT(const char8_t *), LIFT(char8_t),
-                        in.size(), in.data(), /*IsUtf8=*/true);
+template <typename ValTy, ValTy... Vals>
+inline constexpr ValTy FixedArray[sizeof...(Vals)] = {Vals...};
+
+template <auto &S>
+inline constexpr span StaticSpan(S, size(S));
+
+template <typename ValTy>
+consteval span<const ValTy> impl(const span<const ValTy> &in) {
+  if (in.size() == 0)
+    return {};
+
+  vector Args = {^^ValTy};
+  for (const auto &V : in)
+    Args.push_back(reflect_value(V));
+
+  return extract<span<const ValTy>>(
+    substitute(^^StaticSpan, { substitute(^^FixedArray, Args) }));
 }
+}  // namespace __define_static
 
 template <ranges::input_range R>
     requires (is_constructible_v<ranges::range_value_t<R>,
                                  ranges::range_reference_t<R>>)
 consteval auto define_static_array(R &&elems)
     -> span<const ranges::range_value_t<R>> {
-  vector vec(from_range, elems);
+  using ValTy  = ranges::range_value_t<R>;
+  using ImplTy = span<const ValTy>(*)(const span<const ValTy> &);
+  auto impl = extract<ImplTy>(substitute(^^__define_static::impl, {^^ValTy}));
 
-  using value_t = ranges::range_value_t<R>;
-  const value_t *arr = __metafunction(detail::__metafn_define_static_array,
-                                      LIFT(const value_t *), LIFT(value_t),
-                                      vec.size(), vec.data());
-  return span<const ranges::range_value_t<R>>(arr, vec.size());
+  vector<ValTy> vals(from_range, elems);
+  return impl(vals);
+}
+
+// Returns a static string having the provided contents.
+consteval auto define_static_string(string_view in) -> const char * {
+  const char nullterm[1] = {0};
+  vector<span<const char>> v = {in, nullterm};
+  return define_static_array(views::join(v)).data();
+}
+
+consteval auto define_static_string(u8string_view in) -> const char8_t * {
+  const char8_t nullterm[1] = {0};
+  vector<span<const char8_t>> v = {in, nullterm};
+  return define_static_array(views::join(v)).data();
 }
 
 
@@ -2149,7 +2168,7 @@ consteval auto type_tuple_size(info type) -> size_t {
 
 consteval auto type_tuple_element(size_t index, info type) -> info {
   return dealias(substitute(LIFT(tuple_element_t),
-                            {std::meta::reflect_value(index), type}));
+                            {reflect_value(index), type}));
 }
 
 consteval auto type_variant_size(info type) -> size_t {
@@ -2158,7 +2177,7 @@ consteval auto type_variant_size(info type) -> size_t {
 
 consteval auto type_variant_alternative(size_t index, info type) -> info {
   return dealias(substitute(LIFT(variant_alternative_t),
-                 {std::meta::reflect_value(index), type}));
+                 {reflect_value(index), type}));
 }
 
 
@@ -2241,7 +2260,7 @@ consteval auto annotations_of(info r, info ty) -> vector<info> {
 
 template<typename T>
 consteval optional<T> annotation_of_type(info r) {
-  auto v = annotations_of(r, ^^T);
+  auto v = annotations_of(r, LIFT(T));
   optional<T> result{};
   for (info a: v) {
     if (result.has_value()) {
@@ -2325,13 +2344,13 @@ struct pretty_printer {
 
   using string_t = basic_string<CharT>;
 
-  static consteval const CharT *string_constant(std::string_view contents) {
+  static consteval const CharT *string_constant(string_view contents) {
     if constexpr (IsUtf8) {
-      std::u8string result(contents.size(), 0);
+      u8string result(contents.size(), 0);
       for (size_t idx = 0; char c : contents)
         result[idx++] = char8_t(c);
 
-      return std::meta::define_static_string(result);
+      return define_static_string(result);
     } else {
       return contents.data();
     }
@@ -2626,15 +2645,15 @@ consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
   if constexpr (is_constructor_template(R))
     return render<parent_of(R)>();
   else if (is_operator_function_template(R)) {
-    std::meta::operators op = operator_of(R);
+    operators op = operator_of(R);
 
     string_t result = "operator";
     switch (op) {
-    case std::meta::operators::op_new:
-    case std::meta::operators::op_delete:
-    case std::meta::operators::op_array_new:
-    case std::meta::operators::op_array_delete:
-    case std::meta::operators::op_co_await:
+    case operators::op_new:
+    case operators::op_delete:
+    case operators::op_array_new:
+    case operators::op_array_delete:
+    case operators::op_co_await:
       result += " ";
       [[fallthrough]];
     default:
@@ -2675,15 +2694,15 @@ consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
   } else if constexpr (is_constructor(R)) {
     return render<parent_of(R)>();
   } else if constexpr (is_operator_function(R)) {
-    std::meta::operators op = operator_of(R);
+    operators op = operator_of(R);
 
     result = "operator";
     switch (op) {
-    case std::meta::operators::op_new:
-    case std::meta::operators::op_delete:
-    case std::meta::operators::op_array_new:
-    case std::meta::operators::op_array_delete:
-    case std::meta::operators::op_co_await:
+    case operators::op_new:
+    case operators::op_delete:
+    case operators::op_array_new:
+    case operators::op_array_delete:
+    case operators::op_co_await:
       result += " ";
       [[fallthrough]];
     default:

@@ -40,7 +40,7 @@ struct Cls {
 };
 constexpr auto objs = std::meta::define_static_array(std::vector<Cls>{1, 3, 5});
 static_assert(objs.size() == 3);
-static_assert(objs[0].k == 3 && objs[1].k == 5 && objs[2].k == 7);
+static_assert(objs[0].k == 5 && objs[1].k == 7 && objs[2].k == 9);
 
 constexpr auto infos = std::meta::define_static_array(
                                               nonstatic_data_members_of(^^Cls));

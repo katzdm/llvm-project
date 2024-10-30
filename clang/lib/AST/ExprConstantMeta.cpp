@@ -505,16 +505,6 @@ static bool alignment_of(APValue &Result, ASTContext &C, MetaActions &Meta,
                          EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
                          SourceRange Range, ArrayRef<Expr *> Args);
 
-static bool define_static_string(APValue &Result, ASTContext &C,
-                                 MetaActions &Meta, EvalFn Evaluator,
-                                 DiagFn Diagnoser, QualType ResultTy,
-                                 SourceRange Range, ArrayRef<Expr *> Args);
-
-static bool define_static_array(APValue &Result, ASTContext &C,
-                                MetaActions &Meta, EvalFn Evaluator,
-                                DiagFn Diagnoser, QualType ResultTy,
-                                SourceRange Range, ArrayRef<Expr *> Args);
-
 // -----------------------------------------------------------------------------
 // P3096 Metafunction declarations
 // -----------------------------------------------------------------------------
@@ -682,8 +672,6 @@ static constexpr Metafunction Metafunctions[] = {
   { Metafunction::MFRK_sizeT, 1, 1, bit_offset_of },
   { Metafunction::MFRK_sizeT, 1, 1, bit_size_of },
   { Metafunction::MFRK_sizeT, 1, 1, alignment_of },
-  { Metafunction::MFRK_spliceFromArg, 5, 5, define_static_string },
-  { Metafunction::MFRK_spliceFromArg, 4, 4, define_static_array },
 
   // P3096 metafunction extensions
   { Metafunction::MFRK_metaInfo, 3, 3, get_ith_parameter_of },
@@ -5416,137 +5404,6 @@ bool alignment_of(APValue &Result, ASTContext &C, MetaActions &Meta,
   }
   llvm_unreachable("unknown reflection kind");
 }
-
-bool define_static_string(APValue &Result, ASTContext &C, MetaActions &Meta,
-                          EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                          SourceRange Range, ArrayRef<Expr *> Args) {
-  assert(Args[0]->getType()->isReflectionType());
-  assert(Args[1]->getType()->isReflectionType());
-
-  APValue Scratch;
-
-  // Evaluate the character type.
-  if (!Evaluator(Scratch, Args[1], true))
-    return true;
-  QualType CharTy = Scratch.getReflectedType();
-
-  // Evaluate the length of the string provided.
-  std::string Contents;
-  if (!Evaluator(Scratch, Args[2], true))
-    return true;
-  size_t Length = Scratch.getInt().getExtValue();
-  Contents.resize(Length);
-
-  // Evaluate the given name. Miserably inefficient, but gets the job done.
-  for (uint64_t k = 0; k < Length; ++k) {
-    llvm::APInt Idx(C.getTypeSize(C.getSizeType()), k, false);
-    Expr *Synthesized = IntegerLiteral::Create(C, Idx, C.getSizeType(),
-                                               Args[3]->getExprLoc());
-
-    Synthesized = new (C) ArraySubscriptExpr(Args[3], Synthesized, CharTy,
-                                             VK_LValue, OK_Ordinary,
-                                             Range.getBegin());
-    if (Synthesized->isValueDependent() || Synthesized->isTypeDependent())
-      return true;
-
-    if (!Evaluator(Scratch, Synthesized, true))
-      return true;
-
-    Contents[k] = static_cast<char>(Scratch.getInt().getExtValue());
-  }
-
-  if (!Evaluator(Scratch, Args[4], true))
-    return true;
-  bool IsUtf8 = Scratch.getInt().getBoolValue();
-
-  VarDecl *AnonArr = C.getGeneratedCharArray(Contents, IsUtf8);
-  if (!AnonArr->hasInit()) {
-    Expr *StrLit = makeStrLiteral(Contents, C, IsUtf8);
-
-    AnonArr->setConstexpr(true);
-    Meta.AttachInitializer(AnonArr, StrLit);
-
-    Meta.BroadcastInjectedDecl(AnonArr);
-  }
-  assert(AnonArr->getFormalLinkage() == Linkage::Internal);
-
-  APValue::LValuePathEntry Path[1] = {APValue::LValuePathEntry::ArrayIndex(0)};
-  return SetAndSucceed(Result,
-                       APValue(AnonArr, CharUnits::Zero(), Path, false));
-}
-
-bool define_static_array(APValue &Result, ASTContext &C, MetaActions &Meta,
-                         EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                         SourceRange Range, ArrayRef<Expr *> Args) {
-  assert(Args[0]->getType()->isReflectionType());
-  assert(Args[1]->getType()->isReflectionType());
-
-  APValue Scratch;
-
-  // Evaluate the value type.
-  if (!Evaluator(Scratch, Args[1], true))
-    return true;
-  QualType ValueTy = Scratch.getReflectedType();
-
-  // Evaluate the number of elements provided.
-  SmallVector<Expr *, 4> Elems;
-  if (!Evaluator(Scratch, Args[2], true))
-    return true;
-  size_t Length = Scratch.getInt().getExtValue();
-  Elems.resize(Length);
-
-  for (uint64_t k = 0; k < Length; ++k) {
-    llvm::APInt Idx(C.getTypeSize(C.getSizeType()), k, false);
-    Expr *Synthesized = IntegerLiteral::Create(C, Idx, C.getSizeType(),
-                                               Args[3]->getExprLoc());
-
-    Synthesized = new (C) ArraySubscriptExpr(Args[3], Synthesized, ValueTy,
-                                             VK_LValue, OK_Ordinary,
-                                             Range.getBegin());
-    if (Synthesized->isValueDependent() || Synthesized->isTypeDependent())
-      return true;
-
-    APValue Val;
-    if (!Evaluator(Val, Synthesized, true))
-      return true;
-
-    Synthesized = new (C) OpaqueValueExpr(Range.getBegin(), ValueTy,
-                                          VK_PRValue);
-    Synthesized = ConstantExpr::Create(C, Synthesized, Val);
-
-    Elems[k] = Synthesized;
-  }
-
-  std::string Name;
-  {
-    static int gen_id = 0;
-    llvm::raw_string_ostream NameOut(Name);
-    NameOut << "__gen_array_" << (gen_id++);
-  }
-
-  QualType ArrTy = C.getConstantArrayType(ValueTy, llvm::APSInt::get(Length),
-                                          Args[2], ArraySizeModifier::Normal,
-                                          /*IndexTypeQuals=*/0);
-  VarDecl *AnonArr = VarDecl::Create(C, C.getTranslationUnitDecl(),
-                                     SourceLocation(), SourceLocation(),
-                                     &C.Idents.get(Name), ArrTy, nullptr,
-                                     SC_Static);
-  {
-    Expr *ILE = Meta.CreateInitList(Elems, Range);
-    if (!ILE)
-      return true;
-    AnonArr->setConstexpr(true);
-    Meta.AttachInitializer(AnonArr, ILE);
-
-    Meta.BroadcastInjectedDecl(AnonArr);
-  }
-  assert(AnonArr->getFormalLinkage() == Linkage::Internal);
-
-  APValue::LValuePathEntry Path[1] = {APValue::LValuePathEntry::ArrayIndex(0)};
-  return SetAndSucceed(Result,
-                       APValue(AnonArr, CharUnits::Zero(), Path, false));
-}
-
 
 bool get_ith_parameter_of(APValue &Result, ASTContext &C, MetaActions &Meta,
                           EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
