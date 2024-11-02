@@ -539,6 +539,19 @@ void ASTStmtWriter::VisitExtractLValueExpr(ExtractLValueExpr *E) {
   Code = serialization::EXPR_EXTRACT_LVALUE;
 }
 
+void ASTStmtWriter::VisitCXXIndeterminateExpansionStmt(
+                                             CXXIndeterminateExpansionStmt *S) {
+  VisitStmt(S);
+  // TODO(P2996): Implement this.
+  Code = serialization::STMT_INDETERMINATE_EXPANSION;
+}
+
+void ASTStmtWriter::VisitCXXIterableExpansionStmt(CXXIterableExpansionStmt *S) {
+  VisitStmt(S);
+  // TODO(P2996): Implement this.
+  Code = serialization::STMT_ITERABLE_EXPANSION;
+}
+
 void ASTStmtWriter::VisitCXXDestructurableExpansionStmt(
                                             CXXDestructurableExpansionStmt *S) {
   VisitStmt(S);
@@ -552,14 +565,8 @@ void ASTStmtWriter::VisitCXXInitListExpansionStmt(CXXInitListExpansionStmt *S) {
   Code = serialization::STMT_INIT_LIST_EXPANSION;
 }
 
-void ASTStmtWriter::VisitCXXExpansionInitListExpr(CXXExpansionInitListExpr *E) {
-  VisitExpr(E);
-  // TODO(P2996): Implement this.
-  Code = serialization::EXPR_EXPANSION_INIT_LIST;
-}
-
-void ASTStmtWriter::VisitCXXExpansionInitListSelectExpr(
-        CXXExpansionInitListSelectExpr *E) {
+void ASTStmtWriter::VisitCXXIterableExpansionSelectExpr(
+        CXXIterableExpansionSelectExpr *E) {
   VisitExpr(E);
   // TODO(P2996): Implement this.
   Code = serialization::EXPR_EXPANSION_SELECT;
@@ -570,6 +577,19 @@ void ASTStmtWriter::VisitCXXDestructurableExpansionSelectExpr(
   VisitExpr(E);
   // TODO(P2996): Implement this.
   Code = serialization::EXPR_EXPANSION_SELECT;
+}
+
+void ASTStmtWriter::VisitCXXExpansionInitListSelectExpr(
+        CXXExpansionInitListSelectExpr *E) {
+  VisitExpr(E);
+  // TODO(P2996): Implement this.
+  Code = serialization::EXPR_EXPANSION_SELECT;
+}
+
+void ASTStmtWriter::VisitCXXExpansionInitListExpr(CXXExpansionInitListExpr *E) {
+  VisitExpr(E);
+  // TODO(P2996): Implement this.
+  Code = serialization::EXPR_EXPANSION_INIT_LIST;
 }
 
 static void

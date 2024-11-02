@@ -9095,6 +9095,63 @@ TreeTransform<Derived>::TransformExtractLValueExpr(ExtractLValueExpr *E) {
 
 template <typename Derived>
 StmtResult
+TreeTransform<Derived>::TransformCXXIndeterminateExpansionStmt(
+                                             CXXIndeterminateExpansionStmt *S) {
+  // Transform optional init-statement.
+  Stmt *Init = S->getInit();
+  if (Init) {
+    StmtResult SR = getDerived().TransformStmt(Init, SDK_NotDiscarded);
+    if (SR.isInvalid())
+      return StmtError();
+    Init = SR.get();
+  }
+
+  // Transform expansion variable declaration (e.g., could have dependent type).
+  StmtResult SR = getDerived().TransformStmt(S->getExpansionVarStmt(),
+                                             SDK_NotDiscarded);
+  if (SR.isInvalid())
+    return StmtError();
+  DeclStmt *ExpansionVarStmt = cast<DeclStmt>(SR.get());
+
+  // Transform the range.
+  SR = getDerived().TransformStmt(S->getRange(), SDK_NotDiscarded);
+  if (SR.isInvalid())
+    return StmtError();
+  Expr *Range = cast<Expr>(SR.get());
+
+  // Build a new expansion statement.
+  SR = SemaRef.BuildCXXExprExpansionStmt(S->getTemplateKWLoc(), S->getForLoc(),
+                                         S->getLParenLoc(), Init,
+                                         ExpansionVarStmt, S->getColonLoc(),
+                                         Range, S->getRParenLoc(),
+                                         S->getTParamRef());
+  if (SR.isInvalid())
+    return StmtError();
+  Stmt *Rebuilt = SR.get();
+
+  // Transform the body.
+  SR = getDerived().TransformStmt(S->getBody());
+  if (SR.isInvalid())
+    return StmtError();
+  Stmt *Body = SR.get();
+
+  // Finish expanding the statement.
+  SR = SemaRef.FinishCXXExpansionStmt(Rebuilt, Body);
+  if (SR.isInvalid())
+    return StmtError();
+
+  return SR.get();
+}
+
+template <typename Derived>
+StmtResult
+TreeTransform<Derived>::TransformCXXIterableExpansionStmt(
+                                                  CXXIterableExpansionStmt *S) {
+  llvm_unreachable("unimplemented");
+}
+
+template <typename Derived>
+StmtResult
 TreeTransform<Derived>::TransformCXXDestructurableExpansionStmt(
                                             CXXDestructurableExpansionStmt *S) {
   // Transform optional init-statement.
@@ -9133,8 +9190,7 @@ TreeTransform<Derived>::TransformCXXDestructurableExpansionStmt(
                                                    ExpansionVarStmt,
                                                    S->getColonLoc(), Range,
                                                    S->getRParenLoc(),
-                                                   S->getTemplateDepth(),
-                                                   Sema::BFRK_Rebuild);
+                                                   S->getTParamRef());
   if (SR.isInvalid())
     return StmtError();
   Stmt *Rebuilt = SR.get();
@@ -9185,8 +9241,7 @@ TreeTransform<Derived>::TransformCXXInitListExpansionStmt(
                                              Init, ExpansionVarStmt,
                                              S->getColonLoc(), Range,
                                              S->getRParenLoc(),
-                                             S->getTemplateDepth(),
-                                             Sema::BFRK_Rebuild);
+                                             S->getTParamRef());
   if (SR.isInvalid())
     return StmtError();
   Stmt *Rebuilt = SR.get();
@@ -9207,30 +9262,9 @@ TreeTransform<Derived>::TransformCXXInitListExpansionStmt(
 
 template <typename Derived>
 ExprResult
-TreeTransform<Derived>::TransformCXXExpansionInitListExpr(
-                                                  CXXExpansionInitListExpr *E) {
-  bool ArgChanged;
-  SmallVector<Expr *> SubExprs;
-  if (getDerived().TransformExprs(E->getSubExprs().data(),
-                                  E->getSubExprs().size(), false, SubExprs,
-                                  &ArgChanged))
-    return ExprError();
-
-  return SemaRef.BuildCXXExpansionInitList(E->getLBraceLoc(), SubExprs,
-                                           E->getRBraceLoc());
-}
-
-template <typename Derived>
-ExprResult
-TreeTransform<Derived>::TransformCXXExpansionInitListSelectExpr(
-                                            CXXExpansionInitListSelectExpr *E) {
-  ExprResult Range = getDerived().TransformExpr(E->getRange());
-  ExprResult Idx = getDerived().TransformExpr(E->getIdx());
-  if (Range.isInvalid() || Idx.isInvalid())
-    return ExprError();
-
-  return SemaRef.ActOnCXXExpansionInitListSelectExpr(
-          cast<CXXExpansionInitListExpr>(Range.get()), Idx.get());
+TreeTransform<Derived>::TransformCXXIterableExpansionSelectExpr(
+                                            CXXIterableExpansionSelectExpr *E) {
+  llvm_unreachable("unimplemented");
 }
 
 template <typename Derived>
@@ -9244,10 +9278,39 @@ TreeTransform<Derived>::TransformCXXDestructurableExpansionSelectExpr(
 
   DecompositionDecl *DD = E->getDecompositionDecl();
   if (DD)
-    DD = cast<DecompositionDecl>(getDerived().TransformDecl(E->getBeginLoc(), DD));
+    DD = cast<DecompositionDecl>(getDerived().TransformDecl(E->getBeginLoc(),
+                                                            DD));
 
   return SemaRef.BuildCXXDestructurableExpansionSelectExpr(
           Range.get(), DD, Idx.get(), E->isConstexpr());
+}
+
+template <typename Derived>
+ExprResult
+TreeTransform<Derived>::TransformCXXExpansionInitListSelectExpr(
+                                            CXXExpansionInitListSelectExpr *E) {
+  ExprResult Range = getDerived().TransformExpr(E->getRange());
+  ExprResult Idx = getDerived().TransformExpr(E->getIdx());
+  if (Range.isInvalid() || Idx.isInvalid())
+    return ExprError();
+
+  return SemaRef.BuildCXXExpansionInitListSelectExpr(
+          cast<CXXExpansionInitListExpr>(Range.get()), Idx.get());
+}
+
+template <typename Derived>
+ExprResult
+TreeTransform<Derived>::TransformCXXExpansionInitListExpr(
+                                                  CXXExpansionInitListExpr *E) {
+  bool ArgChanged;
+  SmallVector<Expr *> SubExprs;
+  if (getDerived().TransformExprs(E->getSubExprs().data(),
+                                  E->getSubExprs().size(), false, SubExprs,
+                                  &ArgChanged))
+    return ExprError();
+
+  return SemaRef.BuildCXXExpansionInitList(E->getLBraceLoc(), SubExprs,
+                                           E->getRBraceLoc());
 }
 
 // Objective-C Statements.

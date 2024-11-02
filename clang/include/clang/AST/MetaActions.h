@@ -127,20 +127,6 @@ public:
   // Synthesizes a call expression for 'Fn(Args...)'.
   virtual Expr *SynthesizeCallExpr(Expr *Fn, MutableArrayRef<Expr *> Args) = 0;
 
-                         // ==========================
-                         // Variable Injection Support
-                         // ==========================
-
-  // Broadcasts the existence of 'D' to downstream consumers (e.g., CodeGen).
-  virtual void BroadcastInjectedDecl(Decl *D) = 0;
-
-  // Attaches 'Init' as the initializer of 'VD'.
-  virtual void AttachInitializer(VarDecl *VD, Expr *Init) = 0;
-
-  // Returns a braced-init-list consisting of the expressions 'Inits'.
-  virtual Expr *CreateInitList(MutableArrayRef<Expr *> Inits,
-                               SourceRange Range) = 0;
-
                            // =======================
                            // Class Synthesis Support
                            // =======================

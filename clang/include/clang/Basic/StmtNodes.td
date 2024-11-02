@@ -56,6 +56,8 @@ def CoreturnStmt : StmtNode<Stmt>;
 
 // C++ expansion statements (P1306)
 def CXXExpansionStmt : StmtNode<Stmt, 1>;
+def CXXIndeterminateExpansionStmt : StmtNode<CXXExpansionStmt>;
+def CXXIterableExpansionStmt : StmtNode<CXXExpansionStmt>;
 def CXXDestructurableExpansionStmt : StmtNode<CXXExpansionStmt>;
 def CXXInitListExpansionStmt : StmtNode<CXXExpansionStmt>;
 
@@ -191,6 +193,7 @@ def ExtractLValueExpr : StmtNode<Expr>;
 def CXXExpansionInitListExpr : StmtNode<Expr>;
 def CXXExpansionInitListSelectExpr : StmtNode<Expr>;
 def CXXDestructurableExpansionSelectExpr : StmtNode<Expr>;
+def CXXIterableExpansionSelectExpr : StmtNode<Expr>;
 
 // Obj-C Expressions.
 def ObjCStringLiteral : StmtNode<Expr>;

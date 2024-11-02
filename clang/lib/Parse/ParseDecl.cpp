@@ -2512,8 +2512,14 @@ Parser::DeclGroupPtrTy Parser::ParseDeclGroup(ParsingDeclSpec &DS,
     bool IsForRangeLoop = false;
     if (TryConsumeToken(tok::colon, FRI->ColonLoc)) {
       IsForRangeLoop = true;
+
+      auto Ctx = Sema::ExpressionEvaluationContext::PotentiallyEvaluated;
+      if (FRI->ExpansionStmt && D.getDeclSpec().getConstexprSpecifier() !=
+                                                 ConstexprSpecKind::Unspecified)
+        Ctx = Sema::ExpressionEvaluationContext::ImmediateFunctionContext;
+
       EnterExpressionEvaluationContext ForRangeInitContext(
-          Actions, Sema::ExpressionEvaluationContext::PotentiallyEvaluated,
+          Actions, Ctx,
           /*LambdaContextDecl=*/nullptr,
           Sema::ExpressionEvaluationContextRecord::EK_Other,
           getLangOpts().CPlusPlus23);

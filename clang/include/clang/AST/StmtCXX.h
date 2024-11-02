@@ -531,15 +531,14 @@ protected:
   /// \brief The subexpressions of an expansion include the expansion variable,
   /// the tuple, pack, or init-list being expanded, and the expansion body.
   enum {
-    INIT,  ///< Init statement.
-    VAR ,  ///< The variable bound to each instance of the expansion.
-    RANGE, ///< The initializing expression providing the domain of expansion.
-    BODY,  ///< The uninstantiated expansion body.
+    INIT,    ///< Init statement.
+    TPARAM,  ///< The dependent reference to the template parameter.
+    VAR ,    ///< The variable bound to each instance of the expansion.
+    RANGE,   ///< The initializing expression providing the domain of expansion.
+    BODY,    ///< The uninstantiated expansion body.
     END
   };
   Stmt *SubStmts[END];
-
-  unsigned TemplateDepth;
 
   unsigned NumInstantiations;
   Stmt **Expansions;
@@ -554,7 +553,7 @@ protected:
                    Expr *Range, unsigned NumInstantiations,
                    SourceLocation TemplateKWLoc, SourceLocation ForLoc,
                    SourceLocation LParenLoc, SourceLocation ColonLoc,
-                   SourceLocation RParenLoc, unsigned Depth);
+                   SourceLocation RParenLoc, Expr *TParamRef);
   CXXExpansionStmt(StmtClass SC, EmptyShell Empty) : Stmt(SC) { }
 
   Stmt *const *getStmts() const { return SubStmts; }
@@ -602,7 +601,10 @@ public:
     return const_cast<CXXExpansionStmt *>(this)->getExpansionVariable();
   }
 
-  unsigned getTemplateDepth() const { return TemplateDepth; }
+  Expr *getTParamRef() { return cast<Expr>(SubStmts[TPARAM]); }
+  const Expr *getTParamRef() const {
+    return const_cast<CXXExpansionStmt *>(this)->getTParamRef();
+  }
 
   unsigned getNumInstantiations() const { return NumInstantiations; }
   bool hasDependentSize() const;
@@ -628,6 +630,79 @@ public:
   friend class ASTStmtReader;
 };
 
+/// CXXIndeterminateExpansionStmt - Expansion over a type-dependent expression.
+///
+/// When the range of an expansion statement is type-dependent, it won't be
+/// possible to resolve it to a destructurable or an iterable expansion until
+/// instantiation (more: different instantiations might take either form).
+///
+/// This Stmt acts as a "placeholder" node, which TreeTransform will make into
+/// either a CXXDestructurableExpansionStmt or a CXXIterableExpansionStmt.
+///
+class CXXIndeterminateExpansionStmt final : public CXXExpansionStmt {
+private:
+  CXXIndeterminateExpansionStmt(Stmt *Init, DeclStmt *ExpansionVar,
+                                Expr *Range, SourceLocation TemplateKWLoc,
+                                SourceLocation ForLoc, SourceLocation LParenLoc,
+                                SourceLocation ColonLoc,
+                                SourceLocation RParenLoc, Expr *TParamRef)
+      : CXXExpansionStmt(CXXIndeterminateExpansionStmtClass, Init,
+                         ExpansionVar, Range, /*NumInstantiations=*/0,
+                         TemplateKWLoc, ForLoc, LParenLoc, ColonLoc, RParenLoc,
+                         TParamRef) { }
+
+  CXXIndeterminateExpansionStmt(EmptyShell Empty)
+      : CXXExpansionStmt(CXXIndeterminateExpansionStmtClass, Empty) { }
+
+public:
+  static CXXIndeterminateExpansionStmt *Create(const ASTContext &C, Stmt *Init,
+                                               DeclStmt *ExpansionVar,
+                                               Expr *Range,
+                                               SourceLocation TemplateKWLoc,
+                                               SourceLocation ForLoc,
+                                               SourceLocation LParenLoc,
+                                               SourceLocation ColonLoc,
+                                               SourceLocation RParenLoc,
+                                               Expr *TParamRef);
+
+  static CXXIndeterminateExpansionStmt *Create(const ASTContext &C,
+                                               EmptyShell Empty);
+  bool hasDependentSize() const;
+};
+
+/// CXXIterableExpansionStmt - Expansion over a iterable expression.
+///
+class CXXIterableExpansionStmt final : public CXXExpansionStmt {
+private:
+  CXXIterableExpansionStmt(Stmt *Init, DeclStmt *ExpansionVar, Expr *Range,
+                           unsigned NumInstantiations,
+                           SourceLocation TemplateKWLoc, SourceLocation ForLoc,
+                           SourceLocation LParenLoc, SourceLocation ColonLoc,
+                           SourceLocation RParenLoc, Expr *TParamRef)
+      : CXXExpansionStmt(CXXIterableExpansionStmtClass, Init,
+                         ExpansionVar, Range, NumInstantiations, TemplateKWLoc,
+                         ForLoc, LParenLoc, ColonLoc, RParenLoc, TParamRef) { }
+
+  CXXIterableExpansionStmt(EmptyShell Empty)
+      : CXXExpansionStmt(CXXIterableExpansionStmtClass, Empty) { }
+
+public:
+  static CXXIterableExpansionStmt *Create(const ASTContext &C, Stmt *Init,
+                                          DeclStmt *ExpansionVar, Expr *Range,
+                                          unsigned NumInstantiations,
+                                          SourceLocation TemplateKWLoc,
+                                          SourceLocation ForLoc,
+                                          SourceLocation LParenLoc,
+                                          SourceLocation ColonLoc,
+                                          SourceLocation RParenLoc,
+                                          Expr *TParamRef);
+
+  static CXXIterableExpansionStmt *Create(const ASTContext &C,
+                                          EmptyShell Empty);
+
+  bool hasDependentSize() const;
+};
+
 /// CXXDestructurableExpansionStmt - Expansion over a destructurable expression.
 ///
 class CXXDestructurableExpansionStmt final : public CXXExpansionStmt {
@@ -638,10 +713,10 @@ private:
                                  SourceLocation ForLoc,
                                  SourceLocation LParenLoc,
                                  SourceLocation ColonLoc,
-                                 SourceLocation RParenLoc, unsigned Depth)
+                                 SourceLocation RParenLoc, Expr *TParamRef)
       : CXXExpansionStmt(CXXDestructurableExpansionStmtClass, Init,
                          ExpansionVar, Range, NumInstantiations, TemplateKWLoc,
-                         ForLoc, LParenLoc, ColonLoc, RParenLoc, Depth) { }
+                         ForLoc, LParenLoc, ColonLoc, RParenLoc, TParamRef) { }
 
   CXXDestructurableExpansionStmt(EmptyShell Empty)
       : CXXExpansionStmt(CXXDestructurableExpansionStmtClass, Empty) { }
@@ -656,7 +731,7 @@ public:
                                                 SourceLocation LParenLoc,
                                                 SourceLocation ColonLoc,
                                                 SourceLocation RParenLoc,
-                                                unsigned Depth);
+                                                Expr *TParamRef);
 
   static CXXDestructurableExpansionStmt *Create(const ASTContext &C,
                                                 EmptyShell Empty);
@@ -672,10 +747,10 @@ private:
                            unsigned NumInstantiations,
                            SourceLocation TemplateKWLoc, SourceLocation ForLoc,
                            SourceLocation LParenLoc, SourceLocation ColonLoc,
-                           SourceLocation RParenLoc, unsigned Depth)
+                           SourceLocation RParenLoc, Expr *TParamRef)
       : CXXExpansionStmt(CXXInitListExpansionStmtClass, Init, ExpansionVar,
                          Range, NumInstantiations, TemplateKWLoc, ForLoc,
-                         LParenLoc, ColonLoc, RParenLoc, Depth) { }
+                         LParenLoc, ColonLoc, RParenLoc, TParamRef) { }
 
   CXXInitListExpansionStmt(EmptyShell Empty)
       : CXXExpansionStmt(CXXInitListExpansionStmtClass, Empty) { }
@@ -689,7 +764,7 @@ public:
                                           SourceLocation LParenLoc,
                                           SourceLocation ColonLoc,
                                           SourceLocation RParenLoc,
-                                          unsigned Depth);
+                                          Expr *TParamRef);
 
   static CXXInitListExpansionStmt *Create(const ASTContext &C,
                                           EmptyShell Empty);

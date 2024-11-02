@@ -15361,50 +15361,40 @@ public:
                                    SourceLocation RParenLoc,
                                    BuildForRangeKind Kind);
 
-  StmtResult ActOnCXXInitListExpansionStmt(SourceLocation TemplateKWLoc,
-                                           SourceLocation ForLoc,
-                                           SourceLocation LParenLoc, Stmt *Init,
-                                           Stmt *ExpansionVarStmt,
-                                           SourceLocation ColonLoc,
-                                           CXXExpansionInitListExpr *Range,
-                                           SourceLocation RParenLoc,
-                                           Expr *TParmRef,
-                                           BuildForRangeKind Kind);
-
-  StmtResult ActOnCXXDestructurableExpansionStmt(SourceLocation TemplateKWLoc,
-                                                 SourceLocation ForLoc,
-                                                 SourceLocation LParenLoc,
-                                                 Stmt *Init,
-                                                 Stmt *ExpansionVarStmt,
-                                                 SourceLocation ColonLoc,
-                                                 Expr *Range,
-                                                 SourceLocation RParenLoc,
-                                                 Expr *TParmRef,
-                                                 BuildForRangeKind Kind);
+  ExprResult ActOnCXXExpansionInitList(SourceLocation LBraceLoc,
+                                       MultiExprArg SubExprs,
+                                       SourceLocation RBraceLoc);
 
   bool ComputeDecompositionExpansionArity(Expr *Range, unsigned &Result);
 
   StmtResult FinishCXXExpansionStmt(Stmt *Heading, Stmt *Body);
 
-  ExprResult ActOnCXXExpansionInitList(SourceLocation LBraceLoc,
-                                       MultiExprArg SubExprs,
-                                       SourceLocation RBraceLoc);
+  StmtResult BuildCXXIndeterminateExpansionStmt(SourceLocation TemplateKWLoc,
+                                                SourceLocation ForLoc,
+                                                SourceLocation LParenLoc,
+                                                Stmt *Init,
+                                                Stmt *ExpansionVarStmt,
+                                                SourceLocation ColonLoc,
+                                                Expr *Range,
+                                                SourceLocation RParenLoc,
+                                                Expr *TParmRef);
 
-  ExprResult
-  ActOnCXXExpansionInitListSelectExpr(CXXExpansionInitListExpr *Range,
-                                      Expr *Idx);
-  ExprResult ActOnCXXDestructurableExpansionSelectExpr(Expr *Range, Expr *Idx,
-                                                       bool Constexpr);
+  StmtResult BuildCXXExprExpansionStmt(SourceLocation TemplateKWLoc,
+                                       SourceLocation ForLoc,
+                                       SourceLocation LParenLoc, Stmt *Init,
+                                       Stmt *ExpansionVarStmt,
+                                       SourceLocation ColonLoc, Expr *Range,
+                                       SourceLocation RParenLoc,
+                                       Expr *TParmRef);
 
-  StmtResult BuildCXXInitListExpansionStmt(SourceLocation TemplateKWLoc,
+  StmtResult BuildCXXIterableExpansionStmt(SourceLocation TemplateKWLoc,
                                            SourceLocation ForLoc,
                                            SourceLocation LParenLoc, Stmt *Init,
                                            Stmt *ExpansionVarStmt,
-                                           SourceLocation ColonLoc,
-                                           CXXExpansionInitListExpr *Range,
+                                           SourceLocation ColonLoc, Expr *Range,
                                            SourceLocation RParenLoc,
-                                           unsigned TemplateDepth,
-                                           BuildForRangeKind Kind);
+                                           Expr *TParmRef, Expr *BeginExpr,
+                                           Expr *EndExpr);
 
   StmtResult BuildCXXDestructurableExpansionStmt(SourceLocation TemplateKWLoc,
                                                  SourceLocation ForLoc,
@@ -15414,21 +15404,29 @@ public:
                                                  SourceLocation ColonLoc,
                                                  Expr *Range,
                                                  SourceLocation RParenLoc,
-                                                 unsigned TemplateDepth,
-                                                 BuildForRangeKind Kind);
+                                                 Expr *TParmRef);
 
-  ExprResult BuildCXXExpansionInitList(SourceLocation LBraceLoc,
-                                       MultiExprArg SubExprs,
-                                       SourceLocation RBraceLoc);
+  StmtResult BuildCXXInitListExpansionStmt(SourceLocation TemplateKWLoc,
+                                           SourceLocation ForLoc,
+                                           SourceLocation LParenLoc, Stmt *Init,
+                                           Stmt *ExpansionVarStmt,
+                                           SourceLocation ColonLoc,
+                                           CXXExpansionInitListExpr *Range,
+                                           SourceLocation RParenLoc,
+                                           Expr *TParmRef);
 
   ExprResult
   BuildCXXExpansionInitListSelectExpr(CXXExpansionInitListExpr *Range,
                                       Expr *Idx);
+  ExprResult BuildCXXIterableExpansionSelectExpr(Expr *Range, Expr *Idx);
   ExprResult BuildCXXDestructurableExpansionSelectExpr(Expr *Range,
                                                        DecompositionDecl *DD,
                                                        Expr *Idx,
                                                        bool Constexpr);
 
+  ExprResult BuildCXXExpansionInitList(SourceLocation LBraceLoc,
+                                       MultiExprArg SubExprs,
+                                       SourceLocation RBraceLoc);
 };
 
 DeductionFailureInfo

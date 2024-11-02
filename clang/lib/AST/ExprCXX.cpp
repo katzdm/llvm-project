@@ -41,6 +41,7 @@
 #include <cstring>
 #include <memory>
 #include <optional>
+#include <iostream>
 
 using namespace clang;
 
@@ -1892,6 +1893,83 @@ TypeTraitExpr *TypeTraitExpr::CreateDeserialized(const ASTContext &C,
   return new (Mem) TypeTraitExpr(EmptyShell());
 }
 
+CUDAKernelCallExpr::CUDAKernelCallExpr(Expr *Fn, CallExpr *Config,
+                                       ArrayRef<Expr *> Args, QualType Ty,
+                                       ExprValueKind VK, SourceLocation RP,
+                                       FPOptionsOverride FPFeatures,
+                                       unsigned MinNumArgs)
+    : CallExpr(CUDAKernelCallExprClass, Fn, /*PreArgs=*/Config, Args, Ty, VK,
+               RP, FPFeatures, MinNumArgs, NotADL) {}
+
+CUDAKernelCallExpr::CUDAKernelCallExpr(unsigned NumArgs, bool HasFPFeatures,
+                                       EmptyShell Empty)
+    : CallExpr(CUDAKernelCallExprClass, /*NumPreArgs=*/END_PREARG, NumArgs,
+               HasFPFeatures, Empty) {}
+
+CUDAKernelCallExpr *
+CUDAKernelCallExpr::Create(const ASTContext &Ctx, Expr *Fn, CallExpr *Config,
+                           ArrayRef<Expr *> Args, QualType Ty, ExprValueKind VK,
+                           SourceLocation RP, FPOptionsOverride FPFeatures,
+                           unsigned MinNumArgs) {
+  // Allocate storage for the trailing objects of CallExpr.
+  unsigned NumArgs = std::max<unsigned>(Args.size(), MinNumArgs);
+  unsigned SizeOfTrailingObjects = CallExpr::sizeOfTrailingObjects(
+      /*NumPreArgs=*/END_PREARG, NumArgs, FPFeatures.requiresTrailingStorage());
+  void *Mem = Ctx.Allocate(sizeof(CUDAKernelCallExpr) + SizeOfTrailingObjects,
+                           alignof(CUDAKernelCallExpr));
+  return new (Mem)
+      CUDAKernelCallExpr(Fn, Config, Args, Ty, VK, RP, FPFeatures, MinNumArgs);
+}
+
+CUDAKernelCallExpr *CUDAKernelCallExpr::CreateEmpty(const ASTContext &Ctx,
+                                                    unsigned NumArgs,
+                                                    bool HasFPFeatures,
+                                                    EmptyShell Empty) {
+  // Allocate storage for the trailing objects of CallExpr.
+  unsigned SizeOfTrailingObjects = CallExpr::sizeOfTrailingObjects(
+      /*NumPreArgs=*/END_PREARG, NumArgs, HasFPFeatures);
+  void *Mem = Ctx.Allocate(sizeof(CUDAKernelCallExpr) + SizeOfTrailingObjects,
+                           alignof(CUDAKernelCallExpr));
+  return new (Mem) CUDAKernelCallExpr(NumArgs, HasFPFeatures, Empty);
+}
+
+CXXParenListInitExpr *
+CXXParenListInitExpr::Create(ASTContext &C, ArrayRef<Expr *> Args, QualType T,
+                             unsigned NumUserSpecifiedExprs,
+                             SourceLocation InitLoc, SourceLocation LParenLoc,
+                             SourceLocation RParenLoc) {
+  void *Mem = C.Allocate(totalSizeToAlloc<Expr *>(Args.size()));
+  return new (Mem) CXXParenListInitExpr(Args, T, NumUserSpecifiedExprs, InitLoc,
+                                        LParenLoc, RParenLoc);
+}
+
+CXXParenListInitExpr *CXXParenListInitExpr::CreateEmpty(ASTContext &C,
+                                                        unsigned NumExprs,
+                                                        EmptyShell Empty) {
+  void *Mem = C.Allocate(totalSizeToAlloc<Expr *>(NumExprs),
+                         alignof(CXXParenListInitExpr));
+  return new (Mem) CXXParenListInitExpr(Empty, NumExprs);
+}
+
+CXXFoldExpr::CXXFoldExpr(QualType T, UnresolvedLookupExpr *Callee,
+                                SourceLocation LParenLoc, Expr *LHS,
+                                BinaryOperatorKind Opcode,
+                                SourceLocation EllipsisLoc, Expr *RHS,
+                                SourceLocation RParenLoc,
+                                std::optional<unsigned> NumExpansions)
+    : Expr(CXXFoldExprClass, T, VK_PRValue, OK_Ordinary), LParenLoc(LParenLoc),
+      EllipsisLoc(EllipsisLoc), RParenLoc(RParenLoc),
+      NumExpansions(NumExpansions ? *NumExpansions + 1 : 0), Opcode(Opcode) {
+  // We rely on asserted invariant to distinguish left and right folds.
+  assert(((LHS && LHS->containsUnexpandedParameterPack()) !=
+          (RHS && RHS->containsUnexpandedParameterPack())) &&
+         "Exactly one of LHS or RHS should contain an unexpanded pack");
+  SubExprs[SubExpr::Callee] = Callee;
+  SubExprs[SubExpr::LHS] = LHS;
+  SubExprs[SubExpr::RHS] = RHS;
+  setDependence(computeDependence(this));
+}
+
 CXXReflectExpr::CXXReflectExpr(const ASTContext &C, QualType ExprTy, APValue RV)
     : Expr(CXXReflectExprClass, ExprTy, VK_PRValue, OK_Ordinary),
       Kind(OperandKind::Reflection) {
@@ -2109,9 +2187,40 @@ CXXDependentMemberSpliceExpr *CXXDependentMemberSpliceExpr::Create(
                                               IsArrow, RHS);
 }
 
+CXXDestructurableExpansionSelectExpr::CXXDestructurableExpansionSelectExpr(
+        QualType ResultTy, Expr *Range, DecompositionDecl *DD, Expr *Idx,
+        bool IsConstexpr)
+    : Expr(CXXDestructurableExpansionSelectExprClass, ResultTy, VK_PRValue,
+           OK_Ordinary),
+      SubExprs{Range, Idx}, DD(DD), IsConstexpr(IsConstexpr) {
+  setDependence(computeDependence(this));
+}
+
+CXXDestructurableExpansionSelectExpr *
+CXXDestructurableExpansionSelectExpr::Create(const ASTContext &C, Expr *Range,
+                                             DecompositionDecl *DD, Expr *Idx,
+                                             bool IsConstexpr) {
+  return new (C) CXXDestructurableExpansionSelectExpr(C.DependentTy, Range, DD,
+                                                      Idx, IsConstexpr);
+}
+
 CXXDependentMemberSpliceExpr *CXXDependentMemberSpliceExpr::CreateEmpty(
         ASTContext &C) {
   return new (C) CXXDependentMemberSpliceExpr(EmptyShell());
+}
+
+CXXExpansionInitListSelectExpr::CXXExpansionInitListSelectExpr(
+        QualType ResultTy, Expr *Range, Expr *Idx)
+    : Expr(CXXExpansionInitListSelectExprClass, ResultTy, VK_PRValue,
+           OK_Ordinary),
+      SubExprs{Range, Idx} {
+  setDependence(computeDependence(this));
+}
+
+CXXExpansionInitListSelectExpr *
+CXXExpansionInitListSelectExpr::Create(const ASTContext &C, Expr *Range,
+                                       Expr *Idx) {
+  return new (C) CXXExpansionInitListSelectExpr(C.DependentTy, Range, Idx);
 }
 
 CXXExpansionInitListExpr::CXXExpansionInitListExpr(
@@ -2134,112 +2243,4 @@ CXXExpansionInitListExpr *CXXExpansionInitListExpr::Create(
         SourceLocation LBraceLoc, SourceLocation RBraceLoc) {
   return new (C) CXXExpansionInitListExpr(C.VoidTy, SubExprs, NumSubExprs,
                                           LBraceLoc, RBraceLoc);
-}
-
-CXXExpansionInitListSelectExpr::CXXExpansionInitListSelectExpr(
-        QualType ResultTy, Expr *Range, Expr *Idx)
-    : Expr(CXXExpansionInitListSelectExprClass, ResultTy, VK_PRValue,
-           OK_Ordinary),
-      SubExprs{Range, Idx} {
-  setDependence(computeDependence(this));
-}
-
-CXXExpansionInitListSelectExpr *
-CXXExpansionInitListSelectExpr::Create(const ASTContext &C, Expr *Range,
-                                       Expr *Idx) {
-  return new (C) CXXExpansionInitListSelectExpr(C.DependentTy, Range, Idx);
-}
-
-CXXDestructurableExpansionSelectExpr::CXXDestructurableExpansionSelectExpr(
-        QualType ResultTy, Expr *Range, DecompositionDecl *DD, Expr *Idx,
-        bool IsConstexpr)
-    : Expr(CXXDestructurableExpansionSelectExprClass, ResultTy, VK_PRValue,
-           OK_Ordinary),
-      SubExprs{Range, Idx}, DD(DD), IsConstexpr(IsConstexpr) {
-  setDependence(computeDependence(this));
-}
-
-CXXDestructurableExpansionSelectExpr *
-CXXDestructurableExpansionSelectExpr::Create(const ASTContext &C, Expr *Range,
-                                             DecompositionDecl *DD, Expr *Idx,
-                                             bool IsConstexpr) {
-  return new (C) CXXDestructurableExpansionSelectExpr(C.DependentTy, Range, DD,
-                                                      Idx, IsConstexpr);
-}
-
-CUDAKernelCallExpr::CUDAKernelCallExpr(Expr *Fn, CallExpr *Config,
-                                       ArrayRef<Expr *> Args, QualType Ty,
-                                       ExprValueKind VK, SourceLocation RP,
-                                       FPOptionsOverride FPFeatures,
-                                       unsigned MinNumArgs)
-    : CallExpr(CUDAKernelCallExprClass, Fn, /*PreArgs=*/Config, Args, Ty, VK,
-               RP, FPFeatures, MinNumArgs, NotADL) {}
-
-CUDAKernelCallExpr::CUDAKernelCallExpr(unsigned NumArgs, bool HasFPFeatures,
-                                       EmptyShell Empty)
-    : CallExpr(CUDAKernelCallExprClass, /*NumPreArgs=*/END_PREARG, NumArgs,
-               HasFPFeatures, Empty) {}
-
-CUDAKernelCallExpr *
-CUDAKernelCallExpr::Create(const ASTContext &Ctx, Expr *Fn, CallExpr *Config,
-                           ArrayRef<Expr *> Args, QualType Ty, ExprValueKind VK,
-                           SourceLocation RP, FPOptionsOverride FPFeatures,
-                           unsigned MinNumArgs) {
-  // Allocate storage for the trailing objects of CallExpr.
-  unsigned NumArgs = std::max<unsigned>(Args.size(), MinNumArgs);
-  unsigned SizeOfTrailingObjects = CallExpr::sizeOfTrailingObjects(
-      /*NumPreArgs=*/END_PREARG, NumArgs, FPFeatures.requiresTrailingStorage());
-  void *Mem = Ctx.Allocate(sizeof(CUDAKernelCallExpr) + SizeOfTrailingObjects,
-                           alignof(CUDAKernelCallExpr));
-  return new (Mem)
-      CUDAKernelCallExpr(Fn, Config, Args, Ty, VK, RP, FPFeatures, MinNumArgs);
-}
-
-CUDAKernelCallExpr *CUDAKernelCallExpr::CreateEmpty(const ASTContext &Ctx,
-                                                    unsigned NumArgs,
-                                                    bool HasFPFeatures,
-                                                    EmptyShell Empty) {
-  // Allocate storage for the trailing objects of CallExpr.
-  unsigned SizeOfTrailingObjects = CallExpr::sizeOfTrailingObjects(
-      /*NumPreArgs=*/END_PREARG, NumArgs, HasFPFeatures);
-  void *Mem = Ctx.Allocate(sizeof(CUDAKernelCallExpr) + SizeOfTrailingObjects,
-                           alignof(CUDAKernelCallExpr));
-  return new (Mem) CUDAKernelCallExpr(NumArgs, HasFPFeatures, Empty);
-}
-
-CXXParenListInitExpr *
-CXXParenListInitExpr::Create(ASTContext &C, ArrayRef<Expr *> Args, QualType T,
-                             unsigned NumUserSpecifiedExprs,
-                             SourceLocation InitLoc, SourceLocation LParenLoc,
-                             SourceLocation RParenLoc) {
-  void *Mem = C.Allocate(totalSizeToAlloc<Expr *>(Args.size()));
-  return new (Mem) CXXParenListInitExpr(Args, T, NumUserSpecifiedExprs, InitLoc,
-                                        LParenLoc, RParenLoc);
-}
-
-CXXParenListInitExpr *CXXParenListInitExpr::CreateEmpty(ASTContext &C,
-                                                        unsigned NumExprs,
-                                                        EmptyShell Empty) {
-  void *Mem = C.Allocate(totalSizeToAlloc<Expr *>(NumExprs),
-                         alignof(CXXParenListInitExpr));
-  return new (Mem) CXXParenListInitExpr(Empty, NumExprs);
-}
-
-CXXFoldExpr::CXXFoldExpr(QualType T, UnresolvedLookupExpr *Callee,
-                                SourceLocation LParenLoc, Expr *LHS,
-                                BinaryOperatorKind Opcode,
-                                SourceLocation EllipsisLoc, Expr *RHS,
-                                SourceLocation RParenLoc,
-                                std::optional<unsigned> NumExpansions)
-    : Expr(CXXFoldExprClass, T, VK_PRValue, OK_Ordinary), LParenLoc(LParenLoc),
-      EllipsisLoc(EllipsisLoc), RParenLoc(RParenLoc),
-      NumExpansions(NumExpansions ? *NumExpansions + 1 : 0), Opcode(Opcode) {
-  // We rely on asserted invariant to distinguish left and right folds.
-  assert(((LHS && LHS->containsUnexpandedParameterPack()) !=
-          (RHS && RHS->containsUnexpandedParameterPack())) &&
-         "Exactly one of LHS or RHS should contain an unexpanded pack");
-  SubExprs[SubExpr::Callee] = Callee;
-  SubExprs[SubExpr::LHS] = LHS;
-  SubExprs[SubExpr::RHS] = RHS;
-  setDependence(computeDependence(this));
 }
