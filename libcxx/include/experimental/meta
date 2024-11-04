@@ -1636,12 +1636,12 @@ consteval span<const ValTy> impl(const span<const ValTy> &in) {
   if (in.size() == 0)
     return {};
 
-  vector Args = {^^ValTy};
+  vector Args = {LIFT(ValTy)};
   for (const auto &V : in)
     Args.push_back(reflect_value(V));
 
   return extract<span<const ValTy>>(
-    substitute(^^StaticSpan, { substitute(^^FixedArray, Args) }));
+    substitute(LIFT(StaticSpan), { substitute(LIFT(FixedArray), Args) }));
 }
 }  // namespace __define_static
 
@@ -1652,7 +1652,8 @@ consteval auto define_static_array(R &&elems)
     -> span<const ranges::range_value_t<R>> {
   using ValTy  = ranges::range_value_t<R>;
   using ImplTy = span<const ValTy>(*)(const span<const ValTy> &);
-  auto impl = extract<ImplTy>(substitute(^^__define_static::impl, {^^ValTy}));
+  auto impl = extract<ImplTy>(substitute(LIFT(__define_static::impl),
+                              {LIFT(ValTy)}));
 
   vector<ValTy> vals(from_range, elems);
   return impl(vals);
