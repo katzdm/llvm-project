@@ -481,9 +481,10 @@ static bool data_member_spec(APValue &Result, ASTContext &C, MetaActions &Meta,
                              QualType ResultTy, SourceRange Range,
                              ArrayRef<Expr *> Args);
 
-static bool define_class(APValue &Result, ASTContext &C, MetaActions &Meta,
-                         EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                         SourceRange Range, ArrayRef<Expr *> Args);
+static bool define_aggregate(APValue &Result, ASTContext &C, MetaActions &Meta,
+                             EvalFn Evaluator, DiagFn Diagnoser,
+                             QualType ResultTy, SourceRange Range,
+                             ArrayRef<Expr *> Args);
 
 static bool offset_of(APValue &Result, ASTContext &C, MetaActions &Meta,
                       EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
@@ -666,7 +667,7 @@ static constexpr Metafunction Metafunctions[] = {
   { Metafunction::MFRK_metaInfo, 2, 2, reflect_result },
   { Metafunction::MFRK_metaInfo, 5, 5, reflect_invoke },
   { Metafunction::MFRK_metaInfo, 10, 10, data_member_spec },
-  { Metafunction::MFRK_metaInfo, 3, 3, define_class },
+  { Metafunction::MFRK_metaInfo, 3, 3, define_aggregate },
   { Metafunction::MFRK_sizeT, 1, 1, offset_of },
   { Metafunction::MFRK_sizeT, 1, 1, size_of },
   { Metafunction::MFRK_sizeT, 1, 1, bit_offset_of },
@@ -2097,7 +2098,6 @@ bool type_of(APValue &Result, ASTContext &C, MetaActions &Meta,
       return Diagnoser(Range.getBegin(), diag::metafn_cannot_query_property)
           << 0 << DescriptionOf(RV) << Range;
 
-    bool UnwrapAliases = isa<ParmVarDecl>(VD) || isa<BindingDecl>(VD);
     bool DropCV = isa<ParmVarDecl>(VD);
     QualType QT = desugarType(VD->getType(), 
                               /*UnwrapAliases=*/ true, DropCV,
@@ -5121,27 +5121,22 @@ bool data_member_spec(APValue &Result, ASTContext &C, MetaActions &Meta,
   return SetAndSucceed(Result, makeReflection(TDMS));
 }
 
-bool define_class(APValue &Result, ASTContext &C, MetaActions &Meta,
-                  EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                  SourceRange Range, ArrayRef<Expr *> Args) {
+bool define_aggregate(APValue &Result, ASTContext &C, MetaActions &Meta,
+                      EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                      SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
 
   APValue Scratch;
   if (!Evaluator(Scratch, Args[0], true))
     return true;
   if (!Scratch.isReflectedType())
-    return DiagnoseReflectionKind(Diagnoser, Range, "an incomplete class type",
+    return DiagnoseReflectionKind(Diagnoser, Range, "a class type",
                                   DescriptionOf(Scratch));
 
   QualType ToComplete = Scratch.getReflectedType();
-  CXXRecordDecl *IncompleteDecl;
-  {
-    NamedDecl *ND;
-    if (!ToComplete->isIncompleteType(&ND))
-      return Diagnoser(Range.getBegin(), diag::metafn_already_complete_type)
-        << ToComplete << Range;
-    IncompleteDecl = cast<CXXRecordDecl>(ND);
-  }
+  if (!ToComplete->isRecordType())
+    return DiagnoseReflectionKind(Diagnoser, Range, "a class type",
+                                  DescriptionOf(Scratch));
 
   // Evaluate the number of members provided.
   if (!Evaluator(Scratch, Args[1], true))
@@ -5149,6 +5144,8 @@ bool define_class(APValue &Result, ASTContext &C, MetaActions &Meta,
   size_t NumMembers = static_cast<size_t>(Scratch.getInt().getExtValue());
 
   SmallVector<TagDataMemberSpec *, 4> MemberSpecs;
+  llvm::FoldingSetNodeID ID;
+  llvm::StringSet<> MemberNames;
   for (size_t k = 0; k < NumMembers; ++k) {
     // Extract the reflection from the list of member specs.
     llvm::APInt Idx(C.getTypeSize(C.getSizeType()), k, false);
@@ -5168,6 +5165,28 @@ bool define_class(APValue &Result, ASTContext &C, MetaActions &Meta,
                                     "a description of a data member",
                                     DescriptionOf(Scratch));
     MemberSpecs.push_back(Scratch.getReflectedDataMemberSpec());
+    Scratch.Profile(ID);
+
+    if (MemberSpecs.back()->Name &&
+        !MemberNames.insert(*MemberSpecs.back()->Name).second)
+      return Diagnoser(Range.getBegin(), diag::metafn_duplicate_member_names)
+          << *MemberSpecs.back()->Name << Range;
+  }
+  unsigned MemberSpecHash = ID.ComputeHash();
+
+  CXXRecordDecl *IncompleteDecl;
+  {
+    NamedDecl *ND;
+    if (!ToComplete->isIncompleteType(&ND)) {
+      unsigned PriorHash;
+      if (C.checkClassMemberSpecHash(ToComplete, PriorHash) &&
+          MemberSpecHash == PriorHash)
+        return SetAndSucceed(Result, makeReflection(ToComplete));
+      else
+        return Diagnoser(Range.getBegin(), diag::metafn_already_complete_type)
+          << ToComplete << Range;
+    }
+    IncompleteDecl = cast<CXXRecordDecl>(ND);
   }
 
   CXXRecordDecl *Definition = Meta.DefineClass(IncompleteDecl, MemberSpecs,
@@ -5175,6 +5194,7 @@ bool define_class(APValue &Result, ASTContext &C, MetaActions &Meta,
   if (!Definition)
     return true;
 
+  C.recordClassMemberSpecHash(ToComplete, MemberSpecHash);
   return SetAndSucceed(Result, makeReflection(ToComplete));
 }
 

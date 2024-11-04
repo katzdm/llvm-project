@@ -46,7 +46,7 @@ def metafn_not_an_operator : Note<"%0 is not an operator or operator template">;
 def metafn_parent_of_undeclared : Note<
   "cannot query the parent of %0 with no declaration">;
 
-// Substitution and invokation.
+// Substitution and invocation.
 def metafn_cannot_be_arg : Note<
   "a reflection of %0 cannot represent a %select{function|template}1 argument">;
 def metafn_cannot_invoke : Note<"cannot invoke %0">;
@@ -92,8 +92,9 @@ def metafn_result_not_representable : Note<
 // Class definition.
 def metafn_name_invalid_identifier : Note<
   "provided name '%0' is not a valid identifier">;
-def metafn_already_complete_type : Note<
-  "%0 is already a complete type">;
+def metafn_already_complete_type : Note<"%0 is already a complete type">;
+def metafn_duplicate_member_names : Note<
+  "cannot produce a class definition with multiple members named '%0'">;
 
 // Annotation injection.
 def metafn_cannot_annotate : Note<"cannot attach an annotation to %1">;

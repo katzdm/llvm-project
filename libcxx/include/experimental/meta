@@ -195,12 +195,12 @@ consteval auto is_special_member_function(info) -> bool;
 consteval auto is_user_provided(info) -> bool;
 consteval auto is_user_declared(info) -> bool;
 
-// define_class
+// define_aggregate
 struct data_member_options_t;
 consteval auto data_member_spec(info class_type,
                                 data_member_options = {}) -> info;
 template <reflection_range R = initializer_list<info>>
-  consteval auto define_class(info class_type, R &&members) -> info;
+  consteval auto define_aggregate(info class_type, R &&members) -> info;
 
 // data layout
 struct member_offsets {
@@ -533,7 +533,7 @@ enum : unsigned {
   __metafn_reflect_result,
   __metafn_reflect_invoke,
   __metafn_data_member_spec,
-  __metafn_define_class,
+  __metafn_define_aggregate,
   __metafn_offset_of,
   __metafn_size_of,
   __metafn_bit_offset_of,
@@ -1524,7 +1524,7 @@ consteval auto alignment_of(info r) -> size_t {
 }
 
 // Returns a reflection representing a description of a data member, which may
-// be used with 'define_class' to define a record type.
+// be used with 'define_aggregate' to define a record type.
 consteval auto data_member_spec(info member_type,
                                 data_member_options_t options = {}) -> info {
   if (!is_type(member_type))
@@ -1583,13 +1583,13 @@ consteval auto data_member_spec(info member_type,
 // Completes the definition of the record type reflected by 'class_type' with
 // the members described by the reflections in the provided range.
 template <reflection_range R = initializer_list<info>>
-consteval auto define_class(info class_type, R &&members) -> info {
+consteval auto define_aggregate(info class_type, R &&members) -> info {
   if constexpr (ranges::contiguous_range<R>) {
-    return __metafunction(detail::__metafn_define_class, class_type,
+    return __metafunction(detail::__metafn_define_aggregate, class_type,
                           ranges::size(members), ranges::data(members));
   } else {
     vector vmembers = members | ranges::to<vector>();
-    return __metafunction(detail::__metafn_define_class, class_type,
+    return __metafunction(detail::__metafn_define_aggregate, class_type,
                           vmembers.size(), vmembers.data());
   }
 }
@@ -2321,6 +2321,13 @@ template <reflection_range R = initializer_list<info>>
 consteval auto test_trait(info templ, R &&args) -> bool {
   return extract<bool>(substitute(templ, args));
 }
+
+template <reflection_range R = initializer_list<info>>
+[[deprecated("renamed to 'define_aggregate' in P2996R8")]]
+consteval auto define_class(info class_type, R &&members) -> info {
+  return define_aggregate(class_type, members);
+}
+
 
                     // ====================================
                     // (u8)display_string_of implementation

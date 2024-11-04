@@ -13103,6 +13103,20 @@ ASTContext::getGeneratedCharArray(StringRef Key, bool Utf8) {
   return Result;
 }
 
+bool ASTContext::checkClassMemberSpecHash(QualType QT, unsigned &Out) {
+  if (ClsMemberSpecHashes.contains(QT)) {
+    Out = ClsMemberSpecHashes[QT];
+    return true;
+  }
+  return false;
+}
+
+void ASTContext::recordClassMemberSpecHash(QualType QT, unsigned Hash) {
+  assert(QT->isRecordType());
+
+  ClsMemberSpecHashes[QT] = Hash;
+}
+
 MSGuidDecl *
 ASTContext::getMSGuidDecl(MSGuidDecl::Parts Parts) const {
   assert(MSGuidTagDecl && "building MS GUID without MS extensions?");

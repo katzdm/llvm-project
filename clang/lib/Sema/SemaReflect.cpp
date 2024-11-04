@@ -509,8 +509,7 @@ public:
                                       false, false, SourceLocation{});
 
     // Derive member visibility.
-    AccessSpecifier MemberAS = (IncompleteDecl->isClass() ? AS_private :
-                                                            AS_public);
+    AccessSpecifier MemberAS = AS_public;
     
     AttributeFactory AttrFactory;
     AttributePool AttrPool(AttrFactory);

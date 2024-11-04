@@ -37,7 +37,7 @@ public:
       ++k;
 
     // Define 'Helper<k>' and return its index.
-    define_class(r, {});
+    define_aggregate(r, {});
     return k;
   }
 };

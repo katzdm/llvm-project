@@ -30,7 +30,8 @@
 template<typename... Ts> struct Tuple {
   struct storage;
 
-  static_assert(is_type(define_class(^^storage, {data_member_spec(^^Ts)...})));
+  static_assert(is_type(define_aggregate(^^storage,
+                                         {data_member_spec(^^Ts)...})));
   storage data;
 
   Tuple(): data{} {}

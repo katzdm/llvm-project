@@ -36,9 +36,9 @@ union U;
 static_assert(!is_complete_type(^^S));
 static_assert(!is_complete_type(^^C));
 static_assert(!is_complete_type(^^U));
-static_assert(is_type(define_class(^^S, {})));
-static_assert(is_type(define_class(^^C, {})));
-static_assert(is_type(define_class(^^U, {})));
+static_assert(is_type(define_aggregate(^^S, {})));
+static_assert(is_type(define_aggregate(^^C, {})));
+static_assert(is_type(define_aggregate(^^U, {})));
 static_assert(is_complete_type(^^S));
 static_assert(is_complete_type(^^C));
 static_assert(is_complete_type(^^U));
@@ -58,7 +58,7 @@ U u;
 namespace test_all_flags {
 struct S;
 static_assert(!is_complete_type(^^S));
-static_assert(is_type(define_class(^^S, {
+static_assert(is_type(define_aggregate(^^S, {
                 data_member_spec(^^int, {.name="count", .alignment=16}),
                 data_member_spec(^^bool, {.name="flag"}),
                 data_member_spec(^^int, {.width=0}),
@@ -80,7 +80,7 @@ static_assert(s.[:nonstatic_data_members_of(^^S)[2]:] == 11);
 
 struct Empty {};
 struct WithEmpty;
-static_assert(is_type(define_class(^^WithEmpty, {
+static_assert(is_type(define_aggregate(^^WithEmpty, {
   data_member_spec(^^int, {}),
   data_member_spec(^^Empty, {.no_unique_address=true}),
 })));
@@ -93,7 +93,7 @@ static_assert(sizeof(WithEmpty) == sizeof(int));
 namespace class_completion {
 class C;
 static_assert(!is_complete_type(^^C));
-static_assert(is_type(define_class(^^C, {
+static_assert(is_type(define_aggregate(^^C, {
                 data_member_spec(^^int, {.name="count"}),
                 data_member_spec(^^bool, {.name="flag"}),
               })));
@@ -102,6 +102,7 @@ static_assert(nonstatic_data_members_of(^^C).size() == 2);
 static_assert(
         (members_of(^^C) |
             std::views::filter(std::meta::is_nonstatic_data_member) |
+            std::views::filter(std::meta::is_public) |
             std::ranges::to<std::vector>()).size() == 2);
 
 C c;
@@ -114,7 +115,7 @@ C c;
 namespace union_completion {
 union U;
 static_assert(!is_complete_type(^^U));
-static_assert(is_type(define_class(^^U, {
+static_assert(is_type(define_aggregate(^^U, {
                 data_member_spec(^^int, {.name="count"}),
                 data_member_spec(^^bool, {.name="flag"}),
               })));
@@ -143,10 +144,10 @@ consteval int nextIncompleteIdx() {
     if (!is_complete_type(substitute(^^S, {std::meta::reflect_value(Idx)})))
       return Idx;
 }
-static_assert(is_type(define_class(^^S<nextIncompleteIdx()>, {
+static_assert(is_type(define_aggregate(^^S<nextIncompleteIdx()>, {
                 data_member_spec(^^int, {.name="mem"}),
               })));
-static_assert(is_type(define_class(^^S<nextIncompleteIdx()>, {
+static_assert(is_type(define_aggregate(^^S<nextIncompleteIdx()>, {
                 data_member_spec(^^bool, {.name="mem"}),
               })));
 
@@ -166,7 +167,7 @@ static_assert(!is_complete_type(^^S<4>));
 namespace completion_of_dependent_type {
 template <typename T, std::meta::info... Mems>
 consteval bool completeDefn() {
-  return is_type(define_class(^^T, {Mems...}));
+  return is_type(define_aggregate(^^T, {Mems...}));
 }
 
 struct S;
@@ -187,7 +188,7 @@ S s;
 namespace completion_of_local_class {
 consteval int fn() {
   struct S;
-  static_assert(is_type(define_class(^^S, {
+  static_assert(is_type(define_aggregate(^^S, {
     data_member_spec(^^int, {.name="member"})
   })));
 
@@ -205,13 +206,13 @@ namespace completion_of_template_with_pack_param {
 template <typename...>
 struct foo;
 
-static_assert(is_type(define_class(^^foo<>, {
+static_assert(is_type(define_aggregate(^^foo<>, {
   data_member_spec(^^int, {.name="mem1"})
 })));
-static_assert(is_type(define_class(^^foo<int>, {
+static_assert(is_type(define_aggregate(^^foo<int>, {
   data_member_spec(^^int, {.name="mem2"})
 })));
-static_assert(is_type(define_class(^^foo<bool, char>, {
+static_assert(is_type(define_aggregate(^^foo<bool, char>, {
   data_member_spec(^^int, {.name="mem3"})
 })));
 
@@ -227,7 +228,7 @@ static_assert(f1.mem1 + f2.mem2 + f3.mem3 == 6);
 
 namespace with_non_contiguous_range {
 struct foo;
-static_assert(is_type(define_class(
+static_assert(is_type(define_aggregate(
     ^^foo,
     std::views::join(std::vector<std::vector<std::pair<bool,
                                                        std::meta::info>>> {
@@ -254,7 +255,7 @@ namespace utf8_identifier_of_roundtrip {
 class Kühl { };
 
 class Cls1;
-static_assert(is_type(define_class(^^Cls1, {
+static_assert(is_type(define_aggregate(^^Cls1, {
   data_member_spec(^^int, {.name=u8identifier_of(^^Kühl)})
 })));
 static_assert(u8identifier_of(nonstatic_data_members_of(^^Cls1)[0]) ==
@@ -280,5 +281,26 @@ static_assert(data_member_spec(^^int, {.name=""}) == data_member_spec(^^int, {})
 using Alias = int;
 static_assert(data_member_spec(^^Alias, {}) != data_member_spec(^^int, {}));
 }  // namespace data_member_spec_comparison
+
+                                // ============
+                                // repeat_calls
+                                // ============
+
+namespace repeat_calls {
+struct S1;
+static_assert(is_type(define_aggregate(^^S1, {})));
+static_assert(is_type(define_aggregate(^^S1, {})));
+
+struct S2;
+static_assert(is_type(define_aggregate(^^S2, {
+  data_member_spec(^^int, {.name="member1"}),
+  data_member_spec(^^bool, {.name="member2"}),
+})));
+static_assert(is_type(define_aggregate(^^S2, {
+  data_member_spec(^^int, {.name="member1"}),
+  data_member_spec(^^bool, {.name="member2"}),
+})));
+
+}  // namespace repeat_calls
 
 int main() { }

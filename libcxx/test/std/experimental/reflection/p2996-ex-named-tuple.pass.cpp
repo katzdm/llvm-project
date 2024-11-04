@@ -54,7 +54,7 @@ consteval auto make_named_tuple(std::meta::info type, Tags... tags) {
                                      {.name=Tag::name()}));
   };
   (f(tags), ...);
-  return define_class(type, nsdms);
+  return define_aggregate(type, nsdms);
 }
 
 struct R;

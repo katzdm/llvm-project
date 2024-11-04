@@ -30,7 +30,7 @@ consteval auto make_named_tuple(
     for (auto [ty, name] : members) {
         nsdms.push_back(data_member_spec(ty, {.name=name}));
     }    
-    return define_class(type, nsdms);
+    return define_aggregate(type, nsdms);
 }
 
 struct R;

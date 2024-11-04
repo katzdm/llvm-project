@@ -39,8 +39,9 @@ consteval auto make_struct_of_arrays(std::meta::info type,
                                       {.name=identifier_of(member)});
     new_members.push_back(mem_descr);
   }
-  return std::meta::define_class(substitute(^^struct_of_arrays_impl, {type, N}),
-                                 new_members);
+  return std::meta::define_aggregate(substitute(^^struct_of_arrays_impl,
+                                                {type, N}),
+                                     new_members);
 }
 
 template <typename T, size_t N>

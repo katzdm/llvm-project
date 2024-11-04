@@ -343,6 +343,10 @@ class ASTContext : public RefCountedBase<ASTContext> {
   mutable llvm::StringMap<VarDecl *> GenCharArrayCache;
   mutable llvm::StringMap<VarDecl *> GenUTF8CharArrayCache;
 
+  /// A mapping from classes created through 'define_aggregate' to the unique
+  /// hashes of their member-specifications.
+  mutable llvm::DenseMap<QualType, unsigned> ClsMemberSpecHashes;
+
   /// MD5 hash of CUID. It is calculated when first used and cached by this
   /// data member.
   mutable std::string CUIDHash;
@@ -3338,6 +3342,9 @@ public:
   /// Return a variable whose holding a generated immutable character array
   /// containing the same string.
   VarDecl *getGeneratedCharArray(StringRef Key, bool IsUtf8);
+
+  bool checkClassMemberSpecHash(QualType QT, unsigned &Out);
+  void recordClassMemberSpecHash(QualType QT, unsigned Hash);
 
   /// Return a declaration for the global GUID object representing the given
   /// GUID value.

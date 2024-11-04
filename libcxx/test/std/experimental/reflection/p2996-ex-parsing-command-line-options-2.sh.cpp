@@ -76,7 +76,7 @@ consteval auto spec_to_opts(std::meta::info opts,
     new_members.push_back(
         data_member_spec(new_type, {.name=identifier_of(member)}));
   }
-  return define_class(opts, new_members);
+  return define_aggregate(opts, new_members);
 }
 
 struct Clap {
