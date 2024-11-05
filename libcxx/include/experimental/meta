@@ -1732,7 +1732,7 @@ consteval auto is_function_type(info r) -> bool {
 }
 
 consteval auto is_reflection_type(info r) -> bool {
-  return r == ^^std::meta::info;
+  return r == LIFT(std::meta::info);
 }
 
 consteval auto is_reference_type(info r) -> bool {
