@@ -38,192 +38,191 @@ class VDtor { virtual ~VDtor() {} };
 
 int fn(bool, char) noexcept { return 0; }
 
-static_assert(type_is_void(^^void));
-static_assert(type_is_null_pointer(^^nullptr_t));
-static_assert(type_is_integral(^^int));
-static_assert(type_is_floating_point(^^float));
-static_assert(type_is_array(^^int[]));
-static_assert(type_is_pointer(^^int *));
-static_assert(type_is_lvalue_reference(^^int&));
-static_assert(type_is_rvalue_reference(^^int&&));
-static_assert(type_is_member_object_pointer(^^int (C::*)));
-static_assert(type_is_member_function_pointer(^^int (C::*)()));
-static_assert(type_is_enum(^^E));
-static_assert(type_is_class(^^C));
-static_assert(type_is_function(^^void()));
+static_assert(is_void_type(^^void));
+static_assert(is_null_pointer_type(^^nullptr_t));
+static_assert(is_integral_type(^^int));
+static_assert(is_floating_point_type(^^float));
+static_assert(is_array_type(^^int[]));
+static_assert(is_pointer_type(^^int *));
+static_assert(is_lvalue_reference_type(^^int&));
+static_assert(is_rvalue_reference_type(^^int&&));
+static_assert(is_member_object_pointer_type(^^int (C::*)));
+static_assert(is_member_function_pointer_type(^^int (C::*)()));
+static_assert(is_enum_type(^^E));
+static_assert(is_class_type(^^C));
+static_assert(is_function_type(^^void()));
+static_assert(is_reflection_type(^^std::meta::info));
 
-static_assert(type_is_reference(^^int&));
-static_assert(type_is_arithmetic(^^int));
-static_assert(type_is_fundamental(^^int));
-static_assert(type_is_object(^^C));
-static_assert(type_is_scalar(^^int));
-static_assert(type_is_compound(^^C));
-static_assert(type_is_member_pointer(^^int (C::*)));
+static_assert(is_reference_type(^^int&));
+static_assert(is_arithmetic_type(^^int));
+static_assert(is_fundamental_type(^^int));
+static_assert(is_object_type(^^C));
+static_assert(is_scalar_type(^^int));
+static_assert(is_compound_type(^^C));
+static_assert(is_member_pointer_type(^^int (C::*)));
 
-static_assert(type_is_const(^^const int));
-static_assert(type_is_volatile(^^volatile int));
-static_assert(type_is_trivial(^^int));
-static_assert(type_is_trivially_copyable(^^C));
-static_assert(type_is_standard_layout(^^int));
-static_assert(type_is_empty(^^C));
-static_assert(type_is_polymorphic(^^AC));
-static_assert(type_is_abstract(^^AC));
-static_assert(type_is_final(^^FC));
-static_assert(type_is_aggregate(^^C));
-static_assert(type_is_signed(^^int));
-static_assert(type_is_unsigned(^^unsigned));;
-static_assert(type_is_bounded_array(^^int[3]));
-static_assert(type_is_unbounded_array(^^int[]));
-static_assert(type_is_scoped_enum(^^E));
+static_assert(is_const_type(^^const int));
+static_assert(is_volatile_type(^^volatile int));
+static_assert(is_trivial_type(^^int));
+static_assert(is_trivially_copyable_type(^^C));
+static_assert(is_standard_layout_type(^^int));
+static_assert(is_empty_type(^^C));
+static_assert(is_polymorphic_type(^^AC));
+static_assert(is_abstract_type(^^AC));
+static_assert(is_final_type(^^FC));
+static_assert(is_aggregate_type(^^C));
+static_assert(is_signed_type(^^int));
+static_assert(is_unsigned_type(^^unsigned));;
+static_assert(is_bounded_array_type(^^int[3]));
+static_assert(is_unbounded_array_type(^^int[]));
+static_assert(is_scoped_enum_type(^^E));
 
-static_assert(type_is_constructible(^^WithCtor, {^^int, ^^bool}));
-static_assert(type_is_default_constructible(^^C));
-static_assert(type_is_copy_constructible(^^C));
-static_assert(type_is_move_constructible(^^C));
+static_assert(is_constructible_type(^^WithCtor, {^^int, ^^bool}));
+static_assert(is_default_constructible_type(^^C));
+static_assert(is_copy_constructible_type(^^C));
+static_assert(is_move_constructible_type(^^C));
 
-static_assert(type_is_assignable(^^U, ^^C));
-static_assert(type_is_copy_assignable(^^U));
-static_assert(type_is_move_assignable(^^U));
+static_assert(is_assignable_type(^^U, ^^C));
+static_assert(is_copy_assignable_type(^^U));
+static_assert(is_move_assignable_type(^^U));
 
-static_assert(type_is_swappable_with(^^int&, ^^int&));
-static_assert(type_is_swappable(^^int));
+static_assert(is_swappable_with_type(^^int&, ^^int&));
+static_assert(is_swappable_type(^^int));
 
-static_assert(type_is_destructible(^^C));
+static_assert(is_destructible_type(^^C));
 
-static_assert(type_is_trivially_constructible(^^Triv, {^^int, ^^bool}));
-static_assert(type_is_trivially_default_constructible(^^C));
-static_assert(type_is_trivially_copy_constructible(^^C));
-static_assert(type_is_trivially_move_constructible(^^C));
+static_assert(is_trivially_constructible_type(^^Triv, {^^int, ^^bool}));
+static_assert(is_trivially_default_constructible_type(^^C));
+static_assert(is_trivially_copy_constructible_type(^^C));
+static_assert(is_trivially_move_constructible_type(^^C));
 
-static_assert(type_is_trivially_assignable(^^C, ^^const C&));
-static_assert(type_is_trivially_copy_assignable(^^C));
-static_assert(type_is_trivially_move_assignable(^^C));
-static_assert(type_is_trivially_destructible(^^C));
+static_assert(is_trivially_assignable_type(^^C, ^^const C&));
+static_assert(is_trivially_copy_assignable_type(^^C));
+static_assert(is_trivially_move_assignable_type(^^C));
+static_assert(is_trivially_destructible_type(^^C));
 
-static_assert(type_is_nothrow_constructible(^^WithCtor, {^^int, ^^bool}));
-static_assert(type_is_nothrow_default_constructible(^^C));
-static_assert(type_is_nothrow_copy_constructible(^^C));
-static_assert(type_is_nothrow_move_constructible(^^C));
+static_assert(is_nothrow_constructible_type(^^WithCtor, {^^int, ^^bool}));
+static_assert(is_nothrow_default_constructible_type(^^C));
+static_assert(is_nothrow_copy_constructible_type(^^C));
+static_assert(is_nothrow_move_constructible_type(^^C));
 
-static_assert(type_is_nothrow_assignable(^^C, ^^const C&));
-static_assert(type_is_nothrow_copy_assignable(^^C));
-static_assert(type_is_nothrow_move_assignable(^^C));
+static_assert(is_nothrow_assignable_type(^^C, ^^const C&));
+static_assert(is_nothrow_copy_assignable_type(^^C));
+static_assert(is_nothrow_move_assignable_type(^^C));
 
-static_assert(type_is_nothrow_swappable_with(^^int&, ^^int&));
-static_assert(type_is_nothrow_swappable(^^int));
+static_assert(is_nothrow_swappable_with_type(^^int&, ^^int&));
+static_assert(is_nothrow_swappable_type(^^int));
 
-static_assert(type_is_nothrow_destructible(^^C));
+static_assert(is_nothrow_destructible_type(^^C));
 
-static_assert(type_has_virtual_destructor(^^VDtor));
+static_assert(has_virtual_destructor(^^VDtor));
 
-static_assert(type_has_unique_object_representations(^^int));
+static_assert(has_unique_object_representations(^^int));
 
-static_assert(type_alignment_of(^^int) == sizeof(int));
-static_assert(type_rank(^^int[4][2]) == 2);
-static_assert(type_extent(^^int[4][2], 1) == 2);
+static_assert(rank(^^int[4][2]) == 2);
+static_assert(extent(^^int[4][2], 1) == 2);
 
-static_assert(type_is_same(^^int, ^^int));
-static_assert(type_is_base_of(^^C, ^^Child));
-static_assert(type_is_convertible(^^bool, ^^int));
-static_assert(type_is_nothrow_convertible(^^bool, ^^int));
+static_assert(is_same_type(^^int, ^^int));
+static_assert(is_base_of_type(^^C, ^^Child));
+static_assert(is_convertible_type(^^bool, ^^int));
+static_assert(is_nothrow_convertible_type(^^bool, ^^int));
 
-static_assert(type_is_invocable(type_of(^^fn), {^^bool, ^^char}));
-static_assert(type_is_invocable_r(^^int, type_of(^^fn), {^^bool, ^^char}));
+static_assert(is_invocable_type(type_of(^^fn), {^^bool, ^^char}));
+static_assert(is_invocable_r_type(^^int, type_of(^^fn), {^^bool, ^^char}));
 
-static_assert(type_is_nothrow_invocable(type_of(^^fn), {^^bool, ^^char}));
-static_assert(type_is_nothrow_invocable_r(^^int, type_of(^^fn),
+static_assert(is_nothrow_invocable_type(type_of(^^fn), {^^bool, ^^char}));
+static_assert(is_nothrow_invocable_r_type(^^int, type_of(^^fn),
                                           {^^bool, ^^char}));
 
-static_assert(type_remove_const(^^const int) == ^^int);
-static_assert(display_string_of(type_remove_const(^^const int)) ==
+static_assert(remove_const(^^const int) == ^^int);
+static_assert(display_string_of(remove_const(^^const int)) ==
               display_string_of(^^int));
-static_assert(type_remove_volatile(^^volatile int) == ^^int);
-static_assert(display_string_of(type_remove_volatile(^^volatile int)) ==
+static_assert(remove_volatile(^^volatile int) == ^^int);
+static_assert(display_string_of(remove_volatile(^^volatile int)) ==
               display_string_of(^^int));
-static_assert(type_remove_cv(^^const volatile int) == ^^int);
-static_assert(display_string_of(type_remove_cv(^^const volatile int)) ==
+static_assert(remove_cv(^^const volatile int) == ^^int);
+static_assert(display_string_of(remove_cv(^^const volatile int)) ==
               display_string_of(^^int));
-static_assert(type_add_const(^^int) == ^^const int);
-static_assert(display_string_of(type_add_const(^^int)) ==
+static_assert(add_const(^^int) == ^^const int);
+static_assert(display_string_of(add_const(^^int)) ==
               display_string_of(^^const int));
-static_assert(type_add_volatile(^^int) == ^^volatile int);
-static_assert(display_string_of(type_add_volatile(^^int)) ==
+static_assert(add_volatile(^^int) == ^^volatile int);
+static_assert(display_string_of(add_volatile(^^int)) ==
               display_string_of(^^volatile int));
-static_assert(type_add_cv(^^int) == ^^const volatile int);
-static_assert(display_string_of(type_add_cv(^^int)) ==
+static_assert(add_cv(^^int) == ^^const volatile int);
+static_assert(display_string_of(add_cv(^^int)) ==
               display_string_of(^^const volatile int));
 
-static_assert(type_remove_reference(^^int&&) == ^^int);
-static_assert(display_string_of(type_remove_reference(^^int&&)) ==
+static_assert(remove_reference(^^int&&) == ^^int);
+static_assert(display_string_of(remove_reference(^^int&&)) ==
               display_string_of(^^int));
-static_assert(type_add_lvalue_reference(^^int) == ^^int&);
-static_assert(display_string_of(type_add_lvalue_reference(^^int)) ==
+static_assert(add_lvalue_reference(^^int) == ^^int&);
+static_assert(display_string_of(add_lvalue_reference(^^int)) ==
               display_string_of(^^int&));
-static_assert(type_add_rvalue_reference(^^int) == ^^int&&);
-static_assert(display_string_of(type_add_rvalue_reference(^^int)) ==
+static_assert(add_rvalue_reference(^^int) == ^^int&&);
+static_assert(display_string_of(add_rvalue_reference(^^int)) ==
               display_string_of(^^int&&));
 
-static_assert(type_make_signed(^^unsigned) == ^^int);
-static_assert(display_string_of(type_make_signed(^^unsigned)) ==
+static_assert(make_signed(^^unsigned) == ^^int);
+static_assert(display_string_of(make_signed(^^unsigned)) ==
               display_string_of(^^int));
-static_assert(type_make_unsigned(^^int) == ^^unsigned);
-static_assert(display_string_of(type_make_unsigned(^^int)) ==
+static_assert(make_unsigned(^^int) == ^^unsigned);
+static_assert(display_string_of(make_unsigned(^^int)) ==
               display_string_of(^^unsigned));
 
-static_assert(type_remove_extent(^^int[2][3]) == ^^int[3]);
-static_assert(display_string_of(type_remove_extent(^^int[2][3])) ==
+static_assert(remove_extent(^^int[2][3]) == ^^int[3]);
+static_assert(display_string_of(remove_extent(^^int[2][3])) ==
               display_string_of(^^int[3]));
-static_assert(type_remove_all_extents(^^int[2][3]) == ^^int);
-static_assert(display_string_of(type_remove_all_extents(^^int[2][3])) ==
+static_assert(remove_all_extents(^^int[2][3]) == ^^int);
+static_assert(display_string_of(remove_all_extents(^^int[2][3])) ==
               display_string_of(^^int));
 
-static_assert(type_remove_pointer(^^int **) == ^^int *);
-static_assert(display_string_of(type_remove_pointer(^^int **)) ==
+static_assert(remove_pointer(^^int **) == ^^int *);
+static_assert(display_string_of(remove_pointer(^^int **)) ==
               display_string_of(^^int *));
-static_assert(type_add_pointer(^^int *) == ^^int **);
-static_assert(display_string_of(type_add_pointer(^^int *)) ==
+static_assert(add_pointer(^^int *) == ^^int **);
+static_assert(display_string_of(add_pointer(^^int *)) ==
               display_string_of(^^int **));
 
-static_assert(type_remove_cvref(^^const volatile int &&) == ^^int);
-static_assert(display_string_of(type_remove_cvref(^^const volatile int &&)) ==
+static_assert(remove_cvref(^^const volatile int &&) == ^^int);
+static_assert(display_string_of(remove_cvref(^^const volatile int &&)) ==
               display_string_of(^^int));
-static_assert(type_decay(^^int[]) == ^^int *);
-static_assert(display_string_of(type_decay(^^int[])) ==
+static_assert(decay(^^int[]) == ^^int *);
+static_assert(display_string_of(decay(^^int[])) ==
               display_string_of(^^int *));
-static_assert(std::meta::type_common_type({^^int, ^^short, ^^bool}) == ^^int);
-static_assert(display_string_of(std::meta::type_common_type({^^int,
-                                                             ^^short,
-                                                             ^^bool})) ==
+static_assert(std::meta::common_type({^^int, ^^short, ^^bool}) == ^^int);
+static_assert(display_string_of(std::meta::common_type({^^int,
+                                                        ^^short,
+                                                        ^^bool})) ==
               display_string_of(^^int));
-static_assert(std::meta::type_common_reference({^^int &, ^^const int &}) ==
+static_assert(std::meta::common_reference({^^int &, ^^const int &}) ==
               ^^const int &);
-static_assert(display_string_of(std::meta::type_common_reference({^^int &,
+static_assert(display_string_of(std::meta::common_reference({^^int &,
                                                         ^^const int &})) ==
               display_string_of(^^const int &));
-static_assert(type_underlying_type(^^E) == ^^short);
-static_assert(display_string_of(type_underlying_type(^^E)) ==
+static_assert(underlying_type(^^E) == ^^short);
+static_assert(display_string_of(underlying_type(^^E)) ==
               display_string_of(^^short));
-static_assert(type_invoke_result(type_of(^^fn), {^^bool, ^^char}) == ^^int);
-static_assert(display_string_of(type_invoke_result(type_of(^^fn),
-                                                   {^^bool, ^^char})) ==
+static_assert(invoke_result(type_of(^^fn), {^^bool, ^^char}) == ^^int);
+static_assert(display_string_of(invoke_result(type_of(^^fn),
+                                              {^^bool, ^^char})) ==
               display_string_of(^^int));
-static_assert(type_unwrap_reference(^^std::reference_wrapper<int>) == ^^int &);
+static_assert(unwrap_reference(^^std::reference_wrapper<int>) == ^^int &);
 static_assert(display_string_of(
-                    type_unwrap_reference(^^std::reference_wrapper<int>)) ==
+                    unwrap_reference(^^std::reference_wrapper<int>)) ==
               display_string_of(^^int &));
-static_assert(type_unwrap_ref_decay(^^std::reference_wrapper<const int>) ==
+static_assert(unwrap_ref_decay(^^std::reference_wrapper<const int>) ==
                                     ^^const int &);
 static_assert(
-    display_string_of(
-          type_unwrap_ref_decay(^^std::reference_wrapper<const int>)) ==
+    display_string_of(unwrap_ref_decay(^^std::reference_wrapper<const int>)) ==
     display_string_of(^^const int &));
 
 using Tup = std::tuple<int, bool, char>;
-static_assert(type_tuple_size(^^Tup) == 3);
-static_assert(type_tuple_element(1, ^^Tup) == ^^bool);
+static_assert(tuple_size(^^Tup) == 3);
+static_assert(tuple_element(1, ^^Tup) == ^^bool);
 
 using Var = std::variant<int, bool, char, int *>;
-static_assert(type_variant_size(^^Var) == 4);
-static_assert(type_variant_alternative(3, ^^Var) == ^^int *);
+static_assert(variant_size(^^Var) == 4);
+static_assert(variant_alternative(3, ^^Var) == ^^int *);
 
 int main() { }

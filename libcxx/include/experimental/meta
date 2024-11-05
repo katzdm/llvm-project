@@ -216,166 +216,166 @@ consteval auto alignment_of(info) -> size_t;
 consteval auto bit_size_of(info) -> size_t;
 
 // primary type categories
-consteval auto type_is_void(info) -> bool;
-consteval auto type_is_null_pointer(info) -> bool;
-consteval auto type_is_integral(info) -> bool;
-consteval auto type_is_floating_point(info) -> bool;
-consteval auto type_is_array(info) -> bool;
-consteval auto type_is_pointer(info) -> bool;
-consteval auto type_is_lvalue_reference(info) -> bool;
-consteval auto type_is_rvalue_reference(info) -> bool;
-consteval auto type_is_member_object_pointer(info) -> bool;
-consteval auto type_is_member_function_pointer(info) -> bool;
-consteval auto type_is_enum(info) -> bool;
-consteval auto type_is_union(info) -> bool;
-consteval auto type_is_class(info) -> bool;
-consteval auto type_is_function(info) -> bool;
+consteval auto is_void_type(info) -> bool;
+consteval auto is_null_pointer_type(info) -> bool;
+consteval auto is_integral_type(info) -> bool;
+consteval auto is_floating_point_type(info) -> bool;
+consteval auto is_array_type(info) -> bool;
+consteval auto is_pointer_type(info) -> bool;
+consteval auto is_lvalue_reference_type(info) -> bool;
+consteval auto is_rvalue_reference_type(info) -> bool;
+consteval auto is_member_object_pointer_type(info) -> bool;
+consteval auto is_member_function_pointer_type(info) -> bool;
+consteval auto is_enum_type(info) -> bool;
+consteval auto is_union_type(info) -> bool;
+consteval auto is_class_type(info) -> bool;
+consteval auto is_function_type(info) -> bool;
+consetval auto is_reflection_type(info) -> bool;
 
 // composite type categories
-consteval auto type_is_reference(info) -> bool;
-consteval auto type_is_arithmetic(info) -> bool;
-consteval auto type_is_fundamental(info) -> bool;
-consteval auto type_is_object(info) -> bool;
-consteval auto type_is_scalar(info) -> bool;
-consteval auto type_is_compound(info) -> bool;
-consteval auto type_is_member_pointer(info) -> bool;
+consteval auto is_reference_type(info) -> bool;
+consteval auto is_arithmetic_type(info) -> bool;
+consteval auto is_fundamental_type(info) -> bool;
+consteval auto is_object_type(info) -> bool;
+consteval auto is_scalar_type(info) -> bool;
+consteval auto is_compound_type(info) -> bool;
+consteval auto is_member_pointer_type(info) -> bool;
 
 // type properties
-consteval auto type_is_const(info) -> bool;
-consteval auto type_is_volatile(info) -> bool;
-consteval auto type_is_trivial(info) -> bool;
-consteval auto type_is_trivially_copyable(info) -> bool;
-consteval auto type_is_standard_layout(info) -> bool;
-consteval auto type_is_empty(info) -> bool;
-consteval auto type_is_polymorphic(info) -> bool;
-consteval auto type_is_abstract(info) -> bool;
-consteval auto type_is_final(info) -> bool;
-consteval auto type_is_aggregate(info) -> bool;
-consteval auto type_is_signed(info) -> bool;
-consteval auto type_is_unsigned(info) -> bool;
-consteval auto type_is_bounded_array(info) -> bool;
-consteval auto type_is_unbounded_array(info) -> bool;
-consteval auto type_is_scoped_enum(info) -> bool;
+consteval auto is_const_type(info) -> bool;
+consteval auto is_volatile_type(info) -> bool;
+consteval auto is_trivial_type(info) -> bool;
+consteval auto is_trivially_copyable_type(info) -> bool;
+consteval auto is_standard_layout_type(info) -> bool;
+consteval auto is_empty_type(info) -> bool;
+consteval auto is_polymorphic_type(info) -> bool;
+consteval auto is_abstract_type(info) -> bool;
+consteval auto is_final_type(info) -> bool;
+consteval auto is_aggregate_type(info) -> bool;
+consteval auto is_signed_type(info) -> bool;
+consteval auto is_unsigned_type(info) -> bool;
+consteval auto is_bounded_array_type(info) -> bool;
+consteval auto is_unbounded_array_type(info) -> bool;
+consteval auto is_scoped_enum_type(info) -> bool;
 
 template <reflection_range R = initializer_list<info>>
-  consteval auto type_is_constructible(info, R &&type_args) -> bool;
-consteval auto type_is_default_constructible(info) -> bool;
-consteval auto type_is_copy_constructible(info) -> bool;
-consteval auto type_is_move_constructible(info) -> bool;
+  consteval auto is_constructible_type(info, R &&args) -> bool;
+consteval auto is_default_constructible_type(info) -> bool;
+consteval auto is_copy_constructible_type(info) -> bool;
+consteval auto is_move_constructible_type(info) -> bool;
 
-consteval auto type_is_assignable(info dst, info src) -> bool;
-consteval auto type_is_copy_assignable(info) -> bool;
-consteval auto type_is_move_assignable(info) -> bool;
+consteval auto is_assignable_type(info dst, info src) -> bool;
+consteval auto is_copy_assignable_type(info) -> bool;
+consteval auto is_move_assignable_type(info) -> bool;
 
-consteval auto type_is_swappable_with(info dst, info src) -> bool;
-consteval auto type_is_swappable(info) -> bool;
+consteval auto is_swappable_with_type(info dst, info src) -> bool;
+consteval auto is_swappable_type(info) -> bool;
 
-consteval auto type_is_destructible(info) -> bool;
-
-template <reflection_range R = initializer_list<info>>
-  consteval auto type_is_trivially_constructible(info, R &&type_args) -> bool;
-consteval auto type_is_trivially_default_constructible(info) -> bool;
-consteval auto type_is_trivially_copy_constructible(info) -> bool;
-consteval auto type_is_trivially_move_constructible(info) -> bool;
-
-consteval auto type_is_trivially_assignable(info dst, info src) -> bool;
-consteval auto type_is_trivially_copy_assignable(info) -> bool;
-consteval auto type_is_trivially_move_assignable(info) -> bool;
-consteval auto type_is_trivially_destructible(info) -> bool;
+consteval auto is_destructible_type(info) -> bool;
 
 template <reflection_range R = initializer_list<info>>
-  consteval auto type_is_nothrow_constructible(info, R &&type_args) -> bool;
-consteval auto type_is_nothrow_default_constructible(info) -> bool;
-consteval auto type_is_nothrow_copy_constructible(info) -> bool;
-consteval auto type_is_nothrow_move_constructible(info) -> bool;
+  consteval auto type_is_trivially_constructible(info, R &&args) -> bool;
+consteval auto is_trivially_default_constructible_type(info) -> bool;
+consteval auto is_trivially_copy_constructible_type(info) -> bool;
+consteval auto is_trivially_move_constructible_type(info) -> bool;
 
-consteval auto type_is_nothrow_assignable(info dst, info src) -> bool;
-consteval auto type_is_nothrow_copy_assignable(info) -> bool;
-consteval auto type_is_nothrow_move_assignable(info) -> bool;
+consteval auto is_trivially_assignable_type(info dst, info src) -> bool;
+consteval auto is_trivially_copy_assignable_type(info) -> bool;
+consteval auto is_trivially_move_assignable_type(info) -> bool;
+consteval auto is_trivially_destructible_type(info) -> bool;
 
-consteval auto type_is_nothrow_swappable_with(info dst, info src) -> bool;
-consteval auto type_is_nothrow_swappable(info) -> bool;
+template <reflection_range R = initializer_list<info>>
+  consteval auto is_nothrow_constructible_type(info, R &&args) -> bool;
+consteval auto is_nothrow_default_constructible_type(info) -> bool;
+consteval auto is_nothrow_copy_constructible_type(info) -> bool;
+consteval auto is_nothrow_move_constructible_type(info) -> bool;
 
-consteval auto type_is_nothrow_destructible(info) -> bool;
+consteval auto is_nothrow_assignable_type(info dst, info src) -> bool;
+consteval auto is_nothrow_copy_assignable_type(info) -> bool;
+consteval auto is_nothrow_move_assignable_type(info) -> bool;
 
-consteval auto type_is_implicit_lifetime(info) -> bool;
+consteval auto is_nothrow_swappable_with_type(info dst, info src) -> bool;
+consteval auto is_nothrow_swappable_type(info) -> bool;
 
-consteval auto type_has_virtual_destructor(info) -> bool;
+consteval auto is_nothrow_destructible_type(info) -> bool;
 
-consteval auto type_has_unique_object_representations(info) -> bool;
+consteval auto is_implicit_lifetime_type(info) -> bool;
 
-consteval auto type_reference_constructs_from_temporary(info) -> bool;
-consteval auto type_reference_converts_from_temporary(info) -> bool;
+consteval auto has_virtual_destructor(info) -> bool;
+
+consteval auto has_unique_object_representations(info) -> bool;
+
+consteval auto reference_constructs_from_temporary(info) -> bool;
+consteval auto reference_converts_from_temporary(info) -> bool;
 
 // type property queries
-consteval auto type_alignment_of(info) -> size_t;
-consteval auto type_rank(info) -> size_t;
-consteval auto type_extent(info type, unsigned i) -> size_t;
+consteval auto rank(info) -> size_t;
+consteval auto extent(info type, unsigned i) -> size_t;
 
 // type relations
-consteval auto type_is_same(info, info) -> bool;
-consteval auto type_is_base_of(info, info) -> bool;
-consteval auto type_is_convertible(info, info) -> bool;
-consteval auto type_is_nothrow_convertible(info, info) -> bool;
-consteval auto type_is_layout_compatible(info, info) -> bool;
-consteval auto type_is_pointer_interconvertible_base_of(info, info) -> bool;
+consteval auto is_same_type(info, info) -> bool;
+consteval auto is_base_of_type(info, info) -> bool;
+consteval auto is_convertible_type(info, info) -> bool;
+consteval auto is_nothrow_convertible_type(info, info) -> bool;
+consteval auto is_layout_compatible_type(info, info) -> bool;
+consteval auto is_pointer_interconvertible_base_of_type(info, info) -> bool;
 
 template <reflection_range R = initializer_list<info>>
-  consteval auto type_is_invocable(info type, R &&args) -> bool;
+  consteval auto is_invocable_type(info type, R &&args) -> bool;
 template <reflection_range R = initializer_list<info>>
-  consteval auto type_is_invocable_r(info type_result, info type,
+  consteval auto is_invocable_r_type(info result, info type,
                                      R &&args) -> bool;
 
 template <reflection_range R = initializer_list<info>>
-  consteval auto type_is_nothrow_invocable(info type, R &&args) -> bool;
+  consteval auto is_nothrow_invocable_type(info type, R &&args) -> bool;
 template <reflection_range R = initializer_list<info>>
-  consteval auto type_is_nothrow_invocable_r(info type_result, info type,
+  consteval auto is_nothrow_invocable_r_type(info result, info type,
                                              R &&args) -> bool;
 
 // const volatile modifications
-consteval auto type_remove_const(info) -> info;
-consteval auto type_remove_volatile(info) -> info;
-consteval auto type_remove_cv(info) -> info;
-consteval auto type_add_const(info) -> info;
-consteval auto type_add_volatile(info) -> info;
-consteval auto type_add_cv(info) -> info;
+consteval auto remove_const(info) -> info;
+consteval auto remove_volatile(info) -> info;
+consteval auto remove_cv(info) -> info;
+consteval auto add_const(info) -> info;
+consteval auto add_volatile(info) -> info;
+consteval auto add_cv(info) -> info;
 
 // reference modifications
-consteval auto type_remove_reference(info) -> info;
-consteval auto type_add_lvalue_reference(info) -> info;
-consteval auto type_add_rvalue_reference(info) -> info;
+consteval auto remove_reference(info) -> info;
+consteval auto add_lvalue_reference(info) -> info;
+consteval auto add_rvalue_reference(info) -> info;
 
 // sign modifications
 consteval auto make_signed(info) -> info;
 consteval auto make_unsigned(info) -> info;
 
 // array modifications
-consteval auto type_remove_extent(info) -> info;
-consteval auto type_remove_all_extents(info) -> info;
+consteval auto remove_extent(info) -> info;
+consteval auto remove_all_extents(info) -> info;
 
 // pointer modifications
-consteval auto type_remove_pointer(info) -> info;
-consteval auto type_add_pointer(info) -> info;
+consteval auto remove_pointer(info) -> info;
+consteval auto add_pointer(info) -> info;
 
 // other transformations
-consteval auto type_remove_cvref(info) -> info;
-consteval auto type_decay(info) -> info;
+consteval auto remove_cvref(info) -> info;
+consteval auto decay(info) -> info;
 template <reflection_range R = initializer_list<info>>
-  consteval auto type_common_type(R &&type_args) -> info;
+  consteval auto common_type(R &&args) -> info;
 template <reflection_range R = initializer_list<info>>
-  consteval auto type_common_reference(R &&type_args) -> info;
-consteval auto type_underlying_type(info) -> info;
+  consteval auto common_reference(R &&args) -> info;
+consteval auto underlying_type(info) -> info;
 template <reflection_range R = initializer_list<info>>
-  consteval auto type_invoke_result(info type, R &&type_args) -> info;
-consteval auto type_unwrap_reference(info) -> info;
-consteval auto type_unwrap_ref_decay(info) -> info;
+  consteval auto invoke_result(info type, R &&args) -> info;
+consteval auto unwrap_reference(info) -> info;
+consteval auto unwrap_ref_decay(info) -> info;
 
 // tuple and variant queries
-consteval auto type_tuple_size(info) -> size_t;
-consteval auto type_tuple_element(size_t, info) -> info;
+consteval auto tuple_size(info) -> size_t;
+consteval auto tuple_element(size_t, info) -> info;
 
-consteval auto type_variant_size(info) -> size_t;
-consteval auto type_variant_alternative(size_t, info) -> info;
+consteval auto variant_size(info) -> size_t;
+consteval auto variant_alternative(size_t, info) -> info;
 
 // function parameters (P3096)
 consteval auto parameters_of(info) -> vector<info>;
@@ -1675,347 +1675,347 @@ consteval auto define_static_string(u8string_view in) -> const char8_t * {
 
 // Type trait wrappers
 
-consteval auto type_is_void(info r) -> bool {
+consteval auto is_void_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_void_v), {r}));
 }
 
-consteval auto type_is_null_pointer(info r) -> bool {
+consteval auto is_null_pointer_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_null_pointer_v), {r}));
 }
 
-consteval auto type_is_integral(info r) -> bool {
+consteval auto is_integral_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_integral_v), {r}));
 }
 
-consteval auto type_is_floating_point(info r) -> bool {
+consteval auto is_floating_point_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_floating_point_v), {r}));
 }
 
-consteval auto type_is_array(info r) -> bool {
+consteval auto is_array_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_array_v), {r}));
 }
 
-consteval auto type_is_pointer(info r) -> bool {
+consteval auto is_pointer_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_pointer_v), {r}));
 }
 
-consteval auto type_is_lvalue_reference(info r) -> bool {
+consteval auto is_lvalue_reference_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_lvalue_reference_v), {r}));
 }
 
-consteval auto type_is_rvalue_reference(info r) -> bool {
+consteval auto is_rvalue_reference_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_rvalue_reference_v), {r}));
 }
 
-consteval auto type_is_member_object_pointer(info r) -> bool {
+consteval auto is_member_object_pointer_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_member_object_pointer_v), {r}));
 }
 
-consteval auto type_is_member_function_pointer(info r) -> bool {
+consteval auto is_member_function_pointer_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_member_function_pointer_v), {r}));
 }
 
-consteval auto type_is_enum(info r) -> bool {
+consteval auto is_enum_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_enum_v), {r}));
 }
 
-consteval auto type_is_union(info r) -> bool {
+consteval auto is_union_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_union_v), {r}));
 }
 
-consteval auto type_is_class(info r) -> bool {
+consteval auto is_class_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_class_v), {r}));
 }
 
-consteval auto type_is_function(info r) -> bool {
+consteval auto is_function_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_function_v), {r}));
 }
 
-consteval auto type_is_reference(info r) -> bool {
+consteval auto is_reflection_type(info r) -> bool {
+  return r == ^^std::meta::info;
+}
+
+consteval auto is_reference_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_reference_v), {r}));
 }
 
-consteval auto type_is_arithmetic(info r) -> bool {
+consteval auto is_arithmetic_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_arithmetic_v), {r}));
 }
 
-consteval auto type_is_fundamental(info r) -> bool {
+consteval auto is_fundamental_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_fundamental_v), {r}));
 }
 
-consteval auto type_is_object(info r) -> bool {
+consteval auto is_object_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_object_v), {r}));
 }
 
-consteval auto type_is_scalar(info r) -> bool {
+consteval auto is_scalar_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_scalar_v), {r}));
 }
 
-consteval auto type_is_compound(info r) -> bool {
+consteval auto is_compound_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_compound_v), {r}));
 }
 
-consteval auto type_is_member_pointer(info r) -> bool {
+consteval auto is_member_pointer_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_member_pointer_v), {r}));
 }
 
-consteval auto type_is_const(info r) -> bool {
+consteval auto is_const_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_const_v), {r}));
 }
 
-consteval auto type_is_volatile(info r) -> bool {
+consteval auto is_volatile_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_volatile_v), {r}));
 }
 
-consteval auto type_is_trivial(info r) -> bool {
+consteval auto is_trivial_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_trivial_v), {r}));
 }
 
-consteval auto type_is_trivially_copyable(info r) -> bool {
+consteval auto is_trivially_copyable_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_trivially_copyable_v), {r}));
 }
 
-consteval auto type_is_standard_layout(info r) -> bool {
+consteval auto is_standard_layout_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_standard_layout_v), {r}));
 }
 
-consteval auto type_is_empty(info r) -> bool {
+consteval auto is_empty_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_empty_v), {r}));
 }
 
-consteval auto type_is_polymorphic(info r) -> bool {
+consteval auto is_polymorphic_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_polymorphic_v), {r}));
 }
 
-consteval auto type_is_abstract(info r) -> bool {
+consteval auto is_abstract_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_abstract_v), {r}));
 }
 
-consteval auto type_is_final(info r) -> bool {
+consteval auto is_final_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_final_v), {r}));
 }
 
-consteval auto type_is_aggregate(info r) -> bool {
+consteval auto is_aggregate_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_aggregate_v), {r}));
 }
 
-consteval auto type_is_signed(info r) -> bool {
+consteval auto is_signed_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_signed_v), {r}));
 }
 
-consteval auto type_is_unsigned(info r) -> bool {
+consteval auto is_unsigned_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_unsigned_v), {r}));
 }
 
-consteval auto type_is_bounded_array(info r) -> bool {
+consteval auto is_bounded_array_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_bounded_array_v), {r}));
 }
 
-consteval auto type_is_unbounded_array(info r) -> bool {
+consteval auto is_unbounded_array_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_unbounded_array_v), {r}));
 }
 
-consteval auto type_is_scoped_enum(info r) -> bool {
+consteval auto is_scoped_enum_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_scoped_enum_v), {r}));
 }
 
 template <reflection_range R = initializer_list<info>>
-consteval auto type_is_constructible(info type, R &&type_args) {
+consteval auto is_constructible_type(info type, R &&type_args) {
   vector<info> args(from_range, type_args);
   args.insert(args.begin(), type);
 
   return extract<bool>(substitute(LIFT(is_constructible_v), args));
 }
 
-consteval auto type_is_default_constructible(info r) -> bool {
+consteval auto is_default_constructible_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_default_constructible_v), {r}));
 }
 
-consteval auto type_is_copy_constructible(info r) -> bool {
+consteval auto is_copy_constructible_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_copy_constructible_v), {r}));
 }
 
-consteval auto type_is_move_constructible(info r) -> bool {
+consteval auto is_move_constructible_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_move_constructible_v), {r}));
 }
 
-consteval auto type_is_assignable(info dst, info src) -> bool {
+consteval auto is_assignable_type(info dst, info src) -> bool {
   return extract<bool>(substitute(LIFT(is_assignable_v), {dst, src}));
 }
 
-consteval auto type_is_copy_assignable(info r) -> bool {
+consteval auto is_copy_assignable_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_copy_assignable_v), {r}));
 }
 
-consteval auto type_is_move_assignable(info r) -> bool {
+consteval auto is_move_assignable_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_move_assignable_v), {r}));
 }
 
-consteval auto type_is_swappable_with(info dst, info src) -> bool {
+consteval auto is_swappable_with_type(info dst, info src) -> bool {
   return extract<bool>(substitute(LIFT(is_swappable_with_v), {dst, src}));
 }
 
-consteval auto type_is_swappable(info r) -> bool {
+consteval auto is_swappable_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_swappable_v), {r}));
 }
 
-consteval auto type_is_destructible(info r) -> bool {
+consteval auto is_destructible_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_destructible_v), {r}));
 }
 
 template <reflection_range R = initializer_list<info>>
-consteval auto type_is_trivially_constructible(info type, R &&type_args) {
+consteval auto is_trivially_constructible_type(info type, R &&type_args) {
   vector<info> args(from_range, type_args);
   args.insert(args.begin(), type);
 
   return extract<bool>(substitute(LIFT(is_trivially_constructible_v), args));
 }
 
-consteval auto type_is_trivially_default_constructible(info r) -> bool {
+consteval auto is_trivially_default_constructible_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_trivially_default_constructible_v),
                                   {r}));
 }
 
-consteval auto type_is_trivially_copy_constructible(info r) -> bool {
+consteval auto is_trivially_copy_constructible_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_trivially_copy_constructible_v),
                                   {r}));
 }
 
-consteval auto type_is_trivially_move_constructible(info r) -> bool {
+consteval auto is_trivially_move_constructible_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_trivially_move_constructible_v),
                                   {r}));
 }
 
-consteval auto type_is_trivially_assignable(info dst, info src) -> bool {
+consteval auto is_trivially_assignable_type(info dst, info src) -> bool {
   return extract<bool>(substitute(LIFT(is_trivially_assignable_v), {dst, src}));
 }
 
-consteval auto type_is_trivially_copy_assignable(info r) -> bool {
+consteval auto is_trivially_copy_assignable_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_trivially_copy_assignable_v), {r}));
 }
 
-consteval auto type_is_trivially_move_assignable(info r) -> bool {
+consteval auto is_trivially_move_assignable_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_trivially_move_assignable_v), {r}));
 }
 
-consteval auto type_is_trivially_destructible(info r) -> bool {
+consteval auto is_trivially_destructible_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_trivially_destructible_v), {r}));
 }
 
 template <reflection_range R = initializer_list<info>>
-consteval auto type_is_nothrow_constructible(info type, R &&type_args) {
+consteval auto is_nothrow_constructible_type(info type, R &&type_args) {
   vector<info> args(from_range, type_args);
   args.insert(args.begin(), type);
 
   return extract<bool>(substitute(LIFT(is_nothrow_constructible_v), args));
 }
 
-consteval auto type_is_nothrow_default_constructible(info r) -> bool {
+consteval auto is_nothrow_default_constructible_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_nothrow_default_constructible_v),
                                   {r}));
 }
 
-consteval auto type_is_nothrow_copy_constructible(info r) -> bool {
+consteval auto is_nothrow_copy_constructible_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_nothrow_copy_constructible_v), {r}));
 }
 
-consteval auto type_is_nothrow_move_constructible(info r) -> bool {
+consteval auto is_nothrow_move_constructible_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_nothrow_move_constructible_v), {r}));
 }
 
-consteval auto type_is_nothrow_assignable(info dst, info src) -> bool {
+consteval auto is_nothrow_assignable_type(info dst, info src) -> bool {
   return extract<bool>(substitute(LIFT(is_nothrow_assignable_v), {dst, src}));
 }
 
-consteval auto type_is_nothrow_copy_assignable(info r) -> bool {
+consteval auto is_nothrow_copy_assignable_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_nothrow_copy_assignable_v), {r}));
 }
 
-consteval auto type_is_nothrow_move_assignable(info r) -> bool {
+consteval auto is_nothrow_move_assignable_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_nothrow_move_assignable_v), {r}));
 }
 
-consteval auto type_is_nothrow_swappable_with(info dst, info src) -> bool {
+consteval auto is_nothrow_swappable_with_type(info dst, info src) -> bool {
   return extract<bool>(substitute(LIFT(is_nothrow_swappable_with_v),
                                   {dst, src}));
 }
 
-consteval auto type_is_nothrow_swappable(info r) -> bool {
+consteval auto is_nothrow_swappable_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_nothrow_swappable_v), {r}));
 }
 
-consteval auto type_is_nothrow_destructible(info r) -> bool {
+consteval auto is_nothrow_destructible_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_nothrow_destructible_v), {r}));
 }
 
 // TODO(P2996): Not yet implemented in libc++.
-/*consteval auto type_is_implicit_lifetime(info r) -> bool {
+/*consteval auto is_implicit_lifetime_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_implicit_lifetime_v), {r}));
 }*/
 
-consteval auto type_has_virtual_destructor(info r) -> bool {
+consteval auto has_virtual_destructor(info r) -> bool {
   return extract<bool>(substitute(LIFT(has_virtual_destructor_v), {r}));
 }
 
-consteval auto type_has_unique_object_representations(info r) -> bool {
+consteval auto has_unique_object_representations(info r) -> bool {
   return extract<bool>(substitute(LIFT(has_unique_object_representations_v),
                                   {r}));
 }
 
 // TODO(P2996): Not yet implemented in libc++.
-/*consteval auto type_reference_constructs_from_temporary(info r) -> bool {
+/*consteval auto reference_constructs_from_temporary(info r) -> bool {
   return extract<bool>(substitute(LIFT(reference_constructs_from_temporary_v),
                                   {r}));
 }*/
 
 // TODO({2996): Not yet implemented in libc++.
-/*consteval auto type_reference_converts_from_temporary(info r) -> bool {
+/*consteval auto reference_converts_from_temporary(info r) -> bool {
   return extract<bool>(substitute(LIFT(reference_converts_from_temporary_v),
                                   {r}));
 }*/
 
-consteval auto type_alignment_of(info r) -> size_t {
-  return extract<size_t>(substitute(LIFT(alignment_of_v), {r}));
-}
-
-consteval auto type_rank(info r) -> size_t {
+consteval auto rank(info r) -> size_t {
   return extract<size_t>(substitute(LIFT(rank_v), {r}));
 }
 
-consteval auto type_extent(info r, unsigned i = 0) -> size_t {
+consteval auto extent(info r, unsigned i = 0) -> size_t {
   return extract<size_t>(substitute(LIFT(extent_v), {r, reflect_value(i)}));
 }
 
-consteval auto type_is_same(info r, info s) -> bool {
+consteval auto is_same_type(info r, info s) -> bool {
   return extract<bool>(substitute(LIFT(is_same_v), {r, s}));
 }
 
-consteval auto type_is_base_of(info r, info s) -> bool {
+consteval auto is_base_of_type(info r, info s) -> bool {
   return extract<bool>(substitute(LIFT(is_base_of_v), {r, s}));
 }
 
-consteval auto type_is_convertible(info r, info s) -> bool {
+consteval auto is_convertible_type(info r, info s) -> bool {
   return extract<bool>(substitute(LIFT(is_convertible_v), {r, s}));
 }
 
-consteval auto type_is_nothrow_convertible(info r, info s) -> bool {
+consteval auto is_nothrow_convertible_type(info r, info s) -> bool {
   return extract<bool>(substitute(LIFT(is_nothrow_convertible_v), {r, s}));
 }
 
 // TODO(P2996): Not yet implemented in libc++.
-/*consteval auto type_is_layout_compatible(info r, info s) -> bool {
+/*consteval auto is_layout_compatible_type(info r, info s) -> bool {
   return extract<bool>(substitute(LIFT(is_layout_compatible_v), {r, s}));
 }*/
 
 // TODO(P2996): Not yet implemented in libc++.
-/*consteval auto type_is_pointer_interconvertible_base_of(info r,
+/*consteval auto is_pointer_interconvertible_base_of_type(info r,
                                                         info s) -> bool {
   return extract<bool>(substitute(LIFT(is_pointer_interconvertible_base_of_v),
                                   {r, s}));
 }*/
 
 template <reflection_range R = initializer_list<info>>
-consteval auto type_is_invocable(info type, R &&args) {
+consteval auto is_invocable_type(info type, R &&args) {
   vector<info> targs(from_range, args);
   targs.insert(targs.begin(), type);
 
@@ -2023,16 +2023,16 @@ consteval auto type_is_invocable(info type, R &&args) {
 }
 
 template <reflection_range R = initializer_list<info>>
-consteval auto type_is_invocable_r(info type_result, info type, R &&args) {
+consteval auto is_invocable_r_type(info result, info type, R &&args) {
   vector<info> targs(from_range, args);
   targs.insert(targs.begin(), type);
-  targs.insert(targs.begin(), type_result);
+  targs.insert(targs.begin(), result);
 
   return extract<bool>(substitute(LIFT(is_invocable_r_v), targs));
 }
 
 template <reflection_range R = initializer_list<info>>
-consteval auto type_is_nothrow_invocable(info type, R &&args) {
+consteval auto is_nothrow_invocable_type(info type, R &&args) {
   vector<info> targs(from_range, args);
   targs.insert(targs.begin(), type);
 
@@ -2040,143 +2040,143 @@ consteval auto type_is_nothrow_invocable(info type, R &&args) {
 }
 
 template <reflection_range R = initializer_list<info>>
-consteval auto type_is_nothrow_invocable_r(info type_result, info type,
+consteval auto is_nothrow_invocable_r_type(info result, info type,
                                            R &&args) {
   vector<info> targs(from_range, args);
   targs.insert(targs.begin(), type);
-  targs.insert(targs.begin(), type_result);
+  targs.insert(targs.begin(), result);
 
   return extract<bool>(substitute(LIFT(is_nothrow_invocable_r_v), targs));
 }
 
-consteval auto type_remove_const(info type) -> info {
+consteval auto remove_const(info type) -> info {
   return detail::__workaround_expand_compiler_builtins(
       dealias(substitute(LIFT(remove_const_t), {type})));
 }
 
-consteval auto type_remove_volatile(info type) -> info {
+consteval auto remove_volatile(info type) -> info {
   return detail::__workaround_expand_compiler_builtins(
       dealias(substitute(LIFT(remove_volatile_t), {type})));
 }
 
-consteval auto type_remove_cv(info type) -> info {
+consteval auto remove_cv(info type) -> info {
   return detail::__workaround_expand_compiler_builtins(
       dealias(substitute(LIFT(remove_cv_t), {type})));
 }
 
-consteval auto type_add_const(info type) -> info {
+consteval auto add_const(info type) -> info {
   return dealias(substitute(LIFT(add_const_t), {type}));
 }
 
-consteval auto type_add_volatile(info type) -> info {
+consteval auto add_volatile(info type) -> info {
   return dealias(substitute(LIFT(add_volatile_t), {type}));
 }
 
-consteval auto type_add_cv(info type) -> info {
+consteval auto add_cv(info type) -> info {
   return dealias(substitute(LIFT(add_cv_t), {type}));
 }
 
-consteval auto type_remove_reference(info type) -> info {
+consteval auto remove_reference(info type) -> info {
   return detail::__workaround_expand_compiler_builtins(
       dealias(substitute(LIFT(remove_reference_t), {type})));
 }
 
-consteval auto type_add_lvalue_reference(info type) -> info {
+consteval auto add_lvalue_reference(info type) -> info {
   return detail::__workaround_expand_compiler_builtins(
       dealias(substitute(LIFT(add_lvalue_reference_t), {type})));
 }
 
-consteval auto type_add_rvalue_reference(info type) -> info {
+consteval auto add_rvalue_reference(info type) -> info {
   return detail::__workaround_expand_compiler_builtins(
       dealias(substitute(LIFT(add_rvalue_reference_t), {type})));
 }
 
-consteval auto type_make_signed(info type) -> info {
+consteval auto make_signed(info type) -> info {
   return detail::__workaround_expand_compiler_builtins(
       dealias(substitute(LIFT(make_signed_t), {type})));
 }
 
-consteval auto type_make_unsigned(info type) -> info {
+consteval auto make_unsigned(info type) -> info {
   return detail::__workaround_expand_compiler_builtins(
       dealias(substitute(LIFT(make_unsigned_t), {type})));
 }
 
-consteval auto type_remove_extent(info type) -> info {
+consteval auto remove_extent(info type) -> info {
   return detail::__workaround_expand_compiler_builtins(
       dealias(substitute(LIFT(remove_extent_t), {type})));
 }
 
-consteval auto type_remove_all_extents(info type) -> info {
+consteval auto remove_all_extents(info type) -> info {
   return detail::__workaround_expand_compiler_builtins(
       dealias(substitute(LIFT(remove_all_extents_t), {type})));
 }
 
-consteval auto type_remove_pointer(info type) -> info {
+consteval auto remove_pointer(info type) -> info {
   return detail::__workaround_expand_compiler_builtins(
       dealias(substitute(LIFT(remove_pointer_t), {type})));
 }
 
-consteval auto type_add_pointer(info type) -> info {
+consteval auto add_pointer(info type) -> info {
   return detail::__workaround_expand_compiler_builtins(
       dealias(substitute(LIFT(add_pointer_t), {type})));
 }
 
-consteval auto type_remove_cvref(info type) -> info {
+consteval auto remove_cvref(info type) -> info {
   return detail::__workaround_expand_compiler_builtins(
       dealias(substitute(LIFT(remove_cvref_t), {type})));
 }
 
-consteval auto type_decay(info type) -> info {
+consteval auto decay(info type) -> info {
   return detail::__workaround_expand_compiler_builtins(
       dealias(substitute(LIFT(decay_t), {type})));
 }
 
 template <reflection_range R = initializer_list<info>>
-consteval auto type_common_type(R &&type_args) -> info {
+consteval auto common_type(R &&args) -> info {
   return detail::__workaround_expand_compiler_builtins(
-      dealias(substitute(LIFT(common_type_t), type_args)));
+      dealias(substitute(LIFT(common_type_t), args)));
 }
 
 template <reflection_range R = initializer_list<info>>
-consteval auto type_common_reference(R &&type_args) -> info {
-  return dealias(substitute(LIFT(common_reference_t), type_args));
+consteval auto common_reference(R &&args) -> info {
+  return dealias(substitute(LIFT(common_reference_t), args));
 }
 
-consteval auto type_underlying_type(info type) -> info {
+consteval auto underlying_type(info type) -> info {
   return detail::__workaround_expand_compiler_builtins(
       dealias(substitute(LIFT(underlying_type_t), {type})));
 }
 
 template <reflection_range R = initializer_list<info>>
-consteval auto type_invoke_result(info type, R &&type_args) -> info {
-  vector<info> targs(from_range, type_args);
+consteval auto invoke_result(info type, R &&args) -> info {
+  vector<info> targs(from_range, args);
   targs.insert(targs.begin(), type);
 
   return dealias(substitute(LIFT(invoke_result_t), targs));
 }
 
-consteval auto type_unwrap_reference(info type) -> info {
+consteval auto unwrap_reference(info type) -> info {
   return dealias(substitute(LIFT(unwrap_reference_t), {type}));
 }
 
-consteval auto type_unwrap_ref_decay(info type) -> info {
+consteval auto unwrap_ref_decay(info type) -> info {
   return dealias(substitute(LIFT(unwrap_ref_decay_t), {type}));
 }
 
-consteval auto type_tuple_size(info type) -> size_t {
+consteval auto tuple_size(info type) -> size_t {
   return extract<size_t>(substitute(LIFT(tuple_size_v), {type}));
 }
 
-consteval auto type_tuple_element(size_t index, info type) -> info {
+consteval auto tuple_element(size_t index, info type) -> info {
   return dealias(substitute(LIFT(tuple_element_t),
                             {reflect_value(index), type}));
 }
 
-consteval auto type_variant_size(info type) -> size_t {
+consteval auto variant_size(info type) -> size_t {
   return extract<size_t>(substitute(LIFT(variant_size_v), {type}));
 }
 
-consteval auto type_variant_alternative(size_t index, info type) -> info {
+consteval auto variant_alternative(size_t index, info type) -> info {
   return dealias(substitute(LIFT(variant_alternative_t),
                  {reflect_value(index), type}));
 }
@@ -2348,7 +2348,7 @@ template <typename CharT>
 struct pretty_printer {
   static_assert(dealias(LIFT(CharT)) == LIFT(char) ||
                 dealias(LIFT(CharT)) == LIFT(char8_t));
-  static constexpr bool IsUtf8 = type_is_same(LIFT(CharT), LIFT(char8_t));
+  static constexpr bool IsUtf8 = is_same_type(LIFT(CharT), LIFT(char8_t));
 
   using string_t = basic_string<CharT>;
 
@@ -2429,15 +2429,15 @@ struct pretty_printer {
       }
 
     template <info R>  // Values of fundamental type.
-        requires (is_value(R) && type_is_fundamental(type_of(R)))
+        requires (is_value(R) && is_fundamental_type(type_of(R)))
       static consteval string_t render();
 
     template <info R>  // Values of aggregate type.
-        requires (is_value(R) && type_is_aggregate(type_of(R)))
+        requires (is_value(R) && is_aggregate_type(type_of(R)))
       static consteval string_t render();
 
     template <info R>  // Values of pointer type.
-        requires (is_value(R) && type_is_pointer(type_of(R)))
+        requires (is_value(R) && is_pointer_type(type_of(R)))
       static consteval string_t render();
 
     template <info R>  // Objects.
@@ -2463,48 +2463,48 @@ struct pretty_printer {
 
     template <info R>  // Value types.
         requires (is_type(R) && !(is_const(R) || is_volatile(R)) &&
-                  !type_is_pointer(R) && !type_is_array(R) &&
-                  !type_is_function(R) && !type_is_reference(R) &&
-                  !type_is_member_pointer(R))
+                  !is_pointer_type(R) && !is_array_type(R) &&
+                  !is_function_type(R) && !is_reference_type(R) &&
+                  !is_member_pointer_type(R))
       static consteval string_t render();
 
     template <info R>  // CV-qualified non-function, non-arry types.
         requires (is_type(R) && (is_const(R) || is_volatile(R)) &&
-                  !type_is_array(R) && !type_is_function(R))
+                  !is_array_type(R) && !is_function_type(R))
       static consteval string_t render();
 
     template <info R>  // Reference types.
         requires (is_type(R) && !(is_const(R) || is_volatile(R)) &&
-                  type_is_reference(R))
+                  is_reference_type(R))
       static consteval string_t render();
 
     template <info R>  // Unqualified array types.
-        requires (is_type(R) && type_is_array(R))
+        requires (is_type(R) && is_array_type(R))
       static consteval string_t render();
 
     template <info R>  // Function types.
-        requires (is_type(R) && type_is_function(R))
+        requires (is_type(R) && is_function_type(R))
       static consteval string_t render();
 
     template <info R>  // Non-function, non-member pointer types.
-        requires (is_type(R) && type_is_pointer(R) &&
+        requires (is_type(R) && is_pointer_type(R) &&
                   !(is_const(R) || is_volatile(R)) &&
-                  !type_is_function(type_remove_pointer(R)))
+                  !is_function_type(remove_pointer(R)))
       static consteval string_t render();
 
     template <info R>  // Function pointer types.
-        requires (is_type(R) && type_is_pointer(R) &&
-                  type_is_function(type_remove_pointer(R)))
+        requires (is_type(R) && is_pointer_type(R) &&
+                  is_function_type(remove_pointer(R)))
       static consteval string_t render();
 
     template <info R>  // Pointer to data member types.
-        requires (is_type(R) && type_is_member_pointer(R) &&
+        requires (is_type(R) && is_member_pointer_type(R) &&
                   !(is_const(R) || is_volatile(R)) &&
-                  !type_is_member_function_pointer(R))
+                  !is_member_function_pointer_type(R))
       static consteval string_t render();
 
     template <info R>  // Pointer to member function types.
-        requires (is_type(R) && type_is_member_function_pointer(R))
+        requires (is_type(R) && is_member_function_pointer_type(R))
       static consteval string_t render();
 
     template <info R>  // Base specifiers.
@@ -2571,7 +2571,7 @@ consteval auto pretty_printer<CharT>::tprint() -> const CharT * {
 
 template <typename CharT>
 template <info R>  // Values of fundamental type.
-    requires(is_value(R) && type_is_fundamental(type_of(R)))
+    requires(is_value(R) && is_fundamental_type(type_of(R)))
 consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
   string_t result;
   constexpr info Ty = dealias(type_of(R));
@@ -2579,20 +2579,20 @@ consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
   if constexpr (Ty == LIFT(nullptr_t))
     result = string_constant("nullptr");
 
-  if constexpr (type_is_same(Ty, LIFT(bool))) {
+  if constexpr (is_same_type(Ty, LIFT(bool))) {
     if (extract<bool>(R))
       result = string_constant("true");
     else
       result = string_constant("false");
   }
 
-  else if constexpr (type_is_same(Ty, LIFT(char))) {
+  else if constexpr (is_same_type(Ty, LIFT(char))) {
     result = string_constant("'");
     result.append(1, extract<char>(R));
     result += string_constant("'");
   }
 
-  else if constexpr (type_is_integral(Ty) &&
+  else if constexpr (is_integral_type(Ty) &&
                      dealias(LIFT(CharT)) == LIFT(char)) {
     CharT buffer[32] = {};
     if (!to_chars(begin(buffer), end(buffer), [:R:]))
@@ -2600,7 +2600,7 @@ consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
     result = buffer;
   }
 
-  else if constexpr (type_is_floating_point(Ty)) {
+  else if constexpr (is_floating_point_type(Ty)) {
     result = render_value_as_hex<R>();
   }
 
@@ -2615,7 +2615,7 @@ consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
 
 template <typename CharT>
 template <info R>  // Values of aggregate type.
-    requires(is_value(R) && type_is_aggregate(type_of(R)))
+    requires(is_value(R) && is_aggregate_type(type_of(R)))
 consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
   string_t result = render<type_of(R)>() + string_constant("{");
 
@@ -2631,7 +2631,7 @@ consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
 
 template <typename CharT>
 template <info R>  // Values of pointer type.
-    requires (is_value(R) && type_is_pointer(type_of(R)))
+    requires (is_value(R) && is_pointer_type(type_of(R)))
 consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
   return string_constant("(value : ") + render<type_of(R)>() +
          string_constant(")");
@@ -2732,15 +2732,15 @@ consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
 template <typename CharT>
 template <info R>  // Value types.
     requires (is_type(R) && !(is_const(R) || is_volatile(R)) &&
-              !type_is_pointer(R) && !type_is_array(R) &&
-              !type_is_function(R) && !type_is_reference(R) &&
-              !type_is_member_pointer(R))
+              !is_pointer_type(R) && !is_array_type(R) &&
+              !is_function_type(R) && !is_reference_type(R) &&
+              !is_member_pointer_type(R))
 consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
   string_t result;
 
   if constexpr (has_template_arguments(R)) {
     return render<template_of(R)>() + render_template_argument_list_of<R>();
-  } else if constexpr (type_is_fundamental(R)) {
+  } else if constexpr (is_fundamental_type(R)) {
     if (R == LIFT(void)) return string_constant("void");
 
     if (R == LIFT(decltype(nullptr)) || R == LIFT(nullptr_t))
@@ -2761,9 +2761,9 @@ consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
     if (R == LIFT(double)) return string_constant("double");
     if (R == LIFT(long double)) return string_constant("long double");
 
-    if (type_is_unsigned(R)) result += string_constant("unsigned ");
+    if (is_unsigned_type(R)) result += string_constant("unsigned ");
     if constexpr (!is_type_alias(R)) {
-      auto U = type_make_signed(R);
+      auto U = make_signed(R);
       if (U == LIFT(short)) return result + string_constant("short");
       if (U == LIFT(int)) return result + string_constant("int");
       if (U == LIFT(long)) return result + string_constant("long");
@@ -2781,36 +2781,36 @@ consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
 template <typename CharT>
 template <info R>  // CV-qualified non-function, non-array types.
     requires (is_type(R) && (is_const(R) || is_volatile(R)) &&
-              !type_is_array(R) && !type_is_function(R))
+              !is_array_type(R) && !is_function_type(R))
 consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
   string_t result;
   if (is_const(R))
     result += string_constant("const ");
   if (is_volatile(R))
     result += string_constant("volatile ");
-  return result + render<type_remove_cv(R)>();
+  return result + render<remove_cv(R)>();
 }
 
 template <typename CharT>
 template <info R>  // Reference types.
     requires (is_type(R) && !(is_const(R) || is_volatile(R)) &&
-              type_is_reference(R))
+              is_reference_type(R))
 consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
-  string_t result = render<type_remove_reference(R)>() + string_constant(" &");
-  if (type_is_rvalue_reference(R))
+  string_t result = render<remove_reference(R)>() + string_constant(" &");
+  if (is_rvalue_reference_type(R))
     result += string_constant("&");
   return result;
 }
 
 template <typename CharT>
 template <info R>  // Array types.
-    requires (is_type(R) && type_is_array(R))
+    requires (is_type(R) && is_array_type(R))
 consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
-  string_t result = render<type_remove_all_extents(R)>();
+  string_t result = render<remove_all_extents(R)>();
 
-  for (size_t k = 0; k < type_rank(R); ++k) {
+  for (size_t k = 0; k < rank(R); ++k) {
     CharT buffer[32] = {};
-    if (!to_chars(begin(buffer), end(buffer), type_extent(R, k)))
+    if (!to_chars(begin(buffer), end(buffer), extent(R, k)))
       throw "'to_chars' failed to format integeral value";
 
     result += "[" + string_t {buffer} + "]";
@@ -2820,21 +2820,21 @@ consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
 
 template <typename CharT>
 template <info R>  // Non-function, non-member pointer types.
-    requires (is_type(R) && type_is_pointer(R) &&
+    requires (is_type(R) && is_pointer_type(R) &&
               !(is_const(R) || is_volatile(R)) &&
-              !type_is_function(type_remove_pointer(R)))
+              !is_function_type(remove_pointer(R)))
 consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
-  return render<type_remove_pointer(R)>() + string_constant(" *");
+  return render<remove_pointer(R)>() + string_constant(" *");
 }
 
 template <typename CharT>
 template <info R>  // Function pointers.
-    requires (is_type(R) && type_is_pointer(R) &&
-              type_is_function(type_remove_pointer(R)))
+    requires (is_type(R) && is_pointer_type(R) &&
+              is_function_type(remove_pointer(R)))
 consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
 
 #if __has_feature(parameter_reflection)
-  constexpr auto FnTy = type_remove_pointer(R);
+  constexpr auto FnTy = remove_pointer(R);
   string_t result = render<return_type_of(FnTy)>() + string_constant("(*)(");
   size_t Idx = 0;
   [:expand(parameters_of(FnTy)):] >> [&]<auto Param> {
@@ -2854,7 +2854,7 @@ consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
 
 template <typename CharT>
 template <info R>  // Function types.
-    requires (is_type(R) && type_is_function(R))
+    requires (is_type(R) && is_function_type(R))
 consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
 #if __has_feature(parameter_reflection)
   string_t result = render<return_type_of(R)>() + string_constant("(");
@@ -2886,9 +2886,9 @@ consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
 
 template <typename CharT>
 template <info R>  // Pointer to data member types.
-    requires (is_type(R) && type_is_member_pointer(R) &&
+    requires (is_type(R) && is_member_pointer_type(R) &&
               !(is_const(R) || is_volatile(R)) &&
-              !type_is_member_function_pointer(R))
+              !is_member_function_pointer_type(R))
 consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
   string_t result = render<type_of_member_from_memptr<R>()>() +
                     string_constant(" ");
@@ -2899,7 +2899,7 @@ consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
 
 template <typename CharT>
 template <info R>  // Pointer to member function types.
-    requires (is_type(R) && type_is_member_function_pointer(R))
+    requires (is_type(R) && is_member_function_pointer_type(R))
 consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
   constexpr auto FnTy = type_of_member_from_memptr<R>();
 

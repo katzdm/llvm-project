@@ -74,7 +74,7 @@ consteval auto make_indexer(std::vector<std::size_t> sizes)
 template<typename... Tuples>
 auto my_tuple_cat(Tuples&&... tuples) {
     constexpr typename [: make_indexer({
-        type_tuple_size(type_remove_cvref(^^Tuples))...
+        tuple_size(remove_cvref(^^Tuples))...
     }) :] indexer;
     return indexer(std::forward_as_tuple(std::forward<Tuples>(tuples)...));
 }
