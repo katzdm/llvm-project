@@ -53,7 +53,8 @@ public:
 #define VISIT_METHOD(CATEGORY)                                                 \
   RetTy Visit##CATEGORY##TemplateArgument(REF(TemplateArgument) TA,            \
                                           ParamTys... P) {                     \
-    return VisitTemplateArgument(TA, std::forward<ParamTys>(P)...);            \
+    return static_cast<ImplClass *>(this)->VisitTemplateArgument(              \
+        TA, std::forward<ParamTys>(P)...);                                     \
   }
 
   VISIT_METHOD(Null);

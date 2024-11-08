@@ -64,20 +64,17 @@ namespace {
 class USRGenerator : public ConstDeclVisitor<USRGenerator> {
   SmallVectorImpl<char> &Buf;
   llvm::raw_svector_ostream Out;
-  bool IgnoreResults;
   ASTContext *Context;
-  bool generatedLoc;
+  const LangOptions &LangOpts;
+  bool IgnoreResults = false;
+  bool generatedLoc = false;
 
   llvm::DenseMap<const Type *, unsigned> TypeSubstitutions;
 
 public:
-  explicit USRGenerator(ASTContext *Ctx, SmallVectorImpl<char> &Buf)
-  : Buf(Buf),
-    Out(Buf),
-    IgnoreResults(false),
-    Context(Ctx),
-    generatedLoc(false)
-  {
+  USRGenerator(ASTContext *Ctx, SmallVectorImpl<char> &Buf,
+               const LangOptions &LangOpts)
+      : Buf(Buf), Out(Buf), Context(Ctx), LangOpts(LangOpts) {
     // Add the USR space prefix.
     Out << getUSRSpacePrefix();
   }
@@ -248,14 +245,13 @@ void USRGenerator::VisitFunctionDecl(const FunctionDecl *D) {
   } else
     Out << "@F@";
 
-  PrintingPolicy Policy(Context->getLangOpts());
+  PrintingPolicy Policy(LangOpts);
   // Forward references can have different template argument names. Suppress the
   // template argument names in constructors to make their USR more stable.
   Policy.SuppressTemplateArgsInCXXConstructors = true;
   D->getDeclName().print(Out, Policy);
 
-  ASTContext &Ctx = *Context;
-  if ((!Ctx.getLangOpts().CPlusPlus || D->isExternC()) &&
+  if ((!LangOpts.CPlusPlus || D->isExternC()) &&
       !D->hasAttr<OverloadableAttr>())
     return;
 
@@ -659,9 +655,10 @@ bool USRGenerator::GenLoc(const Decl *D, bool IncludeOffset) {
   return IgnoreResults;
 }
 
-static void printQualifier(llvm::raw_ostream &Out, ASTContext &Ctx, NestedNameSpecifier *NNS) {
+static void printQualifier(llvm::raw_ostream &Out, const LangOptions &LangOpts,
+                           NestedNameSpecifier *NNS) {
   // FIXME: Encode the qualifier, don't just print it.
-  PrintingPolicy PO(Ctx.getLangOpts());
+  PrintingPolicy PO(LangOpts);
   PO.SuppressTagKeyword = true;
   PO.SuppressUnwrittenScope = true;
   PO.ConstantArraySizeAsWritten = false;
@@ -952,7 +949,7 @@ void USRGenerator::VisitType(QualType T) {
     }
     if (const DependentNameType *DNT = T->getAs<DependentNameType>()) {
       Out << '^';
-      printQualifier(Out, Ctx, DNT->getQualifier());
+      printQualifier(Out, LangOpts, DNT->getQualifier());
       Out << ':' << DNT->getIdentifier()->getName();
       return;
     }
@@ -1094,7 +1091,7 @@ void USRGenerator::VisitUnresolvedUsingValueDecl(const UnresolvedUsingValueDecl 
     return;
   VisitDeclContext(D->getDeclContext());
   Out << "@UUV@";
-  printQualifier(Out, D->getASTContext(), D->getQualifier());
+  printQualifier(Out, LangOpts, D->getQualifier());
   EmitDeclName(D);
 }
 
@@ -1103,7 +1100,7 @@ void USRGenerator::VisitUnresolvedUsingTypenameDecl(const UnresolvedUsingTypenam
     return;
   VisitDeclContext(D->getDeclContext());
   Out << "@UUT@";
-  printQualifier(Out, D->getASTContext(), D->getQualifier());
+  printQualifier(Out, LangOpts, D->getQualifier());
   Out << D->getName(); // Simple name.
 }
 
@@ -1194,6 +1191,13 @@ bool clang::index::generateUSRForDecl(const Decl *D,
                                       SmallVectorImpl<char> &Buf) {
   if (!D)
     return true;
+  return generateUSRForDecl(D, Buf, D->getASTContext().getLangOpts());
+}
+
+bool clang::index::generateUSRForDecl(const Decl *D, SmallVectorImpl<char> &Buf,
+                                      const LangOptions &LangOpts) {
+  if (!D)
+    return true;
   // We don't ignore decls with invalid source locations. Implicit decls, like
   // C++'s operator new function, can have invalid locations but it is fine to
   // create USRs that can identify them.
@@ -1207,7 +1211,7 @@ bool clang::index::generateUSRForDecl(const Decl *D,
       return false;
     }
   }
-  USRGenerator UG(&D->getASTContext(), Buf);
+  USRGenerator UG(&D->getASTContext(), Buf, LangOpts);
   UG.Visit(D);
   return UG.ignoreResults();
 }
@@ -1244,11 +1248,17 @@ bool clang::index::generateUSRForMacro(StringRef MacroName, SourceLocation Loc,
 
 bool clang::index::generateUSRForType(QualType T, ASTContext &Ctx,
                                       SmallVectorImpl<char> &Buf) {
+  return generateUSRForType(T, Ctx, Buf, Ctx.getLangOpts());
+}
+
+bool clang::index::generateUSRForType(QualType T, ASTContext &Ctx,
+                                      SmallVectorImpl<char> &Buf,
+                                      const LangOptions &LangOpts) {
   if (T.isNull())
     return true;
   T = T.getCanonicalType();
 
-  USRGenerator UG(&Ctx, Buf);
+  USRGenerator UG(&Ctx, Buf, LangOpts);
   UG.VisitType(T);
   return UG.ignoreResults();
 }

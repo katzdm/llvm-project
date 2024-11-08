@@ -294,7 +294,7 @@ public:
   }
 
   static TemplateArgument getEmptyPack() {
-    return TemplateArgument(std::nullopt);
+    return TemplateArgument(ArrayRef<TemplateArgument>());
   }
 
   /// Create a new template argument pack by copying the given set of
