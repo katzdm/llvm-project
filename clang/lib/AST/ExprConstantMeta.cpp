@@ -2845,7 +2845,8 @@ bool extract(APValue &Result, ASTContext &C, MetaActions &Meta,
   llvm_unreachable("invalid reflection type");
 }
 
-bool is_public(APValue &Result, ASTContext &C, MetaActions &Meta,
+template <AccessSpecifier Specifier>
+bool is_ACCESS(APValue &Result, ASTContext &C, MetaActions &Meta,
                EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
                SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
@@ -2857,26 +2858,26 @@ bool is_public(APValue &Result, ASTContext &C, MetaActions &Meta,
 
   switch (RV.getReflectionKind()) {
   case ReflectionKind::Type: {
-    bool IsPublic = false;
+    bool HasTargetAccess = false;
     if (const Decl *D = findTypeDecl(RV.getReflectedType()))
-      IsPublic = (D->getAccess() == AS_public);
+      HasTargetAccess = (D->getAccess() == Specifier);
 
-    return SetAndSucceed(Result, makeBool(C, IsPublic));
+    return SetAndSucceed(Result, makeBool(C, HasTargetAccess));
   }
   case ReflectionKind::Declaration: {
-    bool IsPublic = (RV.getReflectedDecl()->getAccess() == AS_public);
-    return SetAndSucceed(Result, makeBool(C, IsPublic));
+    bool HasTargetAccess = (RV.getReflectedDecl()->getAccess() == Specifier);
+    return SetAndSucceed(Result, makeBool(C, HasTargetAccess));
   }
   case ReflectionKind::Template: {
     const Decl *D = RV.getReflectedTemplate().getAsTemplateDecl();
 
-    bool IsPublic = (D->getAccess() == AS_public);
-    return SetAndSucceed(Result, makeBool(C, IsPublic));
+    bool HasTargetAccess = (D->getAccess() == Specifier);
+    return SetAndSucceed(Result, makeBool(C, HasTargetAccess));
   }
   case ReflectionKind::BaseSpecifier: {
     CXXBaseSpecifier *Base = RV.getReflectedBaseSpecifier();
-    bool IsPublic = (Base->getAccessSpecifier() == AS_public);
-    return SetAndSucceed(Result, makeBool(C, IsPublic));
+    bool HasTargetAccess = (Base->getAccessSpecifier() == Specifier);
+    return SetAndSucceed(Result, makeBool(C, HasTargetAccess));
   }
   case ReflectionKind::Null:
   case ReflectionKind::Object:
@@ -2887,94 +2888,27 @@ bool is_public(APValue &Result, ASTContext &C, MetaActions &Meta,
     return SetAndSucceed(Result, makeBool(C, false));
   }
   llvm_unreachable("invalid reflection type");
+}
+
+bool is_public(APValue &Result, ASTContext &C, MetaActions &Meta,
+               EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+               SourceRange Range, ArrayRef<Expr *> Args) {
+  return is_ACCESS<AS_public>(Result, C, Meta, Evaluator, Diagnoser, ResultTy,
+                              Range, Args);
 }
 
 bool is_protected(APValue &Result, ASTContext &C, MetaActions &Meta,
                   EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
                   SourceRange Range, ArrayRef<Expr *> Args) {
-  assert(Args[0]->getType()->isReflectionType());
-  assert(ResultTy == C.BoolTy);
-
-  APValue RV;
-  if (!Evaluator(RV, Args[0], true))
-    return true;
-
-  switch (RV.getReflectionKind()) {
-  case ReflectionKind::Type: {
-    bool IsProtected = false;
-    if (const Decl *D = findTypeDecl(RV.getReflectedType()))
-      IsProtected = (D->getAccess() == AS_protected);
-
-    return SetAndSucceed(Result, makeBool(C, IsProtected));
-  }
-  case ReflectionKind::Declaration: {
-    bool IsProtected = (RV.getReflectedDecl()->getAccess() == AS_protected);
-    return SetAndSucceed(Result, makeBool(C, IsProtected));
-  }
-  case ReflectionKind::Template: {
-    const Decl *D = RV.getReflectedTemplate().getAsTemplateDecl();
-
-    bool IsProtected = (D->getAccess() == AS_protected);
-    return SetAndSucceed(Result, makeBool(C, IsProtected));
-  }
-  case ReflectionKind::BaseSpecifier: {
-    CXXBaseSpecifier *Base = RV.getReflectedBaseSpecifier();
-    bool IsProtected = (Base->getAccessSpecifier() == AS_protected);
-    return SetAndSucceed(Result, makeBool(C, IsProtected));
-  }
-  case ReflectionKind::Null:
-  case ReflectionKind::Object:
-  case ReflectionKind::Value:
-  case ReflectionKind::DataMemberSpec:
-  case ReflectionKind::Annotation:
-  case ReflectionKind::Namespace:
-    return SetAndSucceed(Result, makeBool(C, false));
-  }
-  llvm_unreachable("invalid reflection type");
+  return is_ACCESS<AS_protected>(Result, C, Meta, Evaluator, Diagnoser,
+                                 ResultTy, Range, Args);
 }
 
 bool is_private(APValue &Result, ASTContext &C, MetaActions &Meta,
                 EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
                 SourceRange Range, ArrayRef<Expr *> Args) {
-  assert(Args[0]->getType()->isReflectionType());
-  assert(ResultTy == C.BoolTy);
-
-  APValue RV;
-  if (!Evaluator(RV, Args[0], true))
-    return true;
-
-  switch (RV.getReflectionKind()) {
-  case ReflectionKind::Type: {
-    bool IsPrivate = false;
-    if (const Decl *D = findTypeDecl(RV.getReflectedType()))
-      IsPrivate = (D->getAccess() == AS_private);
-
-    return SetAndSucceed(Result, makeBool(C, IsPrivate));
-  }
-  case ReflectionKind::Declaration: {
-    bool IsPrivate = (RV.getReflectedDecl()->getAccess() == AS_private);
-    return SetAndSucceed(Result, makeBool(C, IsPrivate));
-  }
-  case ReflectionKind::Template: {
-    const Decl *D = RV.getReflectedTemplate().getAsTemplateDecl();
-
-    bool IsPrivate = (D->getAccess() == AS_private);
-    return SetAndSucceed(Result, makeBool(C, IsPrivate));
-  }
-  case ReflectionKind::BaseSpecifier: {
-    CXXBaseSpecifier *Base = RV.getReflectedBaseSpecifier();
-    bool IsPrivate = (Base->getAccessSpecifier() == AS_private);
-    return SetAndSucceed(Result, makeBool(C, IsPrivate));
-  }
-  case ReflectionKind::Null:
-  case ReflectionKind::Object:
-  case ReflectionKind::Value:
-  case ReflectionKind::Namespace:
-  case ReflectionKind::DataMemberSpec:
-  case ReflectionKind::Annotation:
-    return SetAndSucceed(Result, makeBool(C, false));
-  }
-  llvm_unreachable("invalid reflection type");
+  return is_ACCESS<AS_private>(Result, C, Meta, Evaluator, Diagnoser, ResultTy,
+                               Range, Args);
 }
 
 bool is_access_specified(APValue &Result, ASTContext &C, MetaActions &Meta,
@@ -3153,7 +3087,7 @@ bool is_virtual(APValue &Result, ASTContext &C, MetaActions &Meta,
   bool IsVirtual = false;
   switch (RV.getReflectionKind()) {
   case ReflectionKind::Declaration: {
-    if (const auto *MD = dyn_cast<CXXMethodDecl>(RV.getReflectedDecl()))
+    if (auto *MD = dyn_cast<CXXMethodDecl>(RV.getReflectedDecl()))
       IsVirtual = MD->isVirtual();
     return SetAndSucceed(Result, makeBool(C, IsVirtual));
   }
@@ -3184,26 +3118,12 @@ bool is_pure_virtual(APValue &Result, ASTContext &C, MetaActions &Meta,
   if (!Evaluator(RV, Args[0], true))
     return true;
 
-  switch (RV.getReflectionKind()) {
-  case ReflectionKind::Null:
-  case ReflectionKind::Type:
-  case ReflectionKind::Object:
-  case ReflectionKind::Value:
-  case ReflectionKind::Template:
-  case ReflectionKind::Namespace:
-  case ReflectionKind::BaseSpecifier:
-  case ReflectionKind::DataMemberSpec:
-  case ReflectionKind::Annotation:
-    return SetAndSucceed(Result, makeBool(C, false));
-  case ReflectionKind::Declaration: {
-    bool IsPureVirtual = false;
+  bool IsPureVirtual = false;
+  if (RV.isReflectedDecl())
     if (const auto *FD = dyn_cast<FunctionDecl>(RV.getReflectedDecl()))
       IsPureVirtual = FD->isPureVirtual();
 
-    return SetAndSucceed(Result, makeBool(C, IsPureVirtual));
-  }
-  }
-  llvm_unreachable("invalid reflection type");
+  return SetAndSucceed(Result, makeBool(C, IsPureVirtual));
 }
 
 bool is_override(APValue &Result, ASTContext &C, MetaActions &Meta,
@@ -3217,24 +3137,11 @@ bool is_override(APValue &Result, ASTContext &C, MetaActions &Meta,
     return true;
 
   bool IsOverride = false;
-  switch (RV.getReflectionKind()) {
-  case ReflectionKind::Null:
-  case ReflectionKind::Type:
-  case ReflectionKind::Object:
-  case ReflectionKind::Value:
-  case ReflectionKind::Template:
-  case ReflectionKind::Namespace:
-  case ReflectionKind::BaseSpecifier:
-  case ReflectionKind::DataMemberSpec:
-  case ReflectionKind::Annotation:
-    return SetAndSucceed(Result, makeBool(C, false));
-  case ReflectionKind::Declaration: {
-    if (const auto *MD = dyn_cast<CXXMethodDecl>(RV.getReflectedDecl()))
+  if (RV.isReflectedDecl())
+    if (auto *MD = dyn_cast<CXXMethodDecl>(RV.getReflectedDecl()))
       IsOverride = MD->size_overridden_methods() > 0;
-    return SetAndSucceed(Result, makeBool(C, IsOverride));
-  }
-  }
-  llvm_unreachable("invalid reflection type");
+
+  return SetAndSucceed(Result, makeBool(C, IsOverride));
 }
 
 bool is_deleted(APValue &Result, ASTContext &C, MetaActions &Meta,
@@ -3247,25 +3154,12 @@ bool is_deleted(APValue &Result, ASTContext &C, MetaActions &Meta,
   if (!Evaluator(RV, Args[0], true))
     return true;
 
-  switch (RV.getReflectionKind()) {
-  case ReflectionKind::Null:
-  case ReflectionKind::Type:
-  case ReflectionKind::Object:
-  case ReflectionKind::Value:
-  case ReflectionKind::Template:
-  case ReflectionKind::Namespace:
-  case ReflectionKind::BaseSpecifier:
-  case ReflectionKind::DataMemberSpec:
-  case ReflectionKind::Annotation:
-    return SetAndSucceed(Result, makeBool(C, false));
-  case ReflectionKind::Declaration: {
-    bool IsDeleted = false;
-    if (const auto *FD = dyn_cast<FunctionDecl>(RV.getReflectedDecl()))
+  bool IsDeleted = false;
+  if (RV.isReflectedDecl())
+    if (auto *FD = dyn_cast<FunctionDecl>(RV.getReflectedDecl()))
       IsDeleted = FD->isDeleted();
-    return SetAndSucceed(Result, makeBool(C, IsDeleted));
-  }
-  }
-  llvm_unreachable("invalid reflection type");
+
+  return SetAndSucceed(Result, makeBool(C, IsDeleted));
 }
 
 bool is_defaulted(APValue &Result, ASTContext &C, MetaActions &Meta,
@@ -3278,26 +3172,12 @@ bool is_defaulted(APValue &Result, ASTContext &C, MetaActions &Meta,
   if (!Evaluator(RV, Args[0], true))
     return true;
 
-  switch (RV.getReflectionKind()) {
-  case ReflectionKind::Null:
-  case ReflectionKind::Type:
-  case ReflectionKind::Object:
-  case ReflectionKind::Value:
-  case ReflectionKind::Template:
-  case ReflectionKind::Namespace:
-  case ReflectionKind::BaseSpecifier:
-  case ReflectionKind::DataMemberSpec:
-  case ReflectionKind::Annotation:
-    return SetAndSucceed(Result, makeBool(C, false));
-  case ReflectionKind::Declaration: {
-    bool IsDefaulted = false;
-    if (const auto *FD = dyn_cast<FunctionDecl>(RV.getReflectedDecl()))
+  bool IsDefaulted = false;
+  if (RV.isReflectedDecl())
+    if (auto *FD = dyn_cast<FunctionDecl>(RV.getReflectedDecl()))
       IsDefaulted = FD->isDefaulted();
 
-    return SetAndSucceed(Result, makeBool(C, IsDefaulted));
-  }
-  }
-  llvm_unreachable("invalid reflection type");
+  return SetAndSucceed(Result, makeBool(C, IsDefaulted));
 }
 
 bool is_explicit(APValue &Result, ASTContext &C, MetaActions &Meta,
@@ -3310,29 +3190,15 @@ bool is_explicit(APValue &Result, ASTContext &C, MetaActions &Meta,
   if (!Evaluator(RV, Args[0], true))
     return true;
 
-  switch (RV.getReflectionKind()) {
-  case ReflectionKind::Null:
-  case ReflectionKind::Type:
-  case ReflectionKind::Object:
-  case ReflectionKind::Value:
-  case ReflectionKind::Namespace:
-  case ReflectionKind::BaseSpecifier:
-  case ReflectionKind::DataMemberSpec:
-  case ReflectionKind::Annotation:
-  case ReflectionKind::Template:
-    return SetAndSucceed(Result, makeBool(C, false));
-  case ReflectionKind::Declaration: {
-    ValueDecl *D = RV.getReflectedDecl();
+  bool IsExplicit = false;
+  if (RV.isReflectedDecl()) {
+    if (auto *CtorD = dyn_cast<CXXConstructorDecl>(RV.getReflectedDecl()))
+      IsExplicit = CtorD->getExplicitSpecifier().isExplicit();
+    else if (auto *ConvD = dyn_cast<CXXConversionDecl>(RV.getReflectedDecl()))
+      IsExplicit = ConvD->getExplicitSpecifier().isExplicit();
+  }
 
-    bool result = false;
-    if (auto *CtorD = dyn_cast<CXXConstructorDecl>(D))
-      result = CtorD->getExplicitSpecifier().isExplicit();
-    else if (auto *ConvD = dyn_cast<CXXConversionDecl>(D))
-      result = ConvD->getExplicitSpecifier().isExplicit();
-    return SetAndSucceed(Result, makeBool(C, result));
-  }
-  }
-  llvm_unreachable("invalid reflection type");
+  return SetAndSucceed(Result, makeBool(C, IsExplicit));
 }
 
 bool is_noexcept(APValue &Result, ASTContext &C, MetaActions &Meta,
@@ -3345,30 +3211,13 @@ bool is_noexcept(APValue &Result, ASTContext &C, MetaActions &Meta,
   if (!Evaluator(RV, Args[0], true))
     return true;
 
-  switch (RV.getReflectionKind()) {
-  case ReflectionKind::Null:
-  case ReflectionKind::Object:
-  case ReflectionKind::Value:
-  case ReflectionKind::Template:
-  case ReflectionKind::Namespace:
-  case ReflectionKind::BaseSpecifier:
-  case ReflectionKind::DataMemberSpec:
-  case ReflectionKind::Annotation:
-    return SetAndSucceed(Result, makeBool(C, false));
-  case ReflectionKind::Type: {
-    const QualType QT = RV.getReflectedType();
-    const auto result = isFunctionOrMethodNoexcept(QT);
+  bool IsNoexcept = false;
+  if (RV.isReflectedType())
+    IsNoexcept = isFunctionOrMethodNoexcept(RV.getReflectedType());
+  else if (RV.isReflectedDecl())
+    IsNoexcept = isFunctionOrMethodNoexcept(RV.getReflectedDecl()->getType());
 
-    return SetAndSucceed(Result, makeBool(C, result));
-  }
-  case ReflectionKind::Declaration: {
-    const ValueDecl *D = RV.getReflectedDecl();
-    const auto result = isFunctionOrMethodNoexcept(D->getType());
-
-    return SetAndSucceed(Result, makeBool(C, result));
-  }
-  }
-  llvm_unreachable("invalid reflection type");
+  return SetAndSucceed(Result, makeBool(C, IsNoexcept));
 }
 
 bool is_bit_field(APValue &Result, ASTContext &C, MetaActions &Meta,
@@ -3498,26 +3347,12 @@ bool is_mutable_member(APValue &Result, ASTContext &C, MetaActions &Meta,
   if (!Evaluator(RV, Args[0], true))
     return true;
 
-  switch (RV.getReflectionKind()) {
-  case ReflectionKind::Null:
-  case ReflectionKind::Template:
-  case ReflectionKind::Namespace:
-  case ReflectionKind::BaseSpecifier:
-  case ReflectionKind::DataMemberSpec:
-  case ReflectionKind::Annotation:
-  case ReflectionKind::Type:
-  case ReflectionKind::Object:
-  case ReflectionKind::Value:
-    return SetAndSucceed(Result, makeBool(C, false));
-  case ReflectionKind::Declaration: {
-    bool result = false;
+  bool IsMutableMember = false;
+  if (RV.isReflectedDecl())
     if (auto *FD = dyn_cast<FieldDecl>(RV.getReflectedDecl()))
-      result = FD->isMutable();
+      IsMutableMember = FD->isMutable();
 
-    return SetAndSucceed(Result, makeBool(C, result));
-  }
-  }
-  llvm_unreachable("invalid reflection type");
+  return SetAndSucceed(Result, makeBool(C, IsMutableMember));
 }
 
 bool is_lvalue_reference_qualified(APValue &Result, ASTContext &C,
@@ -3601,10 +3436,10 @@ bool has_thread_storage_duration(APValue &Result, ASTContext &C,
     return true;
 
   bool result = false;
-  if (RV.isReflectedDecl()) {
+  if (RV.isReflectedDecl())
     if (const auto *VD = dyn_cast<VarDecl>(RV.getReflectedDecl()))
       result = VD->getStorageDuration() == SD_Thread;
-  }
+
   return SetAndSucceed(Result, makeBool(C, result));
 }
 
@@ -3620,10 +3455,10 @@ bool has_automatic_storage_duration(APValue &Result, ASTContext &C,
     return true;
 
   bool result = false;
-  if (RV.isReflectedDecl()) {
+  if (RV.isReflectedDecl())
     if (const auto *VD = dyn_cast<VarDecl>(RV.getReflectedDecl()))
       result = VD->getStorageDuration() == SD_Automatic;
-  }
+
   return SetAndSucceed(Result, makeBool(C, result));
 }
 
