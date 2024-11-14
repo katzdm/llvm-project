@@ -23,6 +23,10 @@ constexpr auto get_ctx_repr(std::meta::access_context ctx) {
   return ctx.[:nonstatic_data_members_of(^^decltype(ctx))[0]:];
 }
 
+constexpr auto get_naming_cls_repr(std::meta::access_context ctx) {
+  return ctx.[:nonstatic_data_members_of(^^decltype(ctx))[1]:];
+}
+
 struct PublicBase { int mem; };
 struct ProtectedBase { int mem; };
 struct PrivateBase { int mem; };
@@ -115,14 +119,21 @@ private:
 
     friend struct FriendClsOfAccess;
     friend consteval std::meta::access_context FriendFnOfAccess();
+
+public:
+    static constexpr auto r_prot = ^^prot;
 };
 
 struct Derived : Access {
+  static constexpr auto obj_ctx =
+        std::meta::access_context::current().via(^^Derived);
+
   static_assert(is_accessible(^^Access::PublicBase::mem));
   static_assert(is_accessible(^^Access::ProtectedBase::mem));
-  static_assert(  // PrivateBase::mem
-      !is_accessible(
-            nonstatic_data_members_of(type_of(bases_of(^^Access)[2]))[0]));
+  static_assert(is_accessible(^^::PrivateBase::mem));
+  static_assert(!is_accessible(^^::PrivateBase::mem, obj_ctx));
+  static_assert(!is_accessible(Access::r_prot));
+  static_assert(is_accessible(Access::r_prot, obj_ctx));
 };
 
 static_assert(is_accessible(^^Access::pub));

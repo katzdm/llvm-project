@@ -112,16 +112,15 @@ public:
     return cast<Decl>(S.CurContext);
   }
 
-  bool IsAccessible(NamedDecl *Target, DeclContext *Ctx) override {
+  bool IsAccessible(NamedDecl *Target, DeclContext *Ctx,
+                    CXXRecordDecl *NamingCls) override {
     bool Result = false;
     if (auto *Cls = dyn_cast_or_null<CXXRecordDecl>(Target->getDeclContext())) {
-      CXXRecordDecl *NamingCls = Cls;
-      for (DeclContext *DC = Ctx; DC; DC = DC->getParent())
-        if (auto *CXXRD = dyn_cast<CXXRecordDecl>(DC))
-          if (CXXRD->isDerivedFrom(Cls)) {
-            NamingCls = CXXRD;
-            break;
-          }
+      if (Cls != NamingCls &&
+          !S.IsDerivedFrom(SourceLocation{},
+                           QualType(NamingCls->getTypeForDecl(), 0),
+                           QualType(Cls->getTypeForDecl(), 0)))
+        return false;
 
       DeclContext *PreviousDC = S.CurContext;
       {

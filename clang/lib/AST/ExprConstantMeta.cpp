@@ -150,20 +150,6 @@ static bool is_private(APValue &Result, ASTContext &C, MetaActions &Meta,
                        EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
                        SourceRange Range, ArrayRef<Expr *> Args);
 
-static bool is_access_specified(APValue &Result, ASTContext &C,
-                                MetaActions &Meta, EvalFn Evaluator,
-                                DiagFn Diagnoser, QualType ResultTy,
-                                SourceRange Range, ArrayRef<Expr *> Args);
-
-static bool access_context(APValue &Result, ASTContext &C, MetaActions &Meta,
-                           EvalFn Evaluator, DiagFn Diagnoser,
-                           QualType ResultTy, SourceRange Range,
-                           ArrayRef<Expr *> Args);
-
-static bool is_accessible(APValue &Result, ASTContext &C, MetaActions &Meta,
-                          EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                          SourceRange Range, ArrayRef<Expr *> Args);
-
 static bool is_virtual(APValue &Result, ASTContext &C, MetaActions &Meta,
                        EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
                        SourceRange Range, ArrayRef<Expr *> Args);
@@ -471,11 +457,6 @@ static bool reflect_result(APValue &Result, ASTContext &C, MetaActions &Meta,
                            QualType ResultTy, SourceRange Range,
                            ArrayRef<Expr *> Args);
 
-static bool reflect_invoke(APValue &Result, ASTContext &C, MetaActions &Meta,
-                           EvalFn Evaluator, DiagFn Diagnoser,
-                           QualType ResultTy, SourceRange Range,
-                           ArrayRef<Expr *> Args);
-
 static bool data_member_spec(APValue &Result, ASTContext &C, MetaActions &Meta,
                              EvalFn Evaluator, DiagFn Diagnoser,
                              QualType ResultTy, SourceRange Range,
@@ -559,6 +540,33 @@ static bool annotate(APValue &Result, ASTContext &C, MetaActions &Meta,
                      EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
                      SourceRange Range, ArrayRef<Expr *> Args);
 
+                          // =========================
+                          // Accessibility API (P3493)
+                          // =========================
+
+static bool current_access_context(APValue &Result, ASTContext &C,
+                                   MetaActions &Meta, EvalFn Evaluator,
+                                   DiagFn Diagnoser, QualType ResultTy,
+                                   SourceRange Range, ArrayRef<Expr *> Args);
+
+static bool is_accessible(APValue &Result, ASTContext &C, MetaActions &Meta,
+                          EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                          SourceRange Range, ArrayRef<Expr *> Args);
+
+
+             // ===================================================
+             // Other bespoke functions (not proposed at this time)
+             // ===================================================
+
+static bool is_access_specified(APValue &Result, ASTContext &C,
+                                MetaActions &Meta, EvalFn Evaluator,
+                                DiagFn Diagnoser, QualType ResultTy,
+                                SourceRange Range, ArrayRef<Expr *> Args);
+
+static bool reflect_invoke(APValue &Result, ASTContext &C, MetaActions &Meta,
+                           EvalFn Evaluator, DiagFn Diagnoser,
+                           QualType ResultTy, SourceRange Range,
+                           ArrayRef<Expr *> Args);
 
 // -----------------------------------------------------------------------------
 // Metafunction table
@@ -598,9 +606,6 @@ static constexpr Metafunction Metafunctions[] = {
   { Metafunction::MFRK_bool, 1, 1, is_public },
   { Metafunction::MFRK_bool, 1, 1, is_protected },
   { Metafunction::MFRK_bool, 1, 1, is_private },
-  { Metafunction::MFRK_bool, 1, 1, is_access_specified },
-  { Metafunction::MFRK_metaInfo, 0, 0, access_context },
-  { Metafunction::MFRK_bool, 1, 2, is_accessible },
   { Metafunction::MFRK_bool, 1, 1, is_virtual },
   { Metafunction::MFRK_bool, 1, 1, is_pure_virtual },
   { Metafunction::MFRK_bool, 1, 1, is_override },
@@ -665,7 +670,6 @@ static constexpr Metafunction Metafunctions[] = {
   { Metafunction::MFRK_bool, 1, 1, is_user_provided },
   { Metafunction::MFRK_bool, 1, 1, is_user_declared },
   { Metafunction::MFRK_metaInfo, 2, 2, reflect_result },
-  { Metafunction::MFRK_metaInfo, 5, 5, reflect_invoke },
   { Metafunction::MFRK_metaInfo, 10, 10, data_member_spec },
   { Metafunction::MFRK_metaInfo, 3, 3, define_aggregate },
   { Metafunction::MFRK_sizeT, 1, 1, offset_of },
@@ -683,10 +687,18 @@ static constexpr Metafunction Metafunctions[] = {
   { Metafunction::MFRK_bool, 1, 1, is_function_parameter },
   { Metafunction::MFRK_metaInfo, 1, 1, return_type_of },
 
-  // PXYZ annotation metafunction extensions
+  // P3394 annotation metafunction extensions
   { Metafunction::MFRK_metaInfo, 3, 3, get_ith_annotation_of },
   { Metafunction::MFRK_bool, 1, 1, is_annotation },
   { Metafunction::MFRK_metaInfo, 2, 2, annotate },
+
+  // P3493 accessibility extensions
+  { Metafunction::MFRK_metaInfo, 0, 0, current_access_context },
+  { Metafunction::MFRK_bool, 3, 3, is_accessible },
+
+  // Other bespoke functions (not proposed at this time)
+  { Metafunction::MFRK_bool, 1, 1, is_access_specified },
+  { Metafunction::MFRK_metaInfo, 5, 5, reflect_invoke },
 };
 constexpr const unsigned NumMetafunctions = sizeof(Metafunctions) /
                                             sizeof(Metafunction);
@@ -2911,169 +2923,6 @@ bool is_private(APValue &Result, ASTContext &C, MetaActions &Meta,
                                Range, Args);
 }
 
-bool is_access_specified(APValue &Result, ASTContext &C, MetaActions &Meta,
-                         EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                         SourceRange Range, ArrayRef<Expr *> Args) {
-  assert(Args[0]->getType()->isReflectionType());
-  assert(ResultTy == C.BoolTy);
-
-  auto findAccessSpec = [](Decl *D) -> AccessSpecifier {
-    DeclContext *DC = D->getDeclContext();
-    for (auto I = DC->decls_begin(); *I != D; ++I) {
-      assert(I != DC->decls_end());
-      if (auto *ASD = dyn_cast<AccessSpecDecl>(*I))
-        return ASD->getAccess();
-    }
-    return AS_none;
-  };
-
-  APValue RV;
-  if (!Evaluator(RV, Args[0], true))
-    return true;
-
-  switch (RV.getReflectionKind()) {
-  case ReflectionKind::Type: {
-    bool IsSpecified = false;
-    if (Decl *D = findTypeDecl(RV.getReflectedType()))
-      IsSpecified = findAccessSpec(D) != AS_none;
-
-    return SetAndSucceed(Result, makeBool(C, IsSpecified));
-  }
-  case ReflectionKind::Declaration: {
-    bool IsSpecified = findAccessSpec(RV.getReflectedDecl()) != AS_none;
-    return SetAndSucceed(Result, makeBool(C, IsSpecified));
-  }
-  case ReflectionKind::Template: {
-    Decl *D = RV.getReflectedTemplate().getAsTemplateDecl();
-
-    bool IsSpecified = findAccessSpec(D) != AS_none;
-    return SetAndSucceed(Result, makeBool(C, IsSpecified));
-  }
-  case ReflectionKind::BaseSpecifier: {
-    CXXBaseSpecifier *Base = RV.getReflectedBaseSpecifier();
-    bool IsSpecified = (Base->getAccessSpecifierAsWritten() != AS_none);
-    return SetAndSucceed(Result, makeBool(C, IsSpecified));
-  }
-  case ReflectionKind::Null:
-  case ReflectionKind::Object:
-  case ReflectionKind::Value:
-  case ReflectionKind::Namespace:
-  case ReflectionKind::DataMemberSpec:
-  case ReflectionKind::Annotation:
-    return SetAndSucceed(Result, makeBool(C, false));
-  }
-  llvm_unreachable("invalid reflection type");
-}
-
-static bool findAccessContext(ASTContext &C, MetaActions &Meta,
-                              EvalFn Evaluator, APValue &Result) {
-  StackLocationExpr *SLE = StackLocationExpr::Create(C, SourceRange(), 1);
-  if (!Evaluator(Result, SLE, true) || !Result.isReflection())
-    return false;
-
-  if (Result.getReflectedDecl() != nullptr)
-    return true;
-
-  Result = makeReflection(Meta.CurrentCtx());
-  return true;
-}
-
-bool access_context(APValue &Result, ASTContext &C, MetaActions &Meta,
-                    EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                    SourceRange Range, ArrayRef<Expr *> Args) {
-  assert(ResultTy == C.MetaInfoTy);
-
-  return !findAccessContext(C, Meta, Evaluator, Result);
-}
-
-bool is_accessible(APValue &Result, ASTContext &C, MetaActions &Meta,
-                   EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                   SourceRange Range, ArrayRef<Expr *> Args) {
-  assert(Args[0]->getType()->isReflectionType());
-  assert(ResultTy == C.BoolTy);
-
-  APValue Scratch;
-  if (!Evaluator(Scratch, Args[1], true) || !Scratch.isReflection())
-    return true;
-
-  DeclContext *AccessDC = nullptr;
-  switch (Scratch.getReflectionKind()) {
-  case ReflectionKind::Null:
-    return SetAndSucceed(Result, makeBool(C, false));
-  case ReflectionKind::Type:
-    AccessDC = dyn_cast<DeclContext>(findTypeDecl(Scratch.getReflectedType()));
-    if (!AccessDC)
-      return true;
-    break;
-  case ReflectionKind::Namespace:
-    AccessDC = dyn_cast<DeclContext>(Scratch.getReflectedNamespace());
-    break;
-  case ReflectionKind::Declaration:
-    AccessDC = dyn_cast<DeclContext>(Scratch.getReflectedDecl());
-    break;
-  default:
-    llvm_unreachable("invalid access context");
-  }
-
-  APValue RV;
-  if (!Evaluator(RV, Args[0], true))
-    return true;
-
-  switch (RV.getReflectionKind()) {
-  case ReflectionKind::Type: {
-    NamedDecl *D = findTypeDecl(RV.getReflectedType());
-    if (!D || !D->getDeclContext() || !isa<CXXRecordDecl>(D->getDeclContext()))
-      return DiagnoseReflectionKind(Diagnoser, Range, "a class member");
-
-    bool Accessible = Meta.IsAccessible(D, AccessDC);
-    return SetAndSucceed(Result, makeBool(C, Accessible));
-  }
-  case ReflectionKind::Declaration: {
-    ValueDecl *D = RV.getReflectedDecl();
-    if (!D->getDeclContext() || !isa<CXXRecordDecl>(D->getDeclContext()))
-      return DiagnoseReflectionKind(Diagnoser, Range, "a class member");
-
-    bool Accessible = Meta.IsAccessible(RV.getReflectedDecl(), AccessDC);
-    return SetAndSucceed(Result, makeBool(C, Accessible));
-  }
-  case ReflectionKind::Template: {
-    TemplateDecl *D = RV.getReflectedTemplate().getAsTemplateDecl();
-    if (!D->getDeclContext() || !isa<CXXRecordDecl>(D->getDeclContext()))
-      return DiagnoseReflectionKind(Diagnoser, Range, "a class member");
-
-    bool Accessible = Meta.IsAccessible(D, AccessDC);
-    return SetAndSucceed(Result, makeBool(C, Accessible));
-  }
-  case ReflectionKind::BaseSpecifier: {
-    CXXBaseSpecifier *BaseSpec = RV.getReflectedBaseSpecifier();
-
-    auto *Base = findTypeDecl(BaseSpec->getType());
-    assert(Base && "base class has no type declaration?");
-
-    QualType BaseTy = BaseSpec->getType();
-    QualType DerivedTy(BaseSpec->getDerived()->getTypeForDecl(), 0);
-
-    CXXBasePathElement bpe = { BaseSpec, BaseSpec->getDerived(), 0 };
-    CXXBasePath path;
-    path.push_back(bpe);
-    path.Access = BaseSpec->getAccessSpecifier();
-
-    bool Accessible = Meta.IsAccessibleBase(BaseTy, DerivedTy, path, AccessDC,
-                                            Range.getBegin());
-    return SetAndSucceed(Result, makeBool(C, Accessible));
-  }
-  case ReflectionKind::Null:
-  case ReflectionKind::Object:
-  case ReflectionKind::Value:
-  case ReflectionKind::Namespace:
-  case ReflectionKind::DataMemberSpec:
-  case ReflectionKind::Annotation:
-    return DiagnoseReflectionKind(Diagnoser, Range, "a class member",
-                                  DescriptionOf(RV));
-  }
-  llvm_unreachable("invalid reflection type");
-}
-
 bool is_virtual(APValue &Result, ASTContext &C, MetaActions &Meta,
                 EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
                 SourceRange Range, ArrayRef<Expr *> Args) {
@@ -4502,352 +4351,6 @@ bool reflect_result(APValue &Result, ASTContext &C, MetaActions &Meta,
   return SetAndSucceed(Result, Arg.Lift(Args[1]->getType()));
 }
 
-bool is_nonstatic_member_function(ValueDecl *FD) {
-  if (!FD) {
-    return false;
-  }
-
-  if (dyn_cast<CXXConstructorDecl>(FD)) {
-    return false;
-  }
-
-  auto *MD = dyn_cast<CXXMethodDecl>(FD);
-  if (!MD) {
-    // might be a pointer to member function
-    QualType QT = FD->getType();
-    // check if the type is a pointer to a member
-    if (const MemberPointerType *MPT = QT->getAs<MemberPointerType>()) {
-      QualType PT = MPT->getPointeeType();
-      // check if the pointee type is a function type
-      if (const FunctionProtoType *FPT = PT->getAs<FunctionProtoType>()) {
-        return true;
-      }
-    }
-  } else {
-    return !MD->isStatic();
-  }
-
-  return false;
-}
-
-CXXMethodDecl *getCXXMethodDeclFromDeclRefExpr(DeclRefExpr *DRE,
-                                               ASTContext &C) {
-  ValueDecl *VD = DRE->getDecl();
-
-  if (auto *MD = dyn_cast<CXXMethodDecl>(VD)) {
-    // method declaration
-    return MD;
-  } else {
-    // pointer to non-static method
-    // validation was done in is_nonstatic_member_function
-    Expr::EvalResult ER;
-    if (!DRE->EvaluateAsRValue(ER, C)) {
-      return nullptr;
-    }
-
-    APValue Result = ER.Val;
-    if (!Result.isMemberPointer()) {
-      return nullptr;
-    }
-
-    const ValueDecl *MemberDecl = Result.getMemberPointerDecl();
-    if (const CXXMethodDecl *MethodDecl = dyn_cast<CXXMethodDecl>(MemberDecl)) {
-      // get non-const version
-      return const_cast<CXXMethodDecl *>(MethodDecl);
-    }
-  }
-
-  return nullptr;
-}
-
-bool reflect_invoke(APValue &Result, ASTContext &C, MetaActions &Meta,
-                    EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                    SourceRange Range, ArrayRef<Expr *> Args) {
-  assert(Args[0]->getType()->isReflectionType());
-  assert(
-      Args[1]->getType()->getPointeeOrArrayElementType()->isReflectionType());
-  assert(Args[2]->getType()->isIntegerType());
-  assert(
-      Args[3]->getType()->getPointeeOrArrayElementType()->isReflectionType());
-  assert(Args[4]->getType()->isIntegerType());
-
-  using ReflectionVector = SmallVector<APValue, 4>;
-  auto UnpackReflectionsIntoVector = [&](ReflectionVector &Out,
-                                         Expr *DataExpr, Expr *SzExpr) -> bool {
-    APValue Scratch;
-    if (!Evaluator(Scratch, SzExpr, true))
-      return false;
-
-    size_t nArgs = Scratch.getInt().getExtValue();
-    Out.reserve(nArgs);
-    for (uint64_t k = 0; k < nArgs; ++k) {
-      llvm::APInt Idx(C.getTypeSize(C.getSizeType()), k, false);
-      Expr *Synthesized = IntegerLiteral::Create(C, Idx, C.getSizeType(),
-                                                 DataExpr->getExprLoc());
-
-      Synthesized = new (C) ArraySubscriptExpr(DataExpr, Synthesized,
-                                               C.MetaInfoTy, VK_LValue,
-                                               OK_Ordinary, Range.getBegin());
-
-      if (Synthesized->isValueDependent() || Synthesized->isTypeDependent())
-        return false;
-
-      if (!Evaluator(Scratch, Synthesized, true) || !Scratch.isReflection())
-        return false;
-      Out.push_back(Scratch);
-    }
-
-    return true;
-  };
-
-  APValue FnRefl;
-  if (!Evaluator(FnRefl, Args[0], true))
-    return true;
-
-  SmallVector<TemplateArgument, 4> ExplicitTArgs;
-  {
-    SmallVector<APValue, 4> Reflections;
-    if (!UnpackReflectionsIntoVector(Reflections, Args[1], Args[2]))
-      llvm_unreachable("failed to unpack template arguments from vector?");
-
-    if (Reflections.size() > 0 && !FnRefl.isReflectedTemplate())
-      return DiagnoseReflectionKind(Diagnoser, Range, "a template",
-                                    DescriptionOf(FnRefl));
-
-    SmallVector<TemplateArgument, 4> TArgs;
-    for (APValue RV : Reflections) {
-      if (!CanActAsTemplateArg(RV))
-        return Diagnoser(Range.getBegin(), diag::metafn_cannot_be_arg)
-            << DescriptionOf(RV) << 1 << Range;
-
-      TemplateArgument TArg = TArgFromReflection(C, Evaluator, RV,
-                                                 Range.getBegin());
-      if (TArg.isNull())
-        return true;
-      TArgs.push_back(TArg);
-    }
-
-    expandTemplateArgPacks(TArgs, ExplicitTArgs);
-  }
-
-  SmallVector<Expr *, 4> ArgExprs;
-  {
-    SmallVector<APValue, 4> Reflections;
-    if (!UnpackReflectionsIntoVector(Reflections, Args[3], Args[4]))
-      llvm_unreachable("failed to unpack function arguments from vector?");
-
-    for (APValue RV : Reflections) {
-      if (RV.isReflectedObject()) {
-        Expr *OVE = new (C) OpaqueValueExpr(Range.getBegin(),
-                                            RV.getTypeOfReflectedResult(C),
-                                            VK_LValue);
-        Expr *CE = ConstantExpr::Create(C, OVE, RV.getReflectedObject());
-        ArgExprs.push_back(CE);
-      } else if (RV.isReflectedValue()) {
-        Expr *OVE = new (C) OpaqueValueExpr(Range.getBegin(),
-                                            RV.getTypeOfReflectedResult(C),
-                                            VK_PRValue);
-        Expr *CE = ConstantExpr::Create(C, OVE, RV.getReflectedValue());
-        ArgExprs.push_back(CE);
-      } else if (RV.isReflectedDecl()) {
-        ValueDecl *D = RV.getReflectedDecl();
-        ArgExprs.push_back(
-              DeclRefExpr::Create(C, NestedNameSpecifierLoc(), SourceLocation(),
-                                  D, false, Range.getBegin(), D->getType(),
-                                  VK_LValue, D, nullptr));
-      } else {
-        return Diagnoser(Range.getBegin(), diag::metafn_cannot_be_arg)
-            << DescriptionOf(RV) << 0 << Range;
-      }
-    }
-  }
-
-  Expr *FnRefExpr = nullptr;
-  switch (FnRefl.getReflectionKind()) {
-  case ReflectionKind::Null:
-  case ReflectionKind::Type:
-  case ReflectionKind::Namespace:
-  case ReflectionKind::BaseSpecifier:
-  case ReflectionKind::DataMemberSpec:
-  case ReflectionKind::Annotation:
-    return Diagnoser(Range.getBegin(), diag::metafn_cannot_invoke)
-        << DescriptionOf(FnRefl) << Range;
-  case ReflectionKind::Object: {
-    Expr *OVE = new (C) OpaqueValueExpr(Range.getBegin(),
-                                        FnRefl.getTypeOfReflectedResult(C),
-                                        VK_LValue);
-    FnRefExpr = ConstantExpr::Create(C, OVE, FnRefl.getReflectedObject());
-    break;
-  }
-  case ReflectionKind::Value: {
-    Expr *OVE = new (C) OpaqueValueExpr(Range.getBegin(),
-                                        FnRefl.getTypeOfReflectedResult(C),
-                                        VK_PRValue);
-    FnRefExpr = ConstantExpr::Create(C, OVE, FnRefl.getReflectedValue());
-    break;
-  }
-  case ReflectionKind::Declaration: {
-    ValueDecl *D = FnRefl.getReflectedDecl();
-    Meta.EnsureInstantiated(D, Range);
-
-    FnRefExpr =
-          DeclRefExpr::Create(C, NestedNameSpecifierLoc(), SourceLocation(), D,
-                              false, Range.getBegin(), D->getType(), VK_LValue,
-                              D, nullptr);
-    break;
-  }
-  case ReflectionKind::Template: {
-    TemplateDecl *TDecl = FnRefl.getReflectedTemplate().getAsTemplateDecl();
-    auto *FTD = dyn_cast<FunctionTemplateDecl>(TDecl);
-    if (!FTD) {
-      return Diagnoser(Range.getBegin(), diag::metafn_cannot_invoke)
-          << DescriptionOf(FnRefl) << Range;
-    }
-
-    FunctionDecl *Spec;
-    {
-      bool exclude_first_arg =
-          is_nonstatic_member_function(FTD->getTemplatedDecl()) &&
-          ArgExprs.size() > 0;
-
-      SmallVector<TemplateArgument, 4> ExpandedTArgs;
-      expandTemplateArgPacks(ExplicitTArgs, ExpandedTArgs);
-
-      ArrayRef ArgView(ArgExprs.begin() + (exclude_first_arg ? 1 : 0),
-                       ArgExprs.end());
-
-      Spec = Meta.DeduceSpecialization(FTD, ExpandedTArgs, ArgView,
-                                       Range.getBegin());
-      if (!Spec)
-        return Diagnoser(Range.getBegin(), diag::metafn_no_specialization_found)
-            << FTD << Range;
-
-      Meta.EnsureInstantiated(Spec, Range);
-    }
-
-    FnRefExpr = DeclRefExpr::Create(C, NestedNameSpecifierLoc(),
-                                    SourceLocation(), Spec, false,
-                                    Range.getBegin(), Spec->getType(),
-                                    VK_LValue, Spec, nullptr);
-    break;
-  }
-  }
-
-  Expr* CallExpr;
-  {
-    auto *DRE = dyn_cast<DeclRefExpr>(FnRefExpr);
-    if (DRE && dyn_cast<CXXConstructorDecl>(DRE->getDecl())) {
-      CallExpr = Meta.SynthesizeCallExpr(DRE, ArgExprs);
-    } else {
-      Expr *FnExpr = FnRefExpr;
-      bool handle_member_func =
-          DRE && is_nonstatic_member_function(DRE->getDecl());
-
-      if (handle_member_func) {
-        if (ArgExprs.size() < 1)
-          // need to have object as a first argument
-          return Diagnoser(Range.getBegin(),
-                           diag::metafn_first_argument_is_not_object)
-                 << Range;
-
-        Expr *ObjExpr = ArgExprs[0];
-        QualType ObjType = ObjExpr->getType();
-
-        if (ObjType->isPointerType()) {
-          ObjType = ObjType->getPointeeType();
-          // Convert pointer to rvalue (if needed).
-          APValue Val;
-          if (!Evaluator(Val, ObjExpr, true))
-            return true;
-
-          ObjExpr = new (C) OpaqueValueExpr(Range.getBegin(),
-                                            ObjExpr->getType(), VK_PRValue);
-          ObjExpr = ConstantExpr::Create(C, ObjExpr, Val);
-        }
-
-        if (!ObjType->getAsCXXRecordDecl()) {
-          // first argument is not an object
-          return Diagnoser(Range.getBegin(),
-                           diag::metafn_first_argument_is_not_object)
-                 << Range;
-        }
-
-        CXXMethodDecl *MD = getCXXMethodDeclFromDeclRefExpr(DRE, C);
-        if (!MD) {
-          // most likely, non-constexpr pointer to method was passed
-          return true;
-        }
-
-        // this call is needed to make
-        // CXXSpliceExpr work with pointers to non-static methods
-        // (we unwrap pointer in getCXXMethodDeclFromDeclRefExpr(DRE) function)
-        // for non-pointer setDecl(MD) call is no-op
-        DRE->setDecl(MD);
-
-        auto ObjClass = ObjType->getAsCXXRecordDecl();
-        // check that method belongs to class
-        bool IsMethodFromClassOrParent = (MD->getParent() == ObjClass) ||
-                                       ObjClass->isDerivedFrom(MD->getParent());
-        if (!IsMethodFromClassOrParent) {
-          return Diagnoser(Range.getBegin(),
-                           diag::metafn_function_is_not_member_of_object)
-                 << Range;
-        }
-
-        if (MD->getReturnType()->isVoidType()) {
-          // void return type is not supported
-          return Diagnoser(Range.getBegin(), diag::metafn_function_returns_void)
-                 << Range;
-        }
-
-        SmallVector<TemplateArgument, 4> ExpandedTArgs;
-        expandTemplateArgPacks(ExplicitTArgs, ExpandedTArgs);
-
-        FnExpr = Meta.SynthesizeDirectMemberAccess(ObjExpr, DRE, ExpandedTArgs,
-                                             Range.getBegin());
-        if (!FnExpr)
-          return true;
-      }
-
-      MutableArrayRef<Expr *> ArgView(
-            ArgExprs.begin() + (handle_member_func ? 1 : 0), ArgExprs.end());
-      CallExpr = Meta.SynthesizeCallExpr(FnExpr, ArgView);
-    }
-  }
-
-  if (!CallExpr)
-    return Diagnoser(Range.getBegin(), diag::metafn_invalid_call_expr) << Range;
-
-  if (CallExpr->isTypeDependent() || CallExpr->isValueDependent())
-    return true;
-
-  if (!CallExpr->getType()->isStructuralType() && !CallExpr->isLValue())
-    return Diagnoser(Range.getBegin(), diag::metafn_returns_non_structural_type)
-        << CallExpr->getType() << Range;
-
-  Expr::EvalResult EvalResult;
-  if (!CallExpr->EvaluateAsConstantExpr(EvalResult, C))
-    return Diagnoser(Range.getBegin(),
-                     diag::metafn_invocation_not_constant_expr)
-        << Range;
-
-  // If this is an lvalue to a function, promote the result to reflect
-  // the declaration.
-  if (CallExpr->getType()->isFunctionType() &&
-      EvalResult.Val.getKind() == APValue::LValue &&
-      EvalResult.Val.getLValueOffset().isZero())
-    if (!EvalResult.Val.hasLValuePath() ||
-         EvalResult.Val.getLValuePath().size() == 0)
-      if (APValue::LValueBase LVBase = EvalResult.Val.getLValueBase();
-          LVBase.is<const ValueDecl *>())
-        return SetAndSucceed(
-              Result,
-              makeReflection(
-                  const_cast<ValueDecl *>(LVBase.get<const ValueDecl *>())));
-
-  return SetAndSucceed(Result, EvalResult.Val.Lift(CallExpr->getType()));
-}
-
 bool data_member_spec(APValue &Result, ASTContext &C, MetaActions &Meta,
                       EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
                       SourceRange Range, ArrayRef<Expr *> Args) {
@@ -5655,6 +5158,534 @@ bool annotate(APValue &Result, ASTContext &C, MetaActions &Meta,
         << DescriptionOf(Appertainee) << Range;
   }
   llvm_unreachable("unknown reflection kind");
+}
+
+bool current_access_context(APValue &Result, ASTContext &C, MetaActions &Meta,
+                            EvalFn Evaluator, DiagFn Diagnoser,
+                            QualType ResultTy, SourceRange Range,
+                            ArrayRef<Expr *> Args) {
+  assert(ResultTy == C.MetaInfoTy);
+
+  StackLocationExpr *SLE = StackLocationExpr::Create(C, SourceRange(), 1);
+  if (!Evaluator(Result, SLE, true) || !Result.isReflection())
+    return true;
+  else if (Result.getReflectedDecl() != nullptr)
+    return false;
+
+  return SetAndSucceed(Result, makeReflection(Meta.CurrentCtx()));
+}
+
+bool is_accessible(APValue &Result, ASTContext &C, MetaActions &Meta,
+                   EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                   SourceRange Range, ArrayRef<Expr *> Args) {
+  assert(Args[0]->getType()->isReflectionType());
+  assert(Args[1]->getType()->isReflectionType());
+  assert(Args[2]->getType()->isReflectionType());
+  assert(ResultTy == C.BoolTy);
+
+  APValue Scratch;
+  if (!Evaluator(Scratch, Args[1], true) || !Scratch.isReflection())
+    return true;
+
+  DeclContext *AccessDC = nullptr;
+  switch (Scratch.getReflectionKind()) {
+  case ReflectionKind::Null:
+    return SetAndSucceed(Result, makeBool(C, false));
+  case ReflectionKind::Type:
+    AccessDC = dyn_cast<DeclContext>(findTypeDecl(Scratch.getReflectedType()));
+    if (!AccessDC)
+      return true;
+    break;
+  case ReflectionKind::Namespace:
+    AccessDC = dyn_cast<DeclContext>(Scratch.getReflectedNamespace());
+    break;
+  case ReflectionKind::Declaration:
+    AccessDC = dyn_cast<DeclContext>(Scratch.getReflectedDecl());
+    break;
+  default:
+    llvm_unreachable("invalid access context");
+  }
+
+  CXXRecordDecl *NamingCls = nullptr;
+  if (!Evaluator(Scratch, Args[2], true) || !Scratch.isReflection())
+    return true;
+  assert(Scratch.isNullReflection() || Scratch.isReflectedType());
+  if (Scratch.isReflectedType()) {
+    NamingCls = cast<CXXRecordDecl>(
+            findTypeDecl(Scratch.getReflectedType()))->getDefinition();
+
+    if (!NamingCls)
+      return true;  // TODO(P2996): Diagnostic for naming class.
+  }
+
+  APValue RV;
+  if (!Evaluator(RV, Args[0], true))
+    return true;
+
+  switch (RV.getReflectionKind()) {
+  case ReflectionKind::Type: {
+    NamedDecl *D = findTypeDecl(RV.getReflectedType());
+    if (!D || !D->getDeclContext() || !isa<CXXRecordDecl>(D->getDeclContext()))
+      return DiagnoseReflectionKind(Diagnoser, Range, "a class member");
+
+    if (!NamingCls)
+      NamingCls = cast<CXXRecordDecl>(D->getDeclContext());
+
+    bool Accessible = Meta.IsAccessible(D, AccessDC, NamingCls);
+    return SetAndSucceed(Result, makeBool(C, Accessible));
+  }
+  case ReflectionKind::Declaration: {
+    ValueDecl *D = RV.getReflectedDecl();
+    if (!D->getDeclContext() || !isa<CXXRecordDecl>(D->getDeclContext()))
+      return DiagnoseReflectionKind(Diagnoser, Range, "a class member");
+
+    if (!NamingCls)
+      NamingCls = cast<CXXRecordDecl>(D->getDeclContext());
+
+    bool Accessible = Meta.IsAccessible(RV.getReflectedDecl(), AccessDC,
+                                        NamingCls);
+    return SetAndSucceed(Result, makeBool(C, Accessible));
+  }
+  case ReflectionKind::Template: {
+    TemplateDecl *D = RV.getReflectedTemplate().getAsTemplateDecl();
+    if (!D->getDeclContext() || !isa<CXXRecordDecl>(D->getDeclContext()))
+      return DiagnoseReflectionKind(Diagnoser, Range, "a class member");
+
+    if (!NamingCls)
+      NamingCls = cast<CXXRecordDecl>(D->getDeclContext());
+
+    bool Accessible = Meta.IsAccessible(D, AccessDC, NamingCls);
+    return SetAndSucceed(Result, makeBool(C, Accessible));
+  }
+  case ReflectionKind::BaseSpecifier: {
+    CXXBaseSpecifier *BaseSpec = RV.getReflectedBaseSpecifier();
+
+    auto *Base = findTypeDecl(BaseSpec->getType());
+    assert(Base && "base class has no type declaration?");
+
+    QualType BaseTy = BaseSpec->getType();
+    QualType DerivedTy(BaseSpec->getDerived()->getTypeForDecl(), 0);
+
+    CXXBasePathElement bpe = { BaseSpec, BaseSpec->getDerived(), 0 };
+    CXXBasePath path;
+    path.push_back(bpe);
+    path.Access = BaseSpec->getAccessSpecifier();
+
+    bool Accessible = Meta.IsAccessibleBase(BaseTy, DerivedTy, path, AccessDC,
+                                            Range.getBegin());
+    return SetAndSucceed(Result, makeBool(C, Accessible));
+  }
+  case ReflectionKind::Null:
+  case ReflectionKind::Object:
+  case ReflectionKind::Value:
+  case ReflectionKind::Namespace:
+  case ReflectionKind::DataMemberSpec:
+  case ReflectionKind::Annotation:
+    return DiagnoseReflectionKind(Diagnoser, Range, "a class member",
+                                  DescriptionOf(RV));
+  }
+  llvm_unreachable("invalid reflection type");
+}
+
+
+bool is_access_specified(APValue &Result, ASTContext &C, MetaActions &Meta,
+                         EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                         SourceRange Range, ArrayRef<Expr *> Args) {
+  assert(Args[0]->getType()->isReflectionType());
+  assert(ResultTy == C.BoolTy);
+
+  auto findAccessSpec = [](Decl *D) -> AccessSpecifier {
+    DeclContext *DC = D->getDeclContext();
+    for (auto I = DC->decls_begin(); *I != D; ++I) {
+      assert(I != DC->decls_end());
+      if (auto *ASD = dyn_cast<AccessSpecDecl>(*I))
+        return ASD->getAccess();
+    }
+    return AS_none;
+  };
+
+  APValue RV;
+  if (!Evaluator(RV, Args[0], true))
+    return true;
+
+  switch (RV.getReflectionKind()) {
+  case ReflectionKind::Type: {
+    bool IsSpecified = false;
+    if (Decl *D = findTypeDecl(RV.getReflectedType()))
+      IsSpecified = findAccessSpec(D) != AS_none;
+
+    return SetAndSucceed(Result, makeBool(C, IsSpecified));
+  }
+  case ReflectionKind::Declaration: {
+    bool IsSpecified = findAccessSpec(RV.getReflectedDecl()) != AS_none;
+    return SetAndSucceed(Result, makeBool(C, IsSpecified));
+  }
+  case ReflectionKind::Template: {
+    Decl *D = RV.getReflectedTemplate().getAsTemplateDecl();
+
+    bool IsSpecified = findAccessSpec(D) != AS_none;
+    return SetAndSucceed(Result, makeBool(C, IsSpecified));
+  }
+  case ReflectionKind::BaseSpecifier: {
+    CXXBaseSpecifier *Base = RV.getReflectedBaseSpecifier();
+    bool IsSpecified = (Base->getAccessSpecifierAsWritten() != AS_none);
+    return SetAndSucceed(Result, makeBool(C, IsSpecified));
+  }
+  case ReflectionKind::Null:
+  case ReflectionKind::Object:
+  case ReflectionKind::Value:
+  case ReflectionKind::Namespace:
+  case ReflectionKind::DataMemberSpec:
+  case ReflectionKind::Annotation:
+    return SetAndSucceed(Result, makeBool(C, false));
+  }
+  llvm_unreachable("invalid reflection type");
+}
+
+bool is_nonstatic_member_function(ValueDecl *FD) {
+  if (!FD) {
+    return false;
+  }
+
+  if (dyn_cast<CXXConstructorDecl>(FD)) {
+    return false;
+  }
+
+  auto *MD = dyn_cast<CXXMethodDecl>(FD);
+  if (!MD) {
+    // might be a pointer to member function
+    QualType QT = FD->getType();
+    // check if the type is a pointer to a member
+    if (const MemberPointerType *MPT = QT->getAs<MemberPointerType>()) {
+      QualType PT = MPT->getPointeeType();
+      // check if the pointee type is a function type
+      if (const FunctionProtoType *FPT = PT->getAs<FunctionProtoType>()) {
+        return true;
+      }
+    }
+  } else {
+    return !MD->isStatic();
+  }
+
+  return false;
+}
+
+CXXMethodDecl *getCXXMethodDeclFromDeclRefExpr(DeclRefExpr *DRE,
+                                               ASTContext &C) {
+  ValueDecl *VD = DRE->getDecl();
+
+  if (auto *MD = dyn_cast<CXXMethodDecl>(VD)) {
+    // method declaration
+    return MD;
+  } else {
+    // pointer to non-static method
+    // validation was done in is_nonstatic_member_function
+    Expr::EvalResult ER;
+    if (!DRE->EvaluateAsRValue(ER, C)) {
+      return nullptr;
+    }
+
+    APValue Result = ER.Val;
+    if (!Result.isMemberPointer()) {
+      return nullptr;
+    }
+
+    const ValueDecl *MemberDecl = Result.getMemberPointerDecl();
+    if (const CXXMethodDecl *MethodDecl = dyn_cast<CXXMethodDecl>(MemberDecl)) {
+      // get non-const version
+      return const_cast<CXXMethodDecl *>(MethodDecl);
+    }
+  }
+
+  return nullptr;
+}
+
+bool reflect_invoke(APValue &Result, ASTContext &C, MetaActions &Meta,
+                    EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                    SourceRange Range, ArrayRef<Expr *> Args) {
+  assert(Args[0]->getType()->isReflectionType());
+  assert(
+      Args[1]->getType()->getPointeeOrArrayElementType()->isReflectionType());
+  assert(Args[2]->getType()->isIntegerType());
+  assert(
+      Args[3]->getType()->getPointeeOrArrayElementType()->isReflectionType());
+  assert(Args[4]->getType()->isIntegerType());
+
+  using ReflectionVector = SmallVector<APValue, 4>;
+  auto UnpackReflectionsIntoVector = [&](ReflectionVector &Out,
+                                         Expr *DataExpr, Expr *SzExpr) -> bool {
+    APValue Scratch;
+    if (!Evaluator(Scratch, SzExpr, true))
+      return false;
+
+    size_t nArgs = Scratch.getInt().getExtValue();
+    Out.reserve(nArgs);
+    for (uint64_t k = 0; k < nArgs; ++k) {
+      llvm::APInt Idx(C.getTypeSize(C.getSizeType()), k, false);
+      Expr *Synthesized = IntegerLiteral::Create(C, Idx, C.getSizeType(),
+                                                 DataExpr->getExprLoc());
+
+      Synthesized = new (C) ArraySubscriptExpr(DataExpr, Synthesized,
+                                               C.MetaInfoTy, VK_LValue,
+                                               OK_Ordinary, Range.getBegin());
+
+      if (Synthesized->isValueDependent() || Synthesized->isTypeDependent())
+        return false;
+
+      if (!Evaluator(Scratch, Synthesized, true) || !Scratch.isReflection())
+        return false;
+      Out.push_back(Scratch);
+    }
+
+    return true;
+  };
+
+  APValue FnRefl;
+  if (!Evaluator(FnRefl, Args[0], true))
+    return true;
+
+  SmallVector<TemplateArgument, 4> ExplicitTArgs;
+  {
+    SmallVector<APValue, 4> Reflections;
+    if (!UnpackReflectionsIntoVector(Reflections, Args[1], Args[2]))
+      llvm_unreachable("failed to unpack template arguments from vector?");
+
+    if (Reflections.size() > 0 && !FnRefl.isReflectedTemplate())
+      return DiagnoseReflectionKind(Diagnoser, Range, "a template",
+                                    DescriptionOf(FnRefl));
+
+    SmallVector<TemplateArgument, 4> TArgs;
+    for (APValue RV : Reflections) {
+      if (!CanActAsTemplateArg(RV))
+        return Diagnoser(Range.getBegin(), diag::metafn_cannot_be_arg)
+            << DescriptionOf(RV) << 1 << Range;
+
+      TemplateArgument TArg = TArgFromReflection(C, Evaluator, RV,
+                                                 Range.getBegin());
+      if (TArg.isNull())
+        return true;
+      TArgs.push_back(TArg);
+    }
+
+    expandTemplateArgPacks(TArgs, ExplicitTArgs);
+  }
+
+  SmallVector<Expr *, 4> ArgExprs;
+  {
+    SmallVector<APValue, 4> Reflections;
+    if (!UnpackReflectionsIntoVector(Reflections, Args[3], Args[4]))
+      llvm_unreachable("failed to unpack function arguments from vector?");
+
+    for (APValue RV : Reflections) {
+      if (RV.isReflectedObject()) {
+        Expr *OVE = new (C) OpaqueValueExpr(Range.getBegin(),
+                                            RV.getTypeOfReflectedResult(C),
+                                            VK_LValue);
+        Expr *CE = ConstantExpr::Create(C, OVE, RV.getReflectedObject());
+        ArgExprs.push_back(CE);
+      } else if (RV.isReflectedValue()) {
+        Expr *OVE = new (C) OpaqueValueExpr(Range.getBegin(),
+                                            RV.getTypeOfReflectedResult(C),
+                                            VK_PRValue);
+        Expr *CE = ConstantExpr::Create(C, OVE, RV.getReflectedValue());
+        ArgExprs.push_back(CE);
+      } else if (RV.isReflectedDecl()) {
+        ValueDecl *D = RV.getReflectedDecl();
+        ArgExprs.push_back(
+              DeclRefExpr::Create(C, NestedNameSpecifierLoc(), SourceLocation(),
+                                  D, false, Range.getBegin(), D->getType(),
+                                  VK_LValue, D, nullptr));
+      } else {
+        return Diagnoser(Range.getBegin(), diag::metafn_cannot_be_arg)
+            << DescriptionOf(RV) << 0 << Range;
+      }
+    }
+  }
+
+  Expr *FnRefExpr = nullptr;
+  switch (FnRefl.getReflectionKind()) {
+  case ReflectionKind::Null:
+  case ReflectionKind::Type:
+  case ReflectionKind::Namespace:
+  case ReflectionKind::BaseSpecifier:
+  case ReflectionKind::DataMemberSpec:
+  case ReflectionKind::Annotation:
+    return Diagnoser(Range.getBegin(), diag::metafn_cannot_invoke)
+        << DescriptionOf(FnRefl) << Range;
+  case ReflectionKind::Object: {
+    Expr *OVE = new (C) OpaqueValueExpr(Range.getBegin(),
+                                        FnRefl.getTypeOfReflectedResult(C),
+                                        VK_LValue);
+    FnRefExpr = ConstantExpr::Create(C, OVE, FnRefl.getReflectedObject());
+    break;
+  }
+  case ReflectionKind::Value: {
+    Expr *OVE = new (C) OpaqueValueExpr(Range.getBegin(),
+                                        FnRefl.getTypeOfReflectedResult(C),
+                                        VK_PRValue);
+    FnRefExpr = ConstantExpr::Create(C, OVE, FnRefl.getReflectedValue());
+    break;
+  }
+  case ReflectionKind::Declaration: {
+    ValueDecl *D = FnRefl.getReflectedDecl();
+    Meta.EnsureInstantiated(D, Range);
+
+    FnRefExpr =
+          DeclRefExpr::Create(C, NestedNameSpecifierLoc(), SourceLocation(), D,
+                              false, Range.getBegin(), D->getType(), VK_LValue,
+                              D, nullptr);
+    break;
+  }
+  case ReflectionKind::Template: {
+    TemplateDecl *TDecl = FnRefl.getReflectedTemplate().getAsTemplateDecl();
+    auto *FTD = dyn_cast<FunctionTemplateDecl>(TDecl);
+    if (!FTD) {
+      return Diagnoser(Range.getBegin(), diag::metafn_cannot_invoke)
+          << DescriptionOf(FnRefl) << Range;
+    }
+
+    FunctionDecl *Spec;
+    {
+      bool exclude_first_arg =
+          is_nonstatic_member_function(FTD->getTemplatedDecl()) &&
+          ArgExprs.size() > 0;
+
+      SmallVector<TemplateArgument, 4> ExpandedTArgs;
+      expandTemplateArgPacks(ExplicitTArgs, ExpandedTArgs);
+
+      ArrayRef ArgView(ArgExprs.begin() + (exclude_first_arg ? 1 : 0),
+                       ArgExprs.end());
+
+      Spec = Meta.DeduceSpecialization(FTD, ExpandedTArgs, ArgView,
+                                       Range.getBegin());
+      if (!Spec)
+        return Diagnoser(Range.getBegin(), diag::metafn_no_specialization_found)
+            << FTD << Range;
+
+      Meta.EnsureInstantiated(Spec, Range);
+    }
+
+    FnRefExpr = DeclRefExpr::Create(C, NestedNameSpecifierLoc(),
+                                    SourceLocation(), Spec, false,
+                                    Range.getBegin(), Spec->getType(),
+                                    VK_LValue, Spec, nullptr);
+    break;
+  }
+  }
+
+  Expr* CallExpr;
+  {
+    auto *DRE = dyn_cast<DeclRefExpr>(FnRefExpr);
+    if (DRE && dyn_cast<CXXConstructorDecl>(DRE->getDecl())) {
+      CallExpr = Meta.SynthesizeCallExpr(DRE, ArgExprs);
+    } else {
+      Expr *FnExpr = FnRefExpr;
+      bool handle_member_func =
+          DRE && is_nonstatic_member_function(DRE->getDecl());
+
+      if (handle_member_func) {
+        if (ArgExprs.size() < 1)
+          // need to have object as a first argument
+          return Diagnoser(Range.getBegin(),
+                           diag::metafn_first_argument_is_not_object)
+                 << Range;
+
+        Expr *ObjExpr = ArgExprs[0];
+        QualType ObjType = ObjExpr->getType();
+
+        if (ObjType->isPointerType()) {
+          ObjType = ObjType->getPointeeType();
+          // Convert pointer to rvalue (if needed).
+          APValue Val;
+          if (!Evaluator(Val, ObjExpr, true))
+            return true;
+
+          ObjExpr = new (C) OpaqueValueExpr(Range.getBegin(),
+                                            ObjExpr->getType(), VK_PRValue);
+          ObjExpr = ConstantExpr::Create(C, ObjExpr, Val);
+        }
+
+        if (!ObjType->getAsCXXRecordDecl()) {
+          // first argument is not an object
+          return Diagnoser(Range.getBegin(),
+                           diag::metafn_first_argument_is_not_object)
+                 << Range;
+        }
+
+        CXXMethodDecl *MD = getCXXMethodDeclFromDeclRefExpr(DRE, C);
+        if (!MD) {
+          // most likely, non-constexpr pointer to method was passed
+          return true;
+        }
+
+        // this call is needed to make
+        // CXXSpliceExpr work with pointers to non-static methods
+        // (we unwrap pointer in getCXXMethodDeclFromDeclRefExpr(DRE) function)
+        // for non-pointer setDecl(MD) call is no-op
+        DRE->setDecl(MD);
+
+        auto ObjClass = ObjType->getAsCXXRecordDecl();
+        // check that method belongs to class
+        bool IsMethodFromClassOrParent = (MD->getParent() == ObjClass) ||
+                                       ObjClass->isDerivedFrom(MD->getParent());
+        if (!IsMethodFromClassOrParent) {
+          return Diagnoser(Range.getBegin(),
+                           diag::metafn_function_is_not_member_of_object)
+                 << Range;
+        }
+
+        if (MD->getReturnType()->isVoidType()) {
+          // void return type is not supported
+          return Diagnoser(Range.getBegin(), diag::metafn_function_returns_void)
+                 << Range;
+        }
+
+        SmallVector<TemplateArgument, 4> ExpandedTArgs;
+        expandTemplateArgPacks(ExplicitTArgs, ExpandedTArgs);
+
+        FnExpr = Meta.SynthesizeDirectMemberAccess(ObjExpr, DRE, ExpandedTArgs,
+                                             Range.getBegin());
+        if (!FnExpr)
+          return true;
+      }
+
+      MutableArrayRef<Expr *> ArgView(
+            ArgExprs.begin() + (handle_member_func ? 1 : 0), ArgExprs.end());
+      CallExpr = Meta.SynthesizeCallExpr(FnExpr, ArgView);
+    }
+  }
+
+  if (!CallExpr)
+    return Diagnoser(Range.getBegin(), diag::metafn_invalid_call_expr) << Range;
+
+  if (CallExpr->isTypeDependent() || CallExpr->isValueDependent())
+    return true;
+
+  if (!CallExpr->getType()->isStructuralType() && !CallExpr->isLValue())
+    return Diagnoser(Range.getBegin(), diag::metafn_returns_non_structural_type)
+        << CallExpr->getType() << Range;
+
+  Expr::EvalResult EvalResult;
+  if (!CallExpr->EvaluateAsConstantExpr(EvalResult, C))
+    return Diagnoser(Range.getBegin(),
+                     diag::metafn_invocation_not_constant_expr)
+        << Range;
+
+  // If this is an lvalue to a function, promote the result to reflect
+  // the declaration.
+  if (CallExpr->getType()->isFunctionType() &&
+      EvalResult.Val.getKind() == APValue::LValue &&
+      EvalResult.Val.getLValueOffset().isZero())
+    if (!EvalResult.Val.hasLValuePath() ||
+         EvalResult.Val.getLValuePath().size() == 0)
+      if (APValue::LValueBase LVBase = EvalResult.Val.getLValueBase();
+          LVBase.is<const ValueDecl *>())
+        return SetAndSucceed(
+              Result,
+              makeReflection(
+                  const_cast<ValueDecl *>(LVBase.get<const ValueDecl *>())));
+
+  return SetAndSucceed(Result, EvalResult.Val.Lift(CallExpr->getType()));
 }
 
 }  // end namespace clang

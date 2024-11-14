@@ -56,8 +56,8 @@ public:
   virtual Decl *CurrentCtx() const = 0;
 
   // Returns whether the declaration 'D' is accessible from 'Ctx'.
-  virtual bool IsAccessible(NamedDecl *Target,
-                            DeclContext *Ctx) = 0;
+  virtual bool IsAccessible(NamedDecl *Target, DeclContext *Ctx,
+                            CXXRecordDecl *NamingCls) = 0;
 
   // Returns whether the base class 'B' is accessible from 'Ctx'.
   virtual bool IsAccessibleBase(QualType BaseTy, QualType DerivedTy,
