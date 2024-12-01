@@ -2252,6 +2252,8 @@ bool object_of(APValue &Result, ASTContext &C, MetaActions &Meta,
       return Diagnoser(Range.getBegin(), diag::metafn_cannot_query_property)
           << 1 << DescriptionOf(RV) << Range;
 
+    Meta.EnsureInstantiated(VD, Args[0]->getSourceRange());
+
     QualType QT = VD->getType();
     if (auto *LVRT = dyn_cast<LValueReferenceType>(QT)) {
       QT = LVRT->getPointeeType();
@@ -4584,6 +4586,11 @@ bool size_of(APValue &Result, ASTContext &C, MetaActions &Meta,
   switch (RV.getReflectionKind()) {
   case ReflectionKind::Type: {
     QualType QT = RV.getReflectedType();
+
+    NamedDecl *typeDecl = findTypeDecl(RV.getReflectedType());
+    if (typeDecl)
+      Meta.EnsureInstantiated(typeDecl, Range);
+
     if (QT->isIncompleteType())
       return Diagnoser(Range.getBegin(), diag::metafn_cannot_introspect_type)
           << 4 << 0 << Range;
@@ -4666,6 +4673,11 @@ bool bit_size_of(APValue &Result, ASTContext &C, MetaActions &Meta,
   switch (RV.getReflectionKind()) {
   case ReflectionKind::Type: {
     QualType QT = RV.getReflectedType();
+
+    NamedDecl *typeDecl = findTypeDecl(RV.getReflectedType());
+    if (typeDecl)
+      Meta.EnsureInstantiated(typeDecl, Range);
+
     if (QT->isIncompleteType())
       return Diagnoser(Range.getBegin(), diag::metafn_cannot_introspect_type)
           << 4 << 0 << Range;
