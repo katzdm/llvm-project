@@ -3085,6 +3085,8 @@ bool is_bit_field(APValue &Result, ASTContext &C, MetaActions &Meta,
   if (RV.isReflectedDecl()) {
     if (const auto *FD = dyn_cast<FieldDecl>(RV.getReflectedDecl()))
       result = FD->isBitField();
+    else if (const auto *BD = dyn_cast<BindingDecl>(RV.getReflectedDecl()))
+      result = BD->getBinding()->refersToBitField();
   } else if (RV.isReflectedDataMemberSpec()) {
     result = RV.getReflectedDataMemberSpec()->BitWidth.has_value();
   }
