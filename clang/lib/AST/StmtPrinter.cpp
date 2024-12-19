@@ -2645,7 +2645,7 @@ void StmtPrinter::VisitCoyieldExpr(CoyieldExpr *S) {
 
 void StmtPrinter::VisitCXXReflectExpr(CXXReflectExpr *S) {
   // FIXME: Make this better.
-  OS << "^(...)";
+  OS << "^^(...)";
 }
 
 void StmtPrinter::VisitCXXMetafunctionExpr(CXXMetafunctionExpr *S) {

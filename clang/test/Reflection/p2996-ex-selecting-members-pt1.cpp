@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// RUN: %clang_cc1 %s -std=c++23 -freflection -freflection-new-syntax
+// RUN: %clang_cc1 %s -std=c++23 -freflection
 
 struct S { unsigned i:2, j:6; };
 

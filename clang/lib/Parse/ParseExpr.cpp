@@ -1554,7 +1554,7 @@ ExprResult Parser::ParseCastExpression(CastParseKind ParseKind,
     Res = ParseUnaryExprOrTypeTraitExpression();
     break;
   case tok::caretcaret: {
-    if (!getLangOpts().Reflection || !getLangOpts().ReflectionNewSyntax) {
+    if (!getLangOpts().Reflection) {
       NotCastExpr = true;
       return ExprError();
     }
@@ -1901,12 +1901,7 @@ ExprResult Parser::ParseCastExpression(CastParseKind ParseKind,
     return ParseObjCAtExpression(AtLoc);
   }
   case tok::caret:
-    // '-freflection' and '-fblocks' are mutually exclusive.
-    if (getLangOpts().Reflection && !getLangOpts().ReflectionNewSyntax) {
-        return ParseCXXReflectExpression(ConsumeToken());
-    } else {
-        Res = ParseBlockLiteralExpression();
-    }
+    Res = ParseBlockLiteralExpression();
     break;
   case tok::code_completion: {
     cutOffParsing();
@@ -2651,7 +2646,7 @@ ExprResult Parser::ParseUnaryExprOrTypeTraitExpression() {
                      tok::kw_alignof, tok::kw__Alignof, tok::kw_vec_step,
                      tok::kw___builtin_omp_required_simd_align,
                      tok::kw___builtin_vectorelements) ||
-         (getLangOpts().ReflectionNewSyntax && Tok.is(tok::caretcaret))) &&
+         (getLangOpts().Reflection && Tok.is(tok::caretcaret))) &&
          "Not a sizeof/alignof/vec_step expression!");
   Token OpTok = Tok;
   ConsumeToken();

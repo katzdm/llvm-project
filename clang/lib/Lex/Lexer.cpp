@@ -4357,7 +4357,7 @@ LexStart:
     if (Char == '=') {
       CurPtr = ConsumeChar(CurPtr, SizeTmp, Result);
       Kind = tok::caretequal;
-    } else if (LangOpts.ReflectionNewSyntax && Char == '^') {
+    } else if (LangOpts.Reflection && Char == '^') {
       CurPtr = ConsumeChar(CurPtr, SizeTmp, Result);
       Kind = tok::caretcaret;
     } else {

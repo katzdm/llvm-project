@@ -8,8 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// RUN: %clang_cc1 %s -std=c++23 -freflection -freflection-new-syntax \
-// RUN: -fannotation-attributes
+// RUN: %clang_cc1 %s -std=c++23 -freflection -fannotation-attributes
 
 using info = decltype(^^int);
 
