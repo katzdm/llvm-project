@@ -316,6 +316,7 @@ LANGOPT(ParameterReflection , 1, 0, "Augments C++26 Reflection with function par
 LANGOPT(ExpansionStatements , 1, 0, "Experimental C++26 Expansion Statements")
 LANGOPT(AnnotationAttributes, 1, 0, "Experimental C++26 support for annotations")
 LANGOPT(ConstevalBlocks,      1, 0, "Experimental C++26 support for consteval blocks")
+LANGOPT(AccessContexts,       1, 0, "Experimental C++26 support for reflection with access contexts")
 LANGOPT(ReflectionLatest    , 1, 0, "Enable all experimental C++26 features supported by Clang/P2996")
 
 LANGOPT(MSVCEnableStdcMacro , 1, 0, "Define __STDC__ with '-fms-compatibility'")

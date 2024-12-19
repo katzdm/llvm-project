@@ -105,6 +105,9 @@ def err_fe_reflection_incompatible_with_blocks : Error<
 def err_fe_parameter_reflection_without_reflection : Error<
     "cannot specify '-fparameter-reflection' without '-freflection'">,
     DefaultFatal;
+def err_fe_access_contexts_without_reflection : Error<
+    "cannot specify '-faccess-contexts' without 'freflection'">,
+    DefaultFatal;
 def err_fe_dependency_file_requires_MT : Error<
     "-dependency-file requires at least one -MT or -MQ option">;
 def err_fe_invalid_plugin_name : Error<

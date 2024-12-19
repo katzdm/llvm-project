@@ -24,7 +24,7 @@ inline namespace reflection_v2
 {
 
 // std::meta::info
-using info = decltype(^int);
+using info = decltype(^^int);
 
 // concept reflection_range
 template <typename R>
@@ -66,23 +66,11 @@ consteval auto nonstatic_data_members_of(info class_type) -> vector<info>;
 consteval auto subobjects_of(info class_type) -> vector<info>;
 consteval auto enumerators_of(info enum_type) -> vector<info>;
 
-// public member queries
+// public member queries (removal proposed by P3547)
 consteval auto get_public_members(info) -> vector<info>;
 consteval auto get_public_bases(info) -> vector<info>;
 consteval auto get_static_data_members(info) -> vector<info>;
 consteval auto get_nonstatic_data_members(info) -> vector<info>;
-
-// member access queries
-struct access_context {
-  consteval access_context() noexcept;
-  consteval access_context(const access_context &) noexcept = default;
-  consteval access_context(access_context &&) noexcept = default;
-
-  static consteval auto current() noexcept -> access_context;
-  static consteval auto global() noexcept -> access_context;
-
-  consteval auto via(info) -> access_context;
-};
 
 // substitute
 template <reflection_range R = initializer_list<info>>
@@ -370,22 +358,22 @@ template <typename T>
 consteval auto is_annotation(info) -> bool;
 consteval auto annotate(info) -> info;
 
-// accessibility (P3493)
-consteval auto is_accessible(
-        info r,
-        access_context from = access_context::current()) -> bool;
-consteval auto has_inaccessible_members(
-       info target,
-       access_context from = access_context::current()) -> vector<info>;
+// modeling access control (P3547)
+struct access_context {
+  static consteval auto current() noexcept -> access_context;
+  static consteval auto unprivileged() noexcept -> access_context;
+  static consteval auto unchecked() noexcept -> access_context;
+
+  consteval auto via(info) -> access_context;
+};
+
+consteval auto is_accessible(info r, access_context ctx) -> bool;
+consteval auto has_inaccessible_nonstatic_data_members(
+       info r,
+       access_context cls) -> vector<info>;
 consteval auto has_inaccessible_bases(
-        info target,
-        access_context from = access_context::current()) -> vector<info>;
-consteval auto get_accessible_members(
-       info target,
-       access_context from = access_context::current()) -> vector<info>;
-consteval auto has_accessible_bases(
-        info target,
-        access_context from = access_context::current()) -> vector<info>;
+        info r,
+        access_context cls) -> vector<info>;
 
 // other bespoke functions (not proposed at this time)
 consteval auto is_access_specified(info) -> bool;
@@ -916,110 +904,6 @@ consteval auto is_data_member_spec(info r) -> bool {
   return __metafunction(detail::__metafn_is_data_member_spec, r);
 }
 
-consteval auto members_of(info r) -> vector<info> {
-  using iterator =
-      __range_of_infos::iterator<__range_of_infos::front_member_of_fn,
-                                 __range_of_infos::next_member_of_fn,
-                                 __range_of_infos::map_decl_to_entity_fn>;
-  using range = __range_of_infos::range<iterator>;
-  auto rng = range{r};
-  return vector<info>{rng.begin(), rng.end()};
-}
-
-// Returns whether the reflected entity is a namespace.
-consteval auto is_namespace(info r) -> bool {
-  return __metafunction(detail::__metafn_is_namespace, r);
-}
-
-consteval auto bases_of(info r) -> vector<info> {
-  if (is_namespace(r))
-    throw "Namespaces cannot have base classes";
-
-  using iterator =
-    __range_of_infos::iterator<__range_of_infos::front_base_of_fn,
-                                __range_of_infos::next_base_of_fn,
-                                __range_of_infos::map_identity_fn>;
-  using range = __range_of_infos::range<iterator>;
-  auto rng = range{r};
-  return vector<info>{rng.begin(), rng.end()};
-}
-
-// Returns whether the reflected entity is a variable.
-consteval auto is_variable(info r) -> bool {
-  return __metafunction(detail::__metafn_is_variable, r);
-}
-
-consteval auto static_data_members_of(info r) -> vector<info> {
-  if (is_namespace(r))
-    throw "Namespaces cannot have static data members";
-
-  return members_of(r) | views::filter(is_variable) |
-                         ranges::to<vector>();
-}
-
-consteval auto nonstatic_data_members_of(info r) -> vector<info> {
-  if (is_namespace(r))
-    throw "Namespaces cannot have non-static data members";
-
-  return members_of(r) | views::filter(is_nonstatic_data_member) |
-                         ranges::to<vector>();
-}
-
-consteval auto subobjects_of(info r) -> vector<info> {
-  if (is_namespace(r))
-    throw "Namespaces cannot have subobjects";
-
-  auto subobjects = bases_of(r);
-  subobjects.append_range(nonstatic_data_members_of(r));
-  return subobjects;
-}
-
-// Returns true if the reflected entity has a complete definition.
-consteval auto has_complete_definition(info r) -> bool {
-  return __metafunction(detail::__metafn_has_complete_definition, r);
-}
-
-consteval auto enumerators_of(info r) -> vector<info> {
-  if (!has_complete_definition(r))
-    throw "Reflection must represent an enumeration with a definition";
-
-  using iterator =
-    __range_of_infos::iterator<__range_of_infos::front_enumerator_of_fn,
-                               __range_of_infos::next_enumerator_of_fn,
-                               __range_of_infos::map_identity_fn>;
-  using range = __range_of_infos::range<iterator>;
-  auto rng = range{r};
-  return vector<info>{rng.begin(), rng.end()};
-}
-
-// Returns whether the reflected entity is a public class member.
-consteval auto is_public(info r) -> bool {
-  return __metafunction(detail::__metafn_is_public, r);
-}
-
-consteval auto get_public_members(info r) -> vector<info> {
-  return members_of(r) | views::filter(is_public) | ranges::to<vector>();
-}
-
-consteval auto get_public_bases(info r) -> vector<info> {
-  return bases_of(r) | views::filter(is_public) | ranges::to<vector>();
-}
-
-consteval auto get_public_static_data_members(info r) -> vector<info> {
-  return static_data_members_of(r) | views::filter(is_public) |
-                                     ranges::to<vector>();
-}
-
-consteval auto get_public_nonstatic_data_members(info r) -> vector<info> {
-  return nonstatic_data_members_of(r) | views::filter(is_public) |
-                                        ranges::to<vector>();
-}
-
-// Returns true if the reflected entity is a complete type.
-consteval auto is_complete_type(info r) -> bool {
-  return __metafunction(detail::__metafn_is_complete_type, r);
-}
-
 // Returns whether 'templ' substituted with 'args' forms a valid template-id.
 template <reflection_range R = initializer_list<info>>
 consteval auto can_substitute(info templ, R &&args) -> bool {
@@ -1052,6 +936,197 @@ consteval auto substitute(info templ, R &&args) -> info {
 template <typename Ty> requires (!is_rvalue_reference_v<Ty>)
 consteval auto extract(info r) -> Ty {
   return __metafunction(detail::__metafn_extract, LIFT(Ty), r);
+}
+
+consteval auto is_class_type(info r) -> bool {
+  return extract<bool>(substitute(LIFT(is_class_v), {r}));
+}
+
+#if __has_feature(access_contexts)
+
+class access_context {
+  consteval access_context(info scope, info naming_class) noexcept
+      : scope{scope}, naming_class{naming_class} { }
+
+public:
+  const info scope;
+  const info naming_class;
+
+  consteval access_context() noexcept : scope{LIFT(::)}, naming_class{} { };
+  consteval access_context(const access_context &) noexcept = default;
+  consteval access_context(access_context &&) noexcept = default;
+
+  static consteval access_context current() noexcept {
+    return {__metafunction(detail::__metafn_access_context), {}};
+  }
+
+  static consteval access_context unprivileged() noexcept {
+    return access_context{};
+  }
+
+  static consteval access_context unchecked() noexcept {
+    return access_context{info{}, info{}};
+  }
+
+  consteval access_context via(info new_naming_class) {
+    if (!is_class_type(new_naming_class))
+      throw "naming class must be a reflection of a class type";
+
+    return access_context{scope, new_naming_class};
+  }
+};
+
+consteval auto is_accessible(info r, access_context ctx) -> bool {
+  if (ctx.scope == info {})
+    return true;
+
+  return __metafunction(detail::__metafn_is_accessible,
+                        r, ctx.scope, ctx.naming_class);
+}
+
+#endif  // __has_feature(access_contexts)
+
+#if __has_feature(access_contexts)
+consteval auto members_of(info r, access_context ctx) -> vector<info> {
+#else
+consteval auto members_of(info r) -> vector<info> {
+#endif  // __has_feature(access_contexts)
+  using iterator =
+      __range_of_infos::iterator<__range_of_infos::front_member_of_fn,
+                                 __range_of_infos::next_member_of_fn,
+                                 __range_of_infos::map_decl_to_entity_fn>;
+  using range = __range_of_infos::range<iterator>;
+  auto rng = range{r};
+
+  vector<info> v {rng.begin(), rng.end()};
+#if __has_feature(access_contexts)
+  return vector<info>{
+      from_range,
+      v | views::filter([=](info r) { return is_accessible(r, ctx); })
+  };
+#else
+  return v;
+#endif  // __has_feature(access_contexts)
+}
+
+// Returns whether the reflected entity is a namespace.
+consteval auto is_namespace(info r) -> bool {
+  return __metafunction(detail::__metafn_is_namespace, r);
+}
+
+#if __has_feature(access_contexts)
+consteval auto bases_of(info r, access_context ctx) -> vector<info> {
+#else
+consteval auto bases_of(info r) -> vector<info> {
+#endif  // __has_feature(access_contexts)
+  if (is_namespace(r))
+    throw "Namespaces cannot have base classes";
+
+  using iterator =
+    __range_of_infos::iterator<__range_of_infos::front_base_of_fn,
+                                __range_of_infos::next_base_of_fn,
+                                __range_of_infos::map_identity_fn>;
+  using range = __range_of_infos::range<iterator>;
+  auto rng = range{r};
+
+  vector<info> v {rng.begin(), rng.end()};
+#if __has_feature(access_contexts)
+  return vector<info>{
+      from_range,
+      v | views::filter([=](info r) { return is_accessible(r, ctx); })
+  };
+#else
+  return v;
+#endif  // __has_feature(access_contexts)
+}
+
+// Returns whether the reflected entity is a variable.
+consteval auto is_variable(info r) -> bool {
+  return __metafunction(detail::__metafn_is_variable, r);
+}
+
+#if __has_feature(access_contexts)
+consteval auto static_data_members_of(info r,
+                                      access_context ctx) -> vector<info> {
+#else
+consteval auto static_data_members_of(info r) -> vector<info> {
+#endif  // has_feature(access_contexts
+  if (is_namespace(r))
+    throw "Namespaces cannot have static data members";
+
+#if __has_feature(access_contexts)
+  return members_of(r, ctx) |
+#else
+  return members_of(r) |
+#endif  // __has_feature(access_contexts)
+         views::filter(is_variable) |
+         ranges::to<vector>();
+}
+
+#if __has_feature(access_contexts)
+consteval auto nonstatic_data_members_of(info r,
+                                         access_context ctx) -> vector<info> {
+#else
+consteval auto nonstatic_data_members_of(info r) -> vector<info> {
+#endif  // __has_feature(access_contexts)
+  if (is_namespace(r))
+    throw "Namespaces cannot have non-static data members";
+
+#if __has_feature(access_contexts)
+  return members_of(r, ctx) |
+#else
+  return members_of(r) |
+#endif  // __has_feature(access_contexts)
+         views::filter(is_nonstatic_data_member) |
+         ranges::to<vector>();
+}
+
+// Returns true if the reflected entity has a complete definition.
+consteval auto has_complete_definition(info r) -> bool {
+  return __metafunction(detail::__metafn_has_complete_definition, r);
+}
+
+consteval auto enumerators_of(info r) -> vector<info> {
+  if (!has_complete_definition(r))
+    throw "Reflection must represent an enumeration with a definition";
+
+  using iterator =
+    __range_of_infos::iterator<__range_of_infos::front_enumerator_of_fn,
+                               __range_of_infos::next_enumerator_of_fn,
+                               __range_of_infos::map_identity_fn>;
+  using range = __range_of_infos::range<iterator>;
+  auto rng = range{r};
+  return vector<info>{rng.begin(), rng.end()};
+}
+
+// Returns whether the reflected entity is a public class member.
+consteval auto is_public(info r) -> bool {
+  return __metafunction(detail::__metafn_is_public, r);
+}
+
+#if !__has_feature(access_contexts)
+consteval auto get_public_members(info r) -> vector<info> {
+  return members_of(r) | views::filter(is_public) | ranges::to<vector>();
+}
+
+consteval auto get_public_bases(info r) -> vector<info> {
+  return bases_of(r) | views::filter(is_public) | ranges::to<vector>();
+}
+
+consteval auto get_public_static_data_members(info r) -> vector<info> {
+  return static_data_members_of(r) | views::filter(is_public) |
+                                     ranges::to<vector>();
+}
+
+consteval auto get_public_nonstatic_data_members(info r) -> vector<info> {
+  return nonstatic_data_members_of(r) | views::filter(is_public) |
+                                        ranges::to<vector>();
+}
+#endif  // !__has_feature(access_contexts)
+
+// Returns true if the reflected entity is a complete type.
+consteval auto is_complete_type(info r) -> bool {
+  return __metafunction(detail::__metafn_is_complete_type, r);
 }
 
 // Returns whether the reflected entity is a protected class member.
@@ -1598,10 +1673,6 @@ consteval auto is_union_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_union_v), {r}));
 }
 
-consteval auto is_class_type(info r) -> bool {
-  return extract<bool>(substitute(LIFT(is_class_v), {r}));
-}
-
 consteval auto is_function_type(info r) -> bool {
   return extract<bool>(substitute(LIFT(is_function_v), {r}));
 }
@@ -2060,7 +2131,12 @@ consteval auto variant_alternative(size_t index, info type) -> info {
 namespace detail {
 template <class T> struct __wrap_workaround { using type = T; };
 consteval auto __workaround_expand_compiler_builtins(info type) -> info {
-  return dealias(members_of(substitute(LIFT(__wrap_workaround), {type}))[0]);
+  auto r = substitute(LIFT(__wrap_workaround), {type});
+#if __has_feature(access_contexts)
+  return dealias(members_of(r, access_context::unchecked())[0]);
+#else
+  return dealias(members_of(r)[0]);
+#endif
 }
 
 }  // namespace detail
@@ -2160,85 +2236,22 @@ consteval auto annotate(info entity, info val) -> info {
 
 #endif  // __has_feature(annotation_attributes)
 
-                          // =========================
-                          // Accessibility API (P3493)
-                          // =========================
+#if __has_feature(access_contexts)
 
-class access_context {
-  consteval access_context(info scope, info naming_class) noexcept
-      : scope{scope}, naming_class{naming_class} { }
-
-public:
-  const info scope;
-  const info naming_class;
-
-  consteval access_context() noexcept : scope{LIFT(::)}, naming_class{} { };
-  consteval access_context(const access_context &) noexcept = default;
-  consteval access_context(access_context &&) noexcept = default;
-
-  static consteval access_context current() noexcept {
-    return {__metafunction(detail::__metafn_access_context), {}};
-  }
-
-  static consteval access_context global() noexcept {
-    return access_context{};
-  }
-
-  consteval access_context via(info new_naming_class) {
-    if (!is_class_type(new_naming_class))
-      throw "naming class must be a reflection of a class type";
-
-    return access_context{scope, new_naming_class};
-  }
-};
-
-consteval auto is_accessible(
-        info target,
-        access_context from = access_context::current()) -> bool {
-  info Scope = from.[:nonstatic_data_members_of(LIFT(access_context))[0]:];
-  info NamingCls = from.[:nonstatic_data_members_of(LIFT(access_context))[1]:];
-
-  return __metafunction(detail::__metafn_is_accessible,
-                        target, Scope, NamingCls);
+consteval auto has_inaccessible_nonstatic_data_members(
+        info r,
+        access_context ctx) -> bool {
+  return !ranges::all_of(
+        nonstatic_data_members_of(r, access_context::unchecked()),
+        [=](info m) { return is_accessible(m, ctx); });
 }
 
-consteval auto has_inaccessible_members(
-        info target,
-        access_context from = access_context::current()) -> bool {
-  return !std::ranges::all_of(members_of(target),
-                              [=](info r) { return is_accessible(r, from); });
+consteval auto has_inaccessible_bases(info r, access_context ctx) -> bool {
+  return !ranges::all_of(bases_of(r, access_context::unchecked()),
+                         [=](info b) { return is_accessible(b, ctx); });
 }
 
-consteval auto has_inaccessible_bases(
-        info target,
-        access_context from = access_context::current()) -> bool {
-  return !std::ranges::all_of(bases_of(target),
-                              [=](info r) { return is_accessible(r, from); });
-}
-
-consteval auto get_accessible_members(
-        info target,
-        access_context from = access_context::current())
-    -> vector<info> {
-  if (is_namespace(target))
-    throw "Cannot query the accessible members of a namespace";
-
-  return members_of(target) |
-         views::filter([&](info r) { return is_accessible(r, from); }) |
-         ranges::to<vector>();
-}
-
-consteval auto get_accessible_bases(
-        info target,
-        access_context from = access_context::current())
-    -> vector<info> {
-  if (is_namespace(target))
-    throw "Namespaces cannot have base classes";
-
-  return bases_of(target) |
-         views::filter([&](info r) { return is_accessible(r, from); }) |
-         ranges::to<vector>();
-}
+#endif  // __has_feature(access_contexts)
 
              // ===================================================
              // Other bespoke functions (not proposed at this time)
@@ -2339,6 +2352,33 @@ template <reflection_range R = initializer_list<info>>
 consteval auto define_class(info class_type, R &&members) -> info {
   return define_aggregate(class_type, members);
 }
+
+#if __has_feature(access_contexts)
+[[deprecated("P3547 requires an 'access_context' argument "
+             "(compile with '-fno-access-contexts' to disable this warning)")]]
+consteval auto members_of(info r) -> vector<info> {
+  return members_of(r, access_context::unchecked());
+}
+
+[[deprecated("P3547 requires an 'access_context' argument "
+             "(compile with '-fno-access-contexts' to disable this warning)")]]
+consteval auto bases_of(info r) -> vector<info> {
+  return bases_of(r, access_context::unchecked());
+}
+
+[[deprecated("P3547 requires an 'access_context' argument "
+             "(compile with '-fno-access-contexts' to disable this warning)")]]
+consteval auto static_data_members_of(info r) -> vector<info> {
+  return static_data_members_of(r, access_context::unchecked());
+}
+
+[[deprecated("P3547 requires an 'access_context' argument "
+             "(compile with '-fno-access-contexts' to disable this warning)")]]
+consteval auto nonstatic_data_members_of(info r) -> vector<info> {
+  return nonstatic_data_members_of(r, access_context::unchecked());
+}
+
+#endif  // __has_feature(access_contexts)
 
 
                     // ====================================
@@ -2632,10 +2672,16 @@ consteval auto pretty_printer<CharT>::tprint_impl::render() -> string_t {
   string_t result = render<type_of(R)>() + string_constant("{");
 
   size_t Idx = 0;
-  [:expand(nonstatic_data_members_of(type_of(R))):] >> [&]<auto Mem> {
-    if (Idx++ > 0) result += string_constant(", ");
-    result += tprint_impl::render<reflect_value([:R:].[:Mem:])>();
-  };
+#if __has_feature(access_contexts)
+  [:expand(nonstatic_data_members_of(type_of(R),
+                                     access_context::unchecked())):] >>
+#else
+  [:expand(nonstatic_data_members_of(type_of(R))):] >>
+#endif
+      [&]<auto Mem> {
+        if (Idx++ > 0) result += string_constant(", ");
+          result += tprint_impl::render<reflect_value([:R:].[:Mem:])>();
+      };
   result += string_constant("}");
 
   return result;

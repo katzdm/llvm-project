@@ -347,37 +347,6 @@ static_assert(enumerators_of(^^Cls::Enum) ==
 
 }  // namespace enumerators
 
-                               // ==============
-                               // all_subobjects
-                               // ==============
-
-namespace all_subobjects {
-struct B1 {};
-struct B2 {};
-template <typename... Ts> struct TCls : Ts... {
-  int mem;
-
-  // Not subobjects.
-  static int smem;
-  void memfn();
-  static void smemfn();
-  TCls();
-  ~TCls();
-  struct Inner {};
-  using Alias = int;
-  template <typename> struct TInnerCls;
-  template <typename> void TMemFn();
-  template <typename> static void TSMemFn();
-  template <typename> static int TSMem;
-  template <typename> using TAlias = int;
-};
-static_assert(subobjects_of(^^TCls<B1, B2>).size() == 3);
-static_assert(subobjects_of(^^TCls<B1, B2>)[0] == bases_of(^^TCls<B1, B2>)[0]);
-static_assert(subobjects_of(^^TCls<B1, B2>)[1] == bases_of(^^TCls<B1, B2>)[1]);
-static_assert(subobjects_of(^^TCls<B1, B2>)[2] ==
-              nonstatic_data_members_of(^^TCls<B1, B2>)[0]);
-}  // namespace all_subobjects
-
                             // ====================
                             // complete_definitions
                             // ====================

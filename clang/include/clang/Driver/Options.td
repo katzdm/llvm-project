@@ -3554,6 +3554,11 @@ defm consteval_blocks : BoolFOption<"consteval-blocks",
   PosFlag<SetTrue, [], [ClangOption, CC1Option],
           "Enable proposed consteval blocks as described by P3289">,
   NegFlag<SetFalse>>;
+defm access_contexts : BoolFOption<"access-contexts",
+  LangOpts<"AccessContexts">, DefaultFalse,
+  PosFlag<SetTrue, [], [ClangOption, CC1Option],
+          "Enable access context model as described by P3547">,
+  NegFlag<SetFalse>>;
 defm reflection_latest : BoolFOption<"reflection-latest",
   LangOpts<"ReflectionLatest">, DefaultFalse,
   PosFlag<SetTrue, [], [ClangOption, CC1Option],
