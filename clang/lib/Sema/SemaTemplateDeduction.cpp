@@ -22,10 +22,10 @@
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclTemplate.h"
 #include "clang/AST/DeclarationName.h"
+#include "clang/AST/DynamicRecursiveASTVisitor.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/NestedNameSpecifier.h"
-#include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/TemplateBase.h"
 #include "clang/AST/TemplateName.h"
 #include "clang/AST/Type.h"
@@ -388,7 +388,7 @@ checkDeducedTemplateArguments(ASTContext &Context,
     for (TemplateArgument::pack_iterator
              XA = X.pack_begin(),
              XAEnd = X.pack_end(), YA = Y.pack_begin(), YAEnd = Y.pack_end();
-         XA != XAEnd; ++XA, ++YA) {
+         XA != XAEnd; ++XA) {
       if (YA != YAEnd) {
         TemplateArgument Merged = checkDeducedTemplateArguments(
             Context, DeducedTemplateArgument(*XA, X.wasDeducedFromArrayBound()),
@@ -396,6 +396,7 @@ checkDeducedTemplateArguments(ASTContext &Context,
         if (Merged.isNull() && !(XA->isNull() && YA->isNull()))
           return DeducedTemplateArgument();
         NewPack.push_back(Merged);
+        ++YA;
       } else {
         NewPack.push_back(*XA);
       }
@@ -868,7 +869,10 @@ private:
       if (auto *NTTP = dyn_cast<NonTypeTemplateParmDecl>(
               TemplateParams->getParam(Index))) {
         if (!NTTP->isExpandedParameterPack())
-          if (auto *Expansion = dyn_cast<PackExpansionType>(NTTP->getType()))
+          // FIXME: CWG2982 suggests a type-constraint forms a non-deduced
+          // context, however it is not yet resolved.
+          if (auto *Expansion = dyn_cast<PackExpansionType>(
+                  S.Context.getUnconstrainedType(NTTP->getType())))
             ExtraDeductions.push_back(Expansion->getPattern());
       }
       // FIXME: Also collect the unexpanded packs in any type and template
@@ -1755,7 +1759,8 @@ static TemplateDeductionResult DeduceTemplateArgumentsByTypeMatch(
       // C++ [temp.deduct.conv]p4:
       //   If the original A is a reference type, A can be more cv-qualified
       //   than the deduced A
-      if (!A.getQualifiers().compatiblyIncludes(P.getQualifiers()))
+      if (!A.getQualifiers().compatiblyIncludes(P.getQualifiers(),
+                                                S.getASTContext()))
         return TemplateDeductionResult::NonDeducedMismatch;
 
       // Strip out all extra qualifiers from the argument to figure out the
@@ -3795,7 +3800,7 @@ CheckOriginalCallArgDeduction(Sema &S, TemplateDeductionInfo &Info,
 
     if (AQuals == DeducedAQuals) {
       // Qualifiers match; there's nothing to do.
-    } else if (!DeducedAQuals.compatiblyIncludes(AQuals)) {
+    } else if (!DeducedAQuals.compatiblyIncludes(AQuals, S.getASTContext())) {
       return Failed();
     } else {
       // Qualifiers are compatible, so have the argument type adopt the
@@ -3954,18 +3959,6 @@ TemplateDeductionResult Sema::FinishTemplateArgumentDeduction(
       Result != TemplateDeductionResult::Success)
     return Result;
 
-  // C++ [temp.deduct.call]p10: [DR1391]
-  //   If deduction succeeds for all parameters that contain
-  //   template-parameters that participate in template argument deduction,
-  //   and all template arguments are explicitly specified, deduced, or
-  //   obtained from default template arguments, remaining parameters are then
-  //   compared with the corresponding arguments. For each remaining parameter
-  //   P with a type that was non-dependent before substitution of any
-  //   explicitly-specified template arguments, if the corresponding argument
-  //   A cannot be implicitly converted to P, deduction fails.
-  if (CheckNonDependent())
-    return TemplateDeductionResult::NonDependentConversionFailure;
-
   // Form the template argument list from the deduced template arguments.
   TemplateArgumentList *SugaredDeducedArgumentList =
       TemplateArgumentList::CreateCopy(Context, SugaredBuilder);
@@ -3995,6 +3988,39 @@ TemplateDeductionResult Sema::FinishTemplateArgumentDeduction(
     FD = const_cast<FunctionDecl *>(FDFriend);
     Owner = FD->getLexicalDeclContext();
   }
+  // C++20 [temp.deduct.general]p5: [CWG2369]
+  //   If the function template has associated constraints, those constraints
+  //   are checked for satisfaction. If the constraints are not satisfied, type
+  //   deduction fails.
+  //
+  // FIXME: We haven't implemented CWG2369 for lambdas yet, because we need
+  // to figure out how to instantiate lambda captures to the scope without
+  // first instantiating the lambda.
+  bool IsLambda = isLambdaCallOperator(FD) || isLambdaConversionOperator(FD);
+  if (!IsLambda && !IsIncomplete) {
+    if (CheckFunctionTemplateConstraints(
+            Info.getLocation(),
+            FunctionTemplate->getCanonicalDecl()->getTemplatedDecl(),
+            CanonicalBuilder, Info.AssociatedConstraintsSatisfaction))
+      return TemplateDeductionResult::MiscellaneousDeductionFailure;
+    if (!Info.AssociatedConstraintsSatisfaction.IsSatisfied) {
+      Info.reset(Info.takeSugared(),
+                 TemplateArgumentList::CreateCopy(Context, CanonicalBuilder));
+      return TemplateDeductionResult::ConstraintsNotSatisfied;
+    }
+  }
+  // C++ [temp.deduct.call]p10: [CWG1391]
+  //   If deduction succeeds for all parameters that contain
+  //   template-parameters that participate in template argument deduction,
+  //   and all template arguments are explicitly specified, deduced, or
+  //   obtained from default template arguments, remaining parameters are then
+  //   compared with the corresponding arguments. For each remaining parameter
+  //   P with a type that was non-dependent before substitution of any
+  //   explicitly-specified template arguments, if the corresponding argument
+  //   A cannot be implicitly converted to P, deduction fails.
+  if (CheckNonDependent())
+    return TemplateDeductionResult::NonDependentConversionFailure;
+
   MultiLevelTemplateArgumentList SubstArgs(
       FunctionTemplate, CanonicalDeducedArgumentList->asArray(),
       /*Final=*/false);
@@ -4029,8 +4055,8 @@ TemplateDeductionResult Sema::FinishTemplateArgumentDeduction(
   //   ([temp.constr.decl]), those constraints are checked for satisfaction
   //   ([temp.constr.constr]). If the constraints are not satisfied, type
   //   deduction fails.
-  if (!IsIncomplete) {
-    if (CheckInstantiatedFunctionTemplateConstraints(
+  if (IsLambda && !IsIncomplete) {
+    if (CheckFunctionTemplateConstraints(
             Info.getLocation(), Specialization, CanonicalBuilder,
             Info.AssociatedConstraintsSatisfaction))
       return TemplateDeductionResult::MiscellaneousDeductionFailure;
@@ -6507,8 +6533,7 @@ bool Sema::isTemplateTemplateParameterAtLeastAsSpecializedAs(
 }
 
 namespace {
-struct MarkUsedTemplateParameterVisitor :
-    RecursiveASTVisitor<MarkUsedTemplateParameterVisitor> {
+struct MarkUsedTemplateParameterVisitor : DynamicRecursiveASTVisitor {
   llvm::SmallBitVector &Used;
   unsigned Depth;
 
@@ -6516,23 +6541,22 @@ struct MarkUsedTemplateParameterVisitor :
                                    unsigned Depth)
       : Used(Used), Depth(Depth) { }
 
-  bool VisitTemplateTypeParmType(TemplateTypeParmType *T) {
+  bool VisitTemplateTypeParmType(TemplateTypeParmType *T) override {
     if (T->getDepth() == Depth)
       Used[T->getIndex()] = true;
     return true;
   }
 
-  bool TraverseTemplateName(TemplateName Template) {
+  bool TraverseTemplateName(TemplateName Template) override {
     if (auto *TTP = llvm::dyn_cast_or_null<TemplateTemplateParmDecl>(
             Template.getAsTemplateDecl()))
       if (TTP->getDepth() == Depth)
         Used[TTP->getIndex()] = true;
-    RecursiveASTVisitor<MarkUsedTemplateParameterVisitor>::
-        TraverseTemplateName(Template);
+    DynamicRecursiveASTVisitor::TraverseTemplateName(Template);
     return true;
   }
 
-  bool VisitDeclRefExpr(DeclRefExpr *E) {
+  bool VisitDeclRefExpr(DeclRefExpr *E) override {
     if (auto *NTTP = dyn_cast<NonTypeTemplateParmDecl>(E->getDecl()))
       if (NTTP->getDepth() == Depth)
         Used[NTTP->getIndex()] = true;

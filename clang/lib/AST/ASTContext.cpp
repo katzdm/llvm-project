@@ -34,7 +34,6 @@
 #include "clang/AST/DependenceFlags.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
-#include "clang/AST/ExprConcepts.h"
 #include "clang/AST/ExternalASTSource.h"
 #include "clang/AST/LocInfoType.h"
 #include "clang/AST/Mangle.h"
@@ -44,7 +43,6 @@
 #include "clang/AST/RawCommentList.h"
 #include "clang/AST/RecordLayout.h"
 #include "clang/AST/Stmt.h"
-#include "clang/AST/StmtOpenACC.h"
 #include "clang/AST/TemplateBase.h"
 #include "clang/AST/TemplateName.h"
 #include "clang/AST/Type.h"
@@ -84,7 +82,6 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Frontend/OpenMP/OMPIRBuilder.h"
 #include "llvm/Support/Capacity.h"
-#include "llvm/Support/Casting.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MD5.h"
@@ -116,6 +113,27 @@ enum FloatingRank {
   LongDoubleRank,
   Float128Rank,
   Ibm128Rank
+};
+
+template <> struct llvm::DenseMapInfo<llvm::FoldingSetNodeID> {
+  static FoldingSetNodeID getEmptyKey() { return FoldingSetNodeID{}; }
+
+  static FoldingSetNodeID getTombstoneKey() {
+    FoldingSetNodeID id;
+    for (size_t i = 0; i < sizeof(id) / sizeof(unsigned); ++i) {
+      id.AddInteger(std::numeric_limits<unsigned>::max());
+    }
+    return id;
+  }
+
+  static unsigned getHashValue(const FoldingSetNodeID &Val) {
+    return Val.ComputeHash();
+  }
+
+  static bool isEqual(const FoldingSetNodeID &LHS,
+                      const FoldingSetNodeID &RHS) {
+    return LHS == RHS;
+  }
 };
 
 /// \returns The locations that are relevant when searching for Doc comments
@@ -380,10 +398,10 @@ static const Decl &adjustDeclToTemplate(const Decl &D) {
       llvm::PointerUnion<ClassTemplateDecl *,
                          ClassTemplatePartialSpecializationDecl *>
           PU = CTSD->getSpecializedTemplateOrPartial();
-      return PU.is<ClassTemplateDecl *>()
-                 ? *static_cast<const Decl *>(PU.get<ClassTemplateDecl *>())
+      return isa<ClassTemplateDecl *>(PU)
+                 ? *static_cast<const Decl *>(cast<ClassTemplateDecl *>(PU))
                  : *static_cast<const Decl *>(
-                       PU.get<ClassTemplatePartialSpecializationDecl *>());
+                       cast<ClassTemplatePartialSpecializationDecl *>(PU));
     }
 
     // Class is instantiated from a member definition of a class template?
@@ -905,7 +923,7 @@ ASTContext::ASTContext(LangOptions &LOpts, SourceManager &SM,
       FunctionProtoTypes(this_(), FunctionProtoTypesLog2InitSize),
       DependentTypeOfExprTypes(this_()), DependentDecltypeTypes(this_()),
       TemplateSpecializationTypes(this_()),
-      DependentTemplateSpecializationTypes(this_()), AutoTypes(this_()),
+      DependentTemplateSpecializationTypes(this_()),
       DependentBitIntTypes(this_()), SubstTemplateTemplateParmPacks(this_()),
       DeducedTemplates(this_()), ArrayParameterTypes(this_()),
       CanonTemplateTemplateParms(this_()), SourceMgr(SM), LangOpts(LOpts),
@@ -3571,7 +3589,7 @@ ASTContext::adjustType(QualType Orig,
                        llvm::function_ref<QualType(QualType)> Adjust) const {
   switch (Orig->getTypeClass()) {
   case Type::Attributed: {
-    const auto *AT = dyn_cast<AttributedType>(Orig);
+    const auto *AT = cast<AttributedType>(Orig);
     return getAttributedType(AT->getAttrKind(),
                              adjustType(AT->getModifiedType(), Adjust),
                              adjustType(AT->getEquivalentType(), Adjust),
@@ -6325,13 +6343,11 @@ QualType ASTContext::getPackIndexingType(QualType Pattern, Expr *IndexExpr,
                                          ArrayRef<QualType> Expansions,
                                          int Index) const {
   QualType Canonical;
-  bool ExpandsToEmptyPack = FullySubstituted && Expansions.empty();
   if (FullySubstituted && Index != -1) {
     Canonical = getCanonicalType(Expansions[Index]);
   } else {
     llvm::FoldingSetNodeID ID;
-    PackIndexingType::Profile(ID, *this, Pattern, IndexExpr,
-                              ExpandsToEmptyPack);
+    PackIndexingType::Profile(ID, *this, Pattern, IndexExpr, FullySubstituted);
     void *InsertPos = nullptr;
     PackIndexingType *Canon =
         DependentPackIndexingTypes.FindNodeOrInsertPos(ID, InsertPos);
@@ -6340,7 +6356,7 @@ QualType ASTContext::getPackIndexingType(QualType Pattern, Expr *IndexExpr,
           PackIndexingType::totalSizeToAlloc<QualType>(Expansions.size()),
           TypeAlignment);
       Canon = new (Mem) PackIndexingType(*this, QualType(), Pattern, IndexExpr,
-                                         ExpandsToEmptyPack, Expansions);
+                                         FullySubstituted, Expansions);
       DependentPackIndexingTypes.InsertNode(Canon, InsertPos);
     }
     Canonical = QualType(Canon, 0);
@@ -6350,7 +6366,7 @@ QualType ASTContext::getPackIndexingType(QualType Pattern, Expr *IndexExpr,
       Allocate(PackIndexingType::totalSizeToAlloc<QualType>(Expansions.size()),
                TypeAlignment);
   auto *T = new (Mem) PackIndexingType(*this, Canonical, Pattern, IndexExpr,
-                                       ExpandsToEmptyPack, Expansions);
+                                       FullySubstituted, Expansions);
   Types.push_back(T);
   return QualType(T, 0);
 }
@@ -6398,12 +6414,14 @@ QualType ASTContext::getAutoTypeInternal(
     return getAutoDeductType();
 
   // Look in the folding set for an existing type.
-  void *InsertPos = nullptr;
   llvm::FoldingSetNodeID ID;
-  AutoType::Profile(ID, *this, DeducedType, Keyword, IsDependent,
-                    TypeConstraintConcept, TypeConstraintArgs);
-  if (AutoType *AT = AutoTypes.FindNodeOrInsertPos(ID, InsertPos))
-    return QualType(AT, 0);
+  bool IsDeducedDependent =
+      !DeducedType.isNull() && DeducedType->isDependentType();
+  AutoType::Profile(ID, *this, DeducedType, Keyword,
+                    IsDependent || IsDeducedDependent, TypeConstraintConcept,
+                    TypeConstraintArgs);
+  if (auto const AT_iter = AutoTypes.find(ID); AT_iter != AutoTypes.end())
+    return QualType(AT_iter->getSecond(), 0);
 
   QualType Canon;
   if (!IsCanon) {
@@ -6418,10 +6436,6 @@ QualType ASTContext::getAutoTypeInternal(
         Canon =
             getAutoTypeInternal(QualType(), Keyword, IsDependent, IsPack,
                                 CanonicalConcept, CanonicalConceptArgs, true);
-        // Find the insert position again.
-        [[maybe_unused]] auto *Nothing =
-            AutoTypes.FindNodeOrInsertPos(ID, InsertPos);
-        assert(!Nothing && "canonical type broken");
       }
     }
   }
@@ -6435,8 +6449,13 @@ QualType ASTContext::getAutoTypeInternal(
                    : TypeDependence::None) |
           (IsPack ? TypeDependence::UnexpandedPack : TypeDependence::None),
       Canon, TypeConstraintConcept, TypeConstraintArgs);
+#ifndef NDEBUG
+  llvm::FoldingSetNodeID InsertedID;
+  AT->Profile(InsertedID, *this);
+  assert(InsertedID == ID && "ID does not match");
+#endif
   Types.push_back(AT);
-  AutoTypes.InsertNode(AT, InsertPos);
+  AutoTypes.try_emplace(ID, AT);
   return QualType(AT, 0);
 }
 
@@ -6456,7 +6475,7 @@ ASTContext::getAutoType(QualType DeducedType, AutoTypeKeyword Keyword,
 }
 
 QualType ASTContext::getUnconstrainedType(QualType T) const {
-  QualType CanonT = T.getCanonicalType();
+  QualType CanonT = T.getNonPackExpansionType().getCanonicalType();
 
   // Remove a type-constraint from a top-level auto or decltype(auto).
   if (auto *AT = CanonT->getAs<AutoType>()) {
@@ -9846,6 +9865,43 @@ static TypedefDecl *CreateHexagonBuiltinVaListDecl(const ASTContext *Context) {
   return Context->buildImplicitTypedef(VaListTagArrayType, "__builtin_va_list");
 }
 
+static TypedefDecl *
+CreateXtensaABIBuiltinVaListDecl(const ASTContext *Context) {
+  // typedef struct __va_list_tag {
+  RecordDecl *VaListTagDecl = Context->buildImplicitRecord("__va_list_tag");
+
+  VaListTagDecl->startDefinition();
+
+  // int* __va_stk;
+  // int* __va_reg;
+  // int __va_ndx;
+  constexpr size_t NumFields = 3;
+  QualType FieldTypes[NumFields] = {Context->getPointerType(Context->IntTy),
+                                    Context->getPointerType(Context->IntTy),
+                                    Context->IntTy};
+  const char *FieldNames[NumFields] = {"__va_stk", "__va_reg", "__va_ndx"};
+
+  // Create fields
+  for (unsigned i = 0; i < NumFields; ++i) {
+    FieldDecl *Field = FieldDecl::Create(
+        *Context, VaListTagDecl, SourceLocation(), SourceLocation(),
+        &Context->Idents.get(FieldNames[i]), FieldTypes[i], /*TInfo=*/nullptr,
+        /*BitWidth=*/nullptr,
+        /*Mutable=*/false, ICIS_NoInit);
+    Field->setAccess(AS_public);
+    VaListTagDecl->addDecl(Field);
+  }
+  VaListTagDecl->completeDefinition();
+  Context->VaListTagDecl = VaListTagDecl;
+  QualType VaListTagType = Context->getRecordType(VaListTagDecl);
+
+  // } __va_list_tag;
+  TypedefDecl *VaListTagTypedefDecl =
+      Context->buildImplicitTypedef(VaListTagType, "__builtin_va_list");
+
+  return VaListTagTypedefDecl;
+}
+
 static TypedefDecl *CreateVaListDecl(const ASTContext *Context,
                                      TargetInfo::BuiltinVaListKind Kind) {
   switch (Kind) {
@@ -9867,6 +9923,8 @@ static TypedefDecl *CreateVaListDecl(const ASTContext *Context,
     return CreateSystemZBuiltinVaListDecl(Context);
   case TargetInfo::HexagonBuiltinVaList:
     return CreateHexagonBuiltinVaListDecl(Context);
+  case TargetInfo::XtensaABIBuiltinVaList:
+    return CreateXtensaABIBuiltinVaListDecl(Context);
   }
 
   llvm_unreachable("Unhandled __builtin_va_list type kind");
@@ -11538,7 +11596,7 @@ QualType ASTContext::mergeTypes(QualType LHS, QualType RHS, bool OfBlockPointer,
       Qualifiers RHSPteeQual = RHSPointee.getQualifiers();
       // Blocks can't be an expression in a ternary operator (OpenCL v2.0
       // 6.12.5) thus the following check is asymmetric.
-      if (!LHSPteeQual.isAddressSpaceSupersetOf(RHSPteeQual))
+      if (!LHSPteeQual.isAddressSpaceSupersetOf(RHSPteeQual, *this))
         return {};
       LHSPteeQual.removeAddressSpace();
       RHSPteeQual.removeAddressSpace();
@@ -14477,10 +14535,12 @@ QualType ASTContext::getCorrespondingSignedFixedPointType(QualType Ty) const {
 static std::vector<std::string> getFMVBackendFeaturesFor(
     const llvm::SmallVectorImpl<StringRef> &FMVFeatStrings) {
   std::vector<std::string> BackendFeats;
+  llvm::AArch64::ExtensionSet FeatureBits;
   for (StringRef F : FMVFeatStrings)
     if (auto FMVExt = llvm::AArch64::parseFMVExtension(F))
-      for (StringRef F : FMVExt->getImpliedFeatures())
-        BackendFeats.push_back(F.str());
+      if (FMVExt->ID)
+        FeatureBits.enable(*FMVExt->ID);
+  FeatureBits.toLLVMFeatureList(BackendFeats);
   return BackendFeats;
 }
 

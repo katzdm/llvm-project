@@ -81,6 +81,7 @@ add_clang_library(clangSema
   SemaStmt.cpp
   SemaStmtAsm.cpp
   SemaStmtAttr.cpp
+  SemaSPIRV.cpp
   SemaSYCL.cpp
   SemaSwift.cpp
   SemaSystemZ.cpp

@@ -1453,7 +1453,10 @@ struct data_member_options {
     consteval name_type(T &&in) : impl(in_place_type<string>, in) {}
 
     private:
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-private-field"
       info unused = ^^::;
+#pragma clang diagnostic pop
   };
 
   optional<name_type> name = nullopt;

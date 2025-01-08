@@ -16,9 +16,9 @@
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclFriend.h"
 #include "clang/AST/DeclTemplate.h"
+#include "clang/AST/DynamicRecursiveASTVisitor.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
-#include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/TemplateName.h"
 #include "clang/AST/TypeVisitor.h"
 #include "clang/Basic/Builtins.h"
@@ -26,7 +26,6 @@
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/PartialDiagnostic.h"
 #include "clang/Basic/SourceLocation.h"
-#include "clang/Basic/Stack.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Sema/DeclSpec.h"
 #include "clang/Sema/EnterExpressionEvaluationContext.h"
@@ -39,12 +38,9 @@
 #include "clang/Sema/SemaInternal.h"
 #include "clang/Sema/Template.h"
 #include "clang/Sema/TemplateDeduction.h"
-#include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/SmallBitVector.h"
-#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringExtras.h"
 
-#include <iterator>
 #include <optional>
 using namespace clang;
 using namespace sema;
@@ -1244,7 +1240,7 @@ bool Sema::AttachTypeConstraint(AutoTypeLoc TL,
                                 NonTypeTemplateParmDecl *NewConstrainedParm,
                                 NonTypeTemplateParmDecl *OrigConstrainedParm,
                                 SourceLocation EllipsisLoc) {
-  if (NewConstrainedParm->getType() != TL.getType() ||
+  if (NewConstrainedParm->getType().getNonPackExpansionType() != TL.getType() ||
       TL.getAutoKeyword() != AutoTypeKeyword::Auto) {
     Diag(NewConstrainedParm->getTypeSourceInfo()->getTypeLoc().getBeginLoc(),
          diag::err_unsupported_placeholder_constraint)
@@ -1548,9 +1544,19 @@ NamedDecl *Sema::ActOnNonTypeTemplateParameter(Scope *S, Declarator &D,
   Param->setAccess(AS_public);
 
   if (AutoTypeLoc TL = TInfo->getTypeLoc().getContainedAutoTypeLoc())
-    if (TL.isConstrained())
-      if (AttachTypeConstraint(TL, Param, Param, D.getEllipsisLoc()))
+    if (TL.isConstrained()) {
+      if (D.getEllipsisLoc().isInvalid() &&
+          T->containsUnexpandedParameterPack()) {
+        assert(TL.getConceptReference()->getTemplateArgsAsWritten());
+        for (auto &Loc :
+             TL.getConceptReference()->getTemplateArgsAsWritten()->arguments())
+          Invalid |= DiagnoseUnexpandedParameterPack(
+              Loc, UnexpandedParameterPackContext::UPPC_TypeConstraint);
+      }
+      if (!Invalid &&
+          AttachTypeConstraint(TL, Param, Param, D.getEllipsisLoc()))
         Invalid = true;
+    }
 
   if (Invalid)
     Param->setInvalidDecl();
@@ -2577,9 +2583,7 @@ namespace {
 
 /// A class which looks for a use of a certain level of template
 /// parameter.
-struct DependencyChecker : RecursiveASTVisitor<DependencyChecker> {
-  typedef RecursiveASTVisitor<DependencyChecker> super;
-
+struct DependencyChecker : DynamicRecursiveASTVisitor {
   unsigned Depth;
 
   // Whether we're looking for a use of a template parameter that makes the
@@ -2617,7 +2621,7 @@ struct DependencyChecker : RecursiveASTVisitor<DependencyChecker> {
     return false;
   }
 
-  bool TraverseStmt(Stmt *S, DataRecursionQueue *Q = nullptr) {
+  bool TraverseStmt(Stmt *S) override {
     // Prune out non-type-dependent expressions if requested. This can
     // sometimes result in us failing to find a template parameter reference
     // (if a value-dependent expression creates a dependent type), but this
@@ -2625,51 +2629,51 @@ struct DependencyChecker : RecursiveASTVisitor<DependencyChecker> {
     if (auto *E = dyn_cast_or_null<Expr>(S))
       if (IgnoreNonTypeDependent && !E->isTypeDependent())
         return true;
-    return super::TraverseStmt(S, Q);
+    return DynamicRecursiveASTVisitor::TraverseStmt(S);
   }
 
-  bool TraverseTypeLoc(TypeLoc TL) {
+  bool TraverseTypeLoc(TypeLoc TL) override {
     if (IgnoreNonTypeDependent && !TL.isNull() &&
         !TL.getType()->isDependentType())
       return true;
-    return super::TraverseTypeLoc(TL);
+    return DynamicRecursiveASTVisitor::TraverseTypeLoc(TL);
   }
 
-  bool VisitTemplateTypeParmTypeLoc(TemplateTypeParmTypeLoc TL) {
+  bool VisitTemplateTypeParmTypeLoc(TemplateTypeParmTypeLoc TL) override {
     return !Matches(TL.getTypePtr()->getDepth(), TL.getNameLoc());
   }
 
-  bool VisitTemplateTypeParmType(const TemplateTypeParmType *T) {
+  bool VisitTemplateTypeParmType(TemplateTypeParmType *T) override {
     // For a best-effort search, keep looking until we find a location.
     return IgnoreNonTypeDependent || !Matches(T->getDepth());
   }
 
-  bool TraverseTemplateName(TemplateName N) {
+  bool TraverseTemplateName(TemplateName N) override {
     if (TemplateTemplateParmDecl *PD =
           dyn_cast_or_null<TemplateTemplateParmDecl>(N.getAsTemplateDecl()))
       if (Matches(PD->getDepth()))
         return false;
-    return super::TraverseTemplateName(N);
+    return DynamicRecursiveASTVisitor::TraverseTemplateName(N);
   }
 
-  bool VisitDeclRefExpr(DeclRefExpr *E) {
+  bool VisitDeclRefExpr(DeclRefExpr *E) override {
     if (NonTypeTemplateParmDecl *PD =
           dyn_cast<NonTypeTemplateParmDecl>(E->getDecl()))
       if (Matches(PD->getDepth(), E->getExprLoc()))
         return false;
-    return super::VisitDeclRefExpr(E);
+    return DynamicRecursiveASTVisitor::VisitDeclRefExpr(E);
   }
 
-  bool VisitSubstTemplateTypeParmType(const SubstTemplateTypeParmType *T) {
+  bool VisitSubstTemplateTypeParmType(SubstTemplateTypeParmType *T) override {
     return TraverseType(T->getReplacementType());
   }
 
-  bool
-  VisitSubstTemplateTypeParmPackType(const SubstTemplateTypeParmPackType *T) {
+  bool VisitSubstTemplateTypeParmPackType(
+      SubstTemplateTypeParmPackType *T) override {
     return TraverseTemplateArgument(T->getArgumentPack());
   }
 
-  bool TraverseInjectedClassNameType(const InjectedClassNameType *T) {
+  bool TraverseInjectedClassNameType(InjectedClassNameType *T) override {
     return TraverseType(T->getInjectedSpecializationType());
   }
 };
@@ -4195,6 +4199,13 @@ DeclResult Sema::ActOnVarTemplateSpecialization(
              << IsPartialSpecialization;
   }
 
+  if (const auto *DSA = VarTemplate->getAttr<NoSpecializationsAttr>()) {
+    auto Message = DSA->getMessage();
+    Diag(TemplateNameLoc, diag::warn_invalid_specialization)
+        << VarTemplate << !Message.empty() << Message;
+    Diag(DSA->getLoc(), diag::note_marked_here) << DSA;
+  }
+
   // Check for unexpanded parameter packs in any of the template arguments.
   for (unsigned I = 0, N = TemplateArgs.size(); I != N; ++I)
     if (DiagnoseUnexpandedParameterPack(TemplateArgs[I],
@@ -4577,6 +4588,9 @@ Sema::CheckConceptTemplateId(const CXXScopeSpec &SS,
                              ConceptDecl *NamedConcept,
                              const TemplateArgumentListInfo *TemplateArgs) {
   assert(NamedConcept && "A concept template id without a template?");
+
+  if (NamedConcept->isInvalidDecl())
+    return ExprError();
 
   llvm::SmallVector<TemplateArgument, 4> SugaredConverted, CanonicalConverted;
   if (CheckTemplateArgumentList(
@@ -8388,6 +8402,13 @@ DeclResult Sema::ActOnClassTemplateSpecialization(
     return true;
   }
 
+  if (const auto *DSA = ClassTemplate->getAttr<NoSpecializationsAttr>()) {
+    auto Message = DSA->getMessage();
+    Diag(TemplateNameLoc, diag::warn_invalid_specialization)
+        << ClassTemplate << !Message.empty() << Message;
+    Diag(DSA->getLoc(), diag::note_marked_here) << DSA;
+  }
+
   if (S->isTemplateParamScope())
     EnterTemplatedContext(S, ClassTemplate->getTemplatedDecl());
 
@@ -9271,6 +9292,14 @@ bool Sema::CheckFunctionTemplateSpecialization(
 
   // Ignore access information;  it doesn't figure into redeclaration checking.
   FunctionDecl *Specialization = cast<FunctionDecl>(*Result);
+
+  if (const auto *PT = Specialization->getPrimaryTemplate();
+      const auto *DSA = PT->getAttr<NoSpecializationsAttr>()) {
+    auto Message = DSA->getMessage();
+    Diag(FD->getLocation(), diag::warn_invalid_specialization)
+        << PT << !Message.empty() << Message;
+    Diag(DSA->getLoc(), diag::note_marked_here) << DSA;
+  }
 
   // C++23 [except.spec]p13:
   //   An exception specification is considered to be needed when:
