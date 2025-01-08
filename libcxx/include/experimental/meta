@@ -364,7 +364,7 @@ struct access_context {
   static consteval auto unprivileged() noexcept -> access_context;
   static consteval auto unchecked() noexcept -> access_context;
 
-  consteval auto via(info) -> access_context;
+  consteval auto via(info) const -> access_context;
 };
 
 consteval auto is_accessible(info r, access_context ctx) -> bool;
@@ -962,7 +962,7 @@ public:
     return access_context{info{}, info{}};
   }
 
-  consteval access_context via(info new_naming_class) {
+  consteval access_context via(info new_naming_class) const {
     if (!is_class_type(new_naming_class))
       throw "naming class must be a reflection of a class type";
 
