@@ -271,6 +271,10 @@ public:
       // TODO(P2996): Calling 'substitute' should substitute without
       // instantiation. Should a lighter weight call be used?
       Spec = S.InstantiateFunctionDeclaration(TD, TArgsCopy, InstantiateLoc);
+
+      // Only instantiate the body if the signature has an undeduced type.
+      if (Spec->getType()->isUndeducedType())
+        S.InstantiateFunctionDefinition(InstantiateLoc, Spec);
     }
     return Spec;
   }

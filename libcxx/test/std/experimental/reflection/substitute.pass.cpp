@@ -435,6 +435,18 @@ static_assert(substitute(^^member_pointer, {^^Test, ^^int}) !=
               substitute(^^member_pointer, {^^Test, ^^float}));
 }  // namespace bb_clang_p2996_issue_101_regression_test
 
+                  // ========================================
+                  // bb_clang_p2996_issue_123_regression_test
+                  // ========================================
+
+namespace bb_clang_p2996_issue_123_regression_test {
+template <typename T> auto fn24() {}
+
+void fn() {
+    (void) [:substitute(^^fn24, {^^int}):];
+}
+}  // namespace bb_clang_p2996_issue_123_regression_test
+
                         // ============================
                         // non_type_ref_regression_test
                         // ============================
