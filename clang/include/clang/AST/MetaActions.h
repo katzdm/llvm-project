@@ -148,6 +148,7 @@ public:
   // Returns a new definition of 'D' having the members specified by 'Mems'.
   virtual CXXRecordDecl *DefineClass(CXXRecordDecl *IncompleteDecl,
                                      ArrayRef<TagDataMemberSpec *> MemberSpecs,
+                                     bool AllowInjection,
                                      SourceLocation DefinitionLoc) = 0;
 
                         // ============================

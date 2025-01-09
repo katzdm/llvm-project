@@ -760,6 +760,9 @@ public:
     /// evaluation is not part of the evaluation, but all other temporaries
     /// are destroyed.
     ImmediateInvocation,
+    /// A plainly constant-evaluated expression. Such an expression may produce
+    /// injected declarations.
+    PlainlyConstantEvaluated,
   };
 
   /// Evaluate an expression that is required to be a constant expression. Does

@@ -29,8 +29,9 @@
 template<typename... Ts> struct Tuple {
   struct storage;
 
-  static_assert(is_type(define_aggregate(^^storage,
-                                         {data_member_spec(^^Ts)...})));
+  [[maybe_unused]]
+  static constexpr auto unused = define_aggregate(^^storage,
+                                                  {data_member_spec(^^Ts)...});
   storage data;
 
   Tuple(): data{} {}

@@ -15314,6 +15314,9 @@ public:
                                    CXXSpliceExpr *RHS,
                                    SourceLocation TemplateKWLoc);
 
+  Decl *ActOnConstevalBlockDeclaration(SourceLocation ConstevalLoc,
+                                       Expr *EvaluatingExpr);
+
   // Reflection of non-expression operands.
   ExprResult BuildCXXReflectExpr(SourceLocation OperatorLoc,
                                  SourceLocation OperandLoc, QualType T);
@@ -15371,6 +15374,9 @@ public:
                                       SourceLocation TemplateKWLoc);
   ExprResult BuildDependentMemberSpliceExpr(Expr *Base, SourceLocation OpLoc,
                                             bool IsArrow, CXXSpliceExpr *RHS);
+
+  Decl *BuildConstevalBlockDeclaration(SourceLocation ConstevalLoc,
+                                       Expr *EvaluatingExpr);
 
   DeclContext *TryFindDeclContextOf(const Expr *E);
 

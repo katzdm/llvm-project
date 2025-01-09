@@ -3414,6 +3414,19 @@ StaticAssertDecl *StaticAssertDecl::CreateDeserialized(ASTContext &C,
                                       nullptr, SourceLocation(), false);
 }
 
+void ConstevalBlockDecl::anchor() {}
+
+ConstevalBlockDecl *ConstevalBlockDecl::Create(ASTContext &C, DeclContext *DC,
+                                               SourceLocation ConstevalLoc,
+                                               Expr *EvaluatingExpr) {
+  return new (C, DC) ConstevalBlockDecl(DC, ConstevalLoc, EvaluatingExpr);
+}
+
+ConstevalBlockDecl *ConstevalBlockDecl::CreateDeserialized(ASTContext &C,
+                                                           GlobalDeclID ID) {
+  return new (C, ID) ConstevalBlockDecl(nullptr, SourceLocation(), nullptr);
+}
+
 VarDecl *ValueDecl::getPotentiallyDecomposedVarDecl() {
   assert((isa<VarDecl, BindingDecl>(this)) &&
          "expected a VarDecl or a BindingDecl");

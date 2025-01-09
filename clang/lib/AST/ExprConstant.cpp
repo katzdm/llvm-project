@@ -161,6 +161,7 @@ namespace {
     case ConstantExprKind::Normal:
     case ConstantExprKind::ClassTemplateArgument:
     case ConstantExprKind::ImmediateInvocation:
+    case ConstantExprKind::PlainlyConstantEvaluated:
       // Note that non-type template arguments of class type are emitted as
       // template parameter objects.
       return false;
@@ -175,6 +176,7 @@ namespace {
     switch (Kind) {
     case ConstantExprKind::Normal:
     case ConstantExprKind::ImmediateInvocation:
+    case ConstantExprKind::PlainlyConstantEvaluated:
       return false;
 
     case ConstantExprKind::ClassTemplateArgument:
@@ -996,6 +998,11 @@ namespace {
       /// gets a chance to look at it.
       EM_ConstantExpressionUnevaluated,
 
+      /// Evaluate as a plainly constant-evaluated expression. Allow production
+      /// of injected declarations. Stop if we find that the expression is not a
+      /// constant expression.
+      EM_ConstantExpressionPlainlyConstantEvaluated,
+
       /// Fold the expression to a constant. Stop if we hit a side-effect that
       /// we can't model.
       EM_ConstantFold,
@@ -1214,6 +1221,7 @@ namespace {
           [[fallthrough]];
         case EM_ConstantExpression:
         case EM_ConstantExpressionUnevaluated:
+        case EM_ConstantExpressionPlainlyConstantEvaluated:
           setActiveDiagnostic(false);
           return true;
         }
@@ -1233,6 +1241,7 @@ namespace {
 
       case EM_ConstantExpression:
       case EM_ConstantExpressionUnevaluated:
+      case EM_ConstantExpressionPlainlyConstantEvaluated:
       case EM_ConstantFold:
         // By default, assume any side effect might be valid in some other
         // evaluation of this expression from a different context.
@@ -1258,6 +1267,7 @@ namespace {
 
       case EM_ConstantExpression:
       case EM_ConstantExpressionUnevaluated:
+      case EM_ConstantExpressionPlainlyConstantEvaluated:
         return checkingForUndefinedBehavior();
       }
       llvm_unreachable("Missed EvalMode case");
@@ -1280,6 +1290,7 @@ namespace {
       switch (EvalMode) {
       case EM_ConstantExpression:
       case EM_ConstantExpressionUnevaluated:
+      case EM_ConstantExpressionPlainlyConstantEvaluated:
       case EM_ConstantFold:
       case EM_IgnoreSideEffects:
         return checkingPotentialConstantExpression() ||
@@ -8645,11 +8656,16 @@ bool ExprEvaluatorBase<Derived>::VisitCXXMetafunctionExpr(
   if (Info.checkingPotentialConstantExpression())
     return false;
 
+  // Decide if injection is allowed.
+  bool AllowInjection =
+      (Info.EvalMode ==
+       EvalInfo::EM_ConstantExpressionPlainlyConstantEvaluated);
+
   // Evaluate the metafunction.
   APValue Result;
   const CXXMetafunctionExpr::ImplFn &Implementation = E->getImpl();
-  if (Implementation(Result, Evaluator, Diagnoser, E->getResultType(),
-                     Info.CurrentCall->CallRange, Args)) {
+  if (Implementation(Result, Evaluator, Diagnoser, AllowInjection,
+                     E->getResultType(), Info.CurrentCall->CallRange, Args)) {
     bool Result = Error(E);
     Info.addNotes(Diagnostics);
 
@@ -12938,6 +12954,7 @@ bool IntExprEvaluator::VisitBuiltinCallExpr(const CallExpr *E,
     // size of the referenced object.
     switch (Info.EvalMode) {
     case EvalInfo::EM_ConstantExpression:
+    case EvalInfo::EM_ConstantExpressionPlainlyConstantEvaluated:
     case EvalInfo::EM_ConstantFold:
     case EvalInfo::EM_IgnoreSideEffects:
       // Leave it to IR generation.
@@ -15152,9 +15169,11 @@ bool IntExprEvaluator::VisitCastExpr(const CastExpr *E) {
       return Info.Ctx.getTypeSize(DestType) == Info.Ctx.getTypeSize(SrcType);
     }
 
+    bool IsConstantExpr =
+        (Info.EvalMode == EvalInfo::EM_ConstantExpression ||
+         Info.EvalMode == EvalInfo::EM_ConstantExpressionPlainlyConstantEvaluated);
     if (Info.Ctx.getLangOpts().CPlusPlus && Info.InConstantContext &&
-        Info.EvalMode == EvalInfo::EM_ConstantExpression &&
-        DestType->isEnumeralType()) {
+        IsConstantExpr && DestType->isEnumeralType()) {
 
       bool ConstexprVar = true;
 
@@ -16995,8 +17014,11 @@ bool Expr::EvaluateAsConstantExpr(EvalResult &Result, const ASTContext &Ctx,
   if (FastEvaluateAsRValue(this, Result, Ctx, IsConst) && Result.Val.hasValue())
     return true;
 
-  ExprTimeTraceScope TimeScope(this, Ctx, "EvaluateAsConstantExpr");
   EvalInfo::EvaluationMode EM = EvalInfo::EM_ConstantExpression;
+  if (Kind == ConstantExprKind::PlainlyConstantEvaluated)
+    EM = EvalInfo::EM_ConstantExpressionPlainlyConstantEvaluated;
+
+  ExprTimeTraceScope TimeScope(this, Ctx, "EvaluateAsConstantExpr");
   EvalInfo Info(Ctx, Result, EM);
   Info.InConstantContext = true;
 
@@ -17075,10 +17097,17 @@ bool Expr::EvaluateAsInitializer(APValue &Value, const ASTContext &Ctx,
   Expr::EvalStatus EStatus;
   EStatus.Diag = &Notes;
 
+  EvalInfo::EvaluationMode ConstEM = EvalInfo::EM_ConstantExpression;
+  if (VD->isConstexpr())
+    ConstEM = EvalInfo::EM_ConstantExpressionPlainlyConstantEvaluated;
+  else if (const auto *A = VD->getAttr<ConstInitAttr>();
+           A && A->isConstinit())
+    ConstEM = EvalInfo::EM_ConstantExpressionPlainlyConstantEvaluated;
+
   EvalInfo Info(Ctx, EStatus,
                 (IsConstantInitialization &&
                  (Ctx.getLangOpts().CPlusPlus || Ctx.getLangOpts().C23))
-                    ? EvalInfo::EM_ConstantExpression
+                    ? ConstEM
                     : EvalInfo::EM_ConstantFold);
   Info.setEvaluatingDecl(VD, Value);
   Info.InConstantContext = IsConstantInitialization;

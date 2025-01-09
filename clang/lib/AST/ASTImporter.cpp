@@ -506,6 +506,7 @@ namespace clang {
     ExpectedDecl VisitEmptyDecl(EmptyDecl *D);
     ExpectedDecl VisitAccessSpecDecl(AccessSpecDecl *D);
     ExpectedDecl VisitStaticAssertDecl(StaticAssertDecl *D);
+    ExpectedDecl VisitConstevalBlockDecl(ConstevalBlockDecl *D);
     ExpectedDecl VisitTranslationUnitDecl(TranslationUnitDecl *D);
     ExpectedDecl VisitBindingDecl(BindingDecl *D);
     ExpectedDecl VisitNamespaceDecl(NamespaceDecl *D);
@@ -2631,6 +2632,29 @@ ExpectedDecl ASTNodeImporter::VisitStaticAssertDecl(StaticAssertDecl *D) {
   if (GetImportedOrCreateDecl(
       ToD, D, Importer.getToContext(), DC, ToLocation, ToAssertExpr, ToMessage,
       ToRParenLoc, D->isFailed()))
+    return ToD;
+
+  ToD->setLexicalDeclContext(LexicalDC);
+  LexicalDC->addDeclInternal(ToD);
+  return ToD;
+}
+
+ExpectedDecl ASTNodeImporter::VisitConstevalBlockDecl(ConstevalBlockDecl *D) {
+  auto DCOrErr = Importer.ImportContext(D->getDeclContext());
+  if (!DCOrErr)
+    return DCOrErr.takeError();
+  DeclContext *DC = *DCOrErr;
+  DeclContext *LexicalDC = DC;
+
+  Error Err = Error::success();
+  auto ToLocation = importChecked(Err, D->getLocation());
+  auto ToEvaluatingExpr = importChecked(Err, D->getEvaluatingExpr());
+  if (Err)
+    return std::move(Err);
+
+  ConstevalBlockDecl *ToD;
+  if (GetImportedOrCreateDecl(
+      ToD, D, Importer.getToContext(), DC, ToLocation, ToEvaluatingExpr))
     return ToD;
 
   ToD->setLexicalDeclContext(LexicalDC);

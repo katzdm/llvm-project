@@ -1598,6 +1598,22 @@ Decl *TemplateDeclInstantiator::VisitStaticAssertDecl(StaticAssertDecl *D) {
       InstantiatedMessageExpr.get(), D->getRParenLoc(), D->isFailed());
 }
 
+Decl *TemplateDeclInstantiator::VisitConstevalBlockDecl(ConstevalBlockDecl *D) {
+  Expr *EvaluatingExpr = D->getEvaluatingExpr();
+
+  // The expression in a consteval block is a constant expression.
+  EnterExpressionEvaluationContext ConstantEvaluated(
+      SemaRef, Sema::ExpressionEvaluationContext::ConstantEvaluated);
+
+  ExprResult InstantiatedEvaluatingExpr = SemaRef.SubstExpr(EvaluatingExpr,
+                                                            TemplateArgs);
+  if (InstantiatedEvaluatingExpr.isInvalid())
+    return nullptr;
+
+  return SemaRef.BuildConstevalBlockDeclaration(
+       D->getLocation(), InstantiatedEvaluatingExpr.get());
+}
+
 Decl *TemplateDeclInstantiator::VisitEnumDecl(EnumDecl *D) {
   EnumDecl *PrevDecl = nullptr;
   if (EnumDecl *PatternPrev = getPreviousDeclForInstantiation(D)) {

@@ -1932,6 +1932,7 @@ static bool CheckConstexprDeclStmt(Sema &SemaRef, const FunctionDecl *Dcl,
   for (const auto *DclIt : DS->decls()) {
     switch (DclIt->getKind()) {
     case Decl::StaticAssert:
+    case Decl::ConstevalBlock:
     case Decl::Using:
     case Decl::UsingShadow:
     case Decl::UsingDirective:

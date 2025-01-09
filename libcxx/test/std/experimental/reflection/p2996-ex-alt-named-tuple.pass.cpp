@@ -33,7 +33,8 @@ consteval auto make_named_tuple(
 }
 
 struct R;
-static_assert(is_type(make_named_tuple(^^R, {{^^int, "x"}, {^^double, "y"}})));
+[[maybe_unused]]
+constexpr auto unused = make_named_tuple(^^R, {{^^int, "x"}, {^^double, "y"}});
 
 static_assert(type_of(nonstatic_data_members_of(^^R)[0]) == ^^int);
 static_assert(type_of(nonstatic_data_members_of(^^R)[1]) == ^^double);

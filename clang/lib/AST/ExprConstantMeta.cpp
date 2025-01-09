@@ -42,449 +42,519 @@ using DiagFn = Metafunction::DiagnoseFn;
 
 static bool get_begin_enumerator_decl_of(APValue &Result, ASTContext &C,
                                          MetaActions &Meta, EvalFn Evaluator,
-                                         DiagFn Diagnoser, QualType ResultTy,
-                                         SourceRange Range,
+                                         DiagFn Diagnoser, bool AllowInjection,
+                                         QualType ResultTy, SourceRange Range,
                                          ArrayRef<Expr *> Args);
 
 static bool get_next_enumerator_decl_of(APValue &Result, ASTContext &C,
                                         MetaActions &Meta, EvalFn Evaluator,
-                                        DiagFn Diagnoser, QualType ResultTy,
-                                        SourceRange Range,
+                                        DiagFn Diagnoser, bool AllowInjection,
+                                        QualType ResultTy, SourceRange Range,
                                         ArrayRef<Expr *> Args);
 
 static bool get_ith_base_of(APValue &Result, ASTContext &C, MetaActions &Meta,
                             EvalFn Evaluator, DiagFn Diagnoser,
-                            QualType ResultTy, SourceRange Range,
-                            ArrayRef<Expr *> Args);
+                            bool AllowInjection, QualType ResultTy,
+                            SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool get_ith_template_argument_of(APValue &Result, ASTContext &C,
                                          MetaActions &Meta, EvalFn Evaluator,
-                                         DiagFn Diagnoser, QualType ResultTy,
-                                         SourceRange Range,
+                                         DiagFn Diagnoser, bool AllowInjection,
+                                         QualType ResultTy, SourceRange Range,
                                          ArrayRef<Expr *> Args);
 
 static bool get_begin_member_decl_of(APValue &Result, ASTContext &C,
                                      MetaActions &Meta, EvalFn Evaluator,
-                                     DiagFn Diagnoser, QualType ResultTy,
-                                     SourceRange Range, ArrayRef<Expr *> Args);
+                                     DiagFn Diagnoser, bool AllowInjection,
+                                     QualType ResultTy, SourceRange Range,
+                                     ArrayRef<Expr *> Args);
 
 static bool get_next_member_decl_of(APValue &Result, ASTContext &C,
                                     MetaActions &Meta, EvalFn Evaluator,
-                                    DiagFn Diagnoser, QualType ResultTy,
-                                    SourceRange Range, ArrayRef<Expr *> Args);
+                                    DiagFn Diagnoser, bool AllowInjection,
+                                    QualType ResultTy, SourceRange Range,
+                                    ArrayRef<Expr *> Args);
 
 static bool is_structural_type(APValue &Result, ASTContext &C,
                                MetaActions &Meta, EvalFn Evaluator,
-                               DiagFn Diagnoser, QualType ResultTy,
-                               SourceRange Range, ArrayRef<Expr *> Args);
+                               DiagFn Diagnoser, bool AllowInjection,
+                               QualType ResultTy, SourceRange Range,
+                               ArrayRef<Expr *> Args);
 
 static bool map_decl_to_entity(APValue &Result, ASTContext &C,
                                MetaActions &Meta, EvalFn Evaluator,
-                               DiagFn Diagnoser, QualType ResultTy,
-                               SourceRange Range, ArrayRef<Expr *> Args);
+                               DiagFn Diagnoser, bool AllowInjection,
+                               QualType ResultTy, SourceRange Range,
+                               ArrayRef<Expr *> Args);
 
 static bool identifier_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                          EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                          EvalFn Evaluator, DiagFn Diagnoser,
+                          bool AllowInjection, QualType ResultTy,
                           SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool has_identifier(APValue &Result, ASTContext &C, MetaActions &Meta,
                            EvalFn Evaluator, DiagFn Diagnoser,
-                           QualType ResultTy, SourceRange Range,
-                           ArrayRef<Expr *> Args);
+                           bool AllowInjection, QualType ResultTy,
+                           SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool operator_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                        EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                        SourceRange Range, ArrayRef<Expr *> Args);
+                        EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                        QualType ResultTy, SourceRange Range,
+                        ArrayRef<Expr *> Args);
 
 static bool source_location_of(APValue &Result, ASTContext &C,
                                MetaActions &Meta, EvalFn Evaluator,
-                               DiagFn Diagnoser, QualType ResultTy,
-                               SourceRange Range, ArrayRef<Expr *> Args);
+                               DiagFn Diagnoser, bool AllowInjection,
+                               QualType ResultTy, SourceRange Range,
+                               ArrayRef<Expr *> Args);
 
 static bool type_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                    EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                    SourceRange Range, ArrayRef<Expr *> Args);
+                    EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                    QualType ResultTy, SourceRange Range,
+                    ArrayRef<Expr *> Args);
 
 static bool parent_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                      EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                      SourceRange Range, ArrayRef<Expr *> Args);
+                      EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                      QualType ResultTy, SourceRange Range,
+                      ArrayRef<Expr *> Args);
 
 static bool dealias(APValue &Result, ASTContext &C, MetaActions &Meta,
-                    EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                    SourceRange Range, ArrayRef<Expr *> Args);
+                    EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                    QualType ResultTy, SourceRange Range,
+                    ArrayRef<Expr *> Args);
 
 static bool value_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                     EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                     SourceRange Range, ArrayRef<Expr *> Args);
+                     EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                     QualType ResultTy, SourceRange Range,
+                     ArrayRef<Expr *> Args);
 
 static bool object_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                      EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                      SourceRange Range, ArrayRef<Expr *> Args);
+                      EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                      QualType ResultTy, SourceRange Range,
+                      ArrayRef<Expr *> Args);
 
 static bool template_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                        EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                        SourceRange Range, ArrayRef<Expr *> Args);
+                        EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                        QualType ResultTy, SourceRange Range,
+                        ArrayRef<Expr *> Args);
 
 static bool can_substitute(APValue &Result, ASTContext &C, MetaActions &Meta,
                            EvalFn Evaluator, DiagFn Diagnoser,
-                           QualType ResultTy, SourceRange Range,
-                           ArrayRef<Expr *> Args);
+                           bool AllowInjection, QualType ResultTy,
+                           SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool substitute(APValue &Result, ASTContext &C, MetaActions &Meta,
-                       EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                       SourceRange Range, ArrayRef<Expr *> Args);
+                       EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                       QualType ResultTy, SourceRange Range,
+                       ArrayRef<Expr *> Args);
 
 static bool extract(APValue &Result, ASTContext &C, MetaActions &Meta,
-                    EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                    SourceRange Range, ArrayRef<Expr *> Args);
+                    EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                    QualType ResultTy, SourceRange Range,
+                    ArrayRef<Expr *> Args);
 
 static bool is_public(APValue &Result, ASTContext &C, MetaActions &Meta,
-                      EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                      SourceRange Range, ArrayRef<Expr *> Args);
+                      EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                      QualType ResultTy, SourceRange Range,
+                      ArrayRef<Expr *> Args);
 
 static bool is_protected(APValue &Result, ASTContext &C, MetaActions &Meta,
-                         EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                         EvalFn Evaluator, DiagFn Diagnoser,
+                         bool AllowInjection, QualType ResultTy,
                          SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool is_private(APValue &Result, ASTContext &C, MetaActions &Meta,
-                       EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                       SourceRange Range, ArrayRef<Expr *> Args);
+                       EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                       QualType ResultTy, SourceRange Range,
+                       ArrayRef<Expr *> Args);
 
 static bool is_virtual(APValue &Result, ASTContext &C, MetaActions &Meta,
-                       EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                       SourceRange Range, ArrayRef<Expr *> Args);
+                       EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                       QualType ResultTy, SourceRange Range,
+                       ArrayRef<Expr *> Args);
 
 static bool is_pure_virtual(APValue &Result, ASTContext &C, MetaActions &Meta,
                             EvalFn Evaluator, DiagFn Diagnoser,
-                            QualType ResultTy, SourceRange Range,
-                            ArrayRef<Expr *> Args);
+                            bool AllowInjection, QualType ResultTy,
+                            SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool is_override(APValue &Result, ASTContext &C, MetaActions &Meta,
-                        EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                        SourceRange Range, ArrayRef<Expr *> Args);
+                        EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                        QualType ResultTy, SourceRange Range,
+                        ArrayRef<Expr *> Args);
 
 static bool is_deleted(APValue &Result, ASTContext &C, MetaActions &Meta,
-                       EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                       SourceRange Range, ArrayRef<Expr *> Args);
+                       EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                       QualType ResultTy, SourceRange Range,
+                       ArrayRef<Expr *> Args);
 
 static bool is_defaulted(APValue &Result, ASTContext &C, MetaActions &Meta,
-                         EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                         EvalFn Evaluator, DiagFn Diagnoser,
+                         bool AllowInjection, QualType ResultTy,
                          SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool is_explicit(APValue &Result, ASTContext &C, MetaActions &Meta,
-                        EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                        SourceRange Range, ArrayRef<Expr *> Args);
+                        EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                        QualType ResultTy, SourceRange Range,
+                        ArrayRef<Expr *> Args);
 
 static bool is_noexcept(APValue &Result, ASTContext &C, MetaActions &Meta,
-                        EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                        SourceRange Range, ArrayRef<Expr *> Args);
+                        EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                        QualType ResultTy, SourceRange Range,
+                        ArrayRef<Expr *> Args);
 
 static bool is_bit_field(APValue &Result, ASTContext &C, MetaActions &Meta,
-                         EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                         EvalFn Evaluator, DiagFn Diagnoser,
+                         bool AllowInjection, QualType ResultTy,
                          SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool is_enumerator(APValue &Result, ASTContext &C, MetaActions &Meta,
-                          EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                          EvalFn Evaluator, DiagFn Diagnoser,
+                          bool AllowInjection, QualType ResultTy,
                           SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool is_const(APValue &Result, ASTContext &C, MetaActions &Meta,
-                     EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                     SourceRange Range, ArrayRef<Expr *> Args);
+                     EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                     QualType ResultTy, SourceRange Range,
+                     ArrayRef<Expr *> Args);
 
 static bool is_volatile(APValue &Result, ASTContext &C, MetaActions &Meta,
-                        EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                        SourceRange Range, ArrayRef<Expr *> Args);
+                        EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                        QualType ResultTy, SourceRange Range,
+                        ArrayRef<Expr *> Args);
 
 static bool is_mutable_member(APValue &Result, ASTContext &C, MetaActions &Meta,
                               EvalFn Evaluator, DiagFn Diagnoser,
-                              QualType ResultTy, SourceRange Range,
-                              ArrayRef<Expr *> Args);
+                              bool AllowInjection, QualType ResultTy,
+                              SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool is_lvalue_reference_qualified(APValue &Result, ASTContext &C,
                                           MetaActions &Meta, EvalFn Evaluator,
-                                          DiagFn Diagnoser, QualType ResultTy,
-                                          SourceRange Range,
+                                          DiagFn Diagnoser, bool AllowInjection,
+                                          QualType ResultTy, SourceRange Range,
                                           ArrayRef<Expr *> Args);
 
 static bool is_rvalue_reference_qualified(APValue &Result, ASTContext &C,
                                           MetaActions &Meta, EvalFn Evaluator,
-                                          DiagFn Diagnoser, QualType ResultTy,
-                                          SourceRange Range,
+                                          DiagFn Diagnoser, bool AllowInjection,
+                                          QualType ResultTy, SourceRange Range,
                                           ArrayRef<Expr *> Args);
 
 static bool has_static_storage_duration(APValue &Result, ASTContext &C,
                                         MetaActions &Meta, EvalFn Evaluator,
-                                        DiagFn Diagnoser, QualType ResultTy,
-                                        SourceRange Range,
+                                        DiagFn Diagnoser, bool AllowInjection,
+                                        QualType ResultTy, SourceRange Range,
                                         ArrayRef<Expr *> Args);
 
 static bool has_thread_storage_duration(APValue &Result, ASTContext &C,
                                         MetaActions &Meta, EvalFn Evaluator,
-                                        DiagFn Diagnoser, QualType ResultTy,
-                                        SourceRange Range,
+                                        DiagFn Diagnoser, bool AllowInjection,
+                                        QualType ResultTy, SourceRange Range,
                                         ArrayRef<Expr *> Args);
 
 static bool has_automatic_storage_duration(APValue &Result, ASTContext &C,
                                            MetaActions &Meta, EvalFn Evaluator,
-                                           DiagFn Diagnoser, QualType ResultTy,
-                                           SourceRange Range,
+                                           DiagFn Diagnoser,
+                                           bool AllowInjection,
+                                           QualType ResultTy, SourceRange Range,
                                            ArrayRef<Expr *> Args);
 
 static bool has_internal_linkage(APValue &Result, ASTContext &C,
                                  MetaActions &Meta, EvalFn Evaluator,
-                                 DiagFn Diagnoser, QualType ResultTy,
-                                 SourceRange Range, ArrayRef<Expr *> Args);
+                                 DiagFn Diagnoser, bool AllowInjection,
+                                 QualType ResultTy, SourceRange Range,
+                                 ArrayRef<Expr *> Args);
 
 static bool has_module_linkage(APValue &Result, ASTContext &C,
                                MetaActions &Meta, EvalFn Evaluator,
-                               DiagFn Diagnoser, QualType ResultTy,
-                               SourceRange Range, ArrayRef<Expr *> Args);
+                               DiagFn Diagnoser, bool AllowInjection,
+                               QualType ResultTy, SourceRange Range,
+                               ArrayRef<Expr *> Args);
 
 static bool has_external_linkage(APValue &Result, ASTContext &C,
                                  MetaActions &Meta, EvalFn Evaluator,
-                                 DiagFn Diagnoser, QualType ResultTy,
-                                 SourceRange Range, ArrayRef<Expr *> Args);
+                                 DiagFn Diagnoser, bool AllowInjection,
+                                 QualType ResultTy, SourceRange Range,
+                                 ArrayRef<Expr *> Args);
 
 static bool has_linkage(APValue &Result, ASTContext &C, MetaActions &Meta,
-                        EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                        SourceRange Range, ArrayRef<Expr *> Args);
+                        EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                        QualType ResultTy, SourceRange Range,
+                        ArrayRef<Expr *> Args);
 
 static bool is_class_member(APValue &Result, ASTContext &C, MetaActions &Meta,
                             EvalFn Evaluator, DiagFn Diagnoser,
-                            QualType ResultTy, SourceRange Range,
-                            ArrayRef<Expr *> Args);
+                            bool AllowInjection, QualType ResultTy,
+                            SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool is_namespace_member(APValue &Result, ASTContext &C,
                                 MetaActions &Meta, EvalFn Evaluator,
-                                DiagFn Diagnoser, QualType ResultTy,
-                                SourceRange Range, ArrayRef<Expr *> Args);
+                                DiagFn Diagnoser, bool AllowInjection,
+                                QualType ResultTy, SourceRange Range,
+                                ArrayRef<Expr *> Args);
 
 static bool is_nonstatic_data_member(APValue &Result, ASTContext &C,
                                      MetaActions &Meta, EvalFn Evaluator,
-                                     DiagFn Diagnoser, QualType ResultTy,
-                                     SourceRange Range, ArrayRef<Expr *> Args);
+                                     DiagFn Diagnoser, bool AllowInjection,
+                                     QualType ResultTy, SourceRange Range,
+                                     ArrayRef<Expr *> Args);
 
 static bool is_static_member(APValue &Result, ASTContext &C, MetaActions &Meta,
                              EvalFn Evaluator, DiagFn Diagnoser,
-                             QualType ResultTy, SourceRange Range,
-                             ArrayRef<Expr *> Args);
+                             bool AllowInjection, QualType ResultTy,
+                             SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool is_base(APValue &Result, ASTContext &C, MetaActions &Meta,
-                    EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                    SourceRange Range, ArrayRef<Expr *> Args);
+                    EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                    QualType ResultTy, SourceRange Range,
+                    ArrayRef<Expr *> Args);
 
 static bool is_data_member_spec(APValue &Result, ASTContext &C,
                                 MetaActions &Meta, EvalFn Evaluator,
-                                DiagFn Diagnoser, QualType ResultTy,
-                                SourceRange Range, ArrayRef<Expr *> Args);
+                                DiagFn Diagnoser, bool AllowInjection,
+                                QualType ResultTy, SourceRange Range,
+                                ArrayRef<Expr *> Args);
 
 static bool is_namespace(APValue &Result, ASTContext &C, MetaActions &Meta,
-                         EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                         EvalFn Evaluator, DiagFn Diagnoser,
+                         bool AllowInjection, QualType ResultTy,
                          SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool is_function(APValue &Result, ASTContext &C, MetaActions &Meta,
-                        EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                        SourceRange Range, ArrayRef<Expr *> Args);
+                        EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                        QualType ResultTy, SourceRange Range,
+                        ArrayRef<Expr *> Args);
 
 static bool is_variable(APValue &Result, ASTContext &C, MetaActions &Meta,
-                        EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                        SourceRange Range, ArrayRef<Expr *> Args);
+                        EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                        QualType ResultTy, SourceRange Range,
+                        ArrayRef<Expr *> Args);
 
 static bool is_type(APValue &Result, ASTContext &C, MetaActions &Meta,
-                    EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                    SourceRange Range, ArrayRef<Expr *> Args);
+                    EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                    QualType ResultTy, SourceRange Range,
+                    ArrayRef<Expr *> Args);
 
 static bool is_alias(APValue &Result, ASTContext &C, MetaActions &Meta,
-                     EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                     SourceRange Range, ArrayRef<Expr *> Args);
+                     EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                     QualType ResultTy, SourceRange Range,
+                     ArrayRef<Expr *> Args);
 
 static bool is_complete_type(APValue &Result, ASTContext &C, MetaActions &Meta,
                              EvalFn Evaluator, DiagFn Diagnoser,
-                             QualType ResultTy, SourceRange Range,
-                             ArrayRef<Expr *> Args);
+                             bool AllowInjection, QualType ResultTy,
+                             SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool has_complete_definition(APValue &Result, ASTContext &C,
                                     MetaActions &Meta, EvalFn Evaluator,
-                                    DiagFn Diagnoser, QualType ResultTy,
-                                    SourceRange Range, ArrayRef<Expr *> Args);
+                                    DiagFn Diagnoser, bool AllowInjection,
+                                    QualType ResultTy, SourceRange Range,
+                                    ArrayRef<Expr *> Args);
 
 static bool is_template(APValue &Result, ASTContext &C, MetaActions &Meta,
-                        EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                        SourceRange Range, ArrayRef<Expr *> Args);
+                        EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                        QualType ResultTy, SourceRange Range,
+                        ArrayRef<Expr *> Args);
 
 static bool is_function_template(APValue &Result, ASTContext &C,
                                  MetaActions &Meta, EvalFn Evaluator,
-                                 DiagFn Diagnoser, QualType ResultTy,
-                                 SourceRange Range, ArrayRef<Expr *> Args);
+                                 DiagFn Diagnoser, bool AllowInjection,
+                                 QualType ResultTy, SourceRange Range,
+                                 ArrayRef<Expr *> Args);
 
 static bool is_variable_template(APValue &Result, ASTContext &C,
                                  MetaActions &Meta, EvalFn Evaluator,
-                                 DiagFn Diagnoser, QualType ResultTy,
-                                 SourceRange Range, ArrayRef<Expr *> Args);
+                                 DiagFn Diagnoser, bool AllowInjection,
+                                 QualType ResultTy, SourceRange Range,
+                                 ArrayRef<Expr *> Args);
 
 static bool is_class_template(APValue &Result, ASTContext &C, MetaActions &Meta,
                               EvalFn Evaluator, DiagFn Diagnoser,
-                              QualType ResultTy, SourceRange Range,
-                              ArrayRef<Expr *> Args);
+                              bool AllowInjection, QualType ResultTy,
+                              SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool is_alias_template(APValue &Result, ASTContext &C, MetaActions &Meta,
                               EvalFn Evaluator, DiagFn Diagnoser,
-                              QualType ResultTy, SourceRange Range,
-                              ArrayRef<Expr *> Args);
+                              bool AllowInjection, QualType ResultTy,
+                              SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool is_conversion_function_template(APValue &Result, ASTContext &C,
                                             MetaActions &Meta, EvalFn Evaluator,
-                                            DiagFn Diagnoser, QualType ResultTy,
+                                            DiagFn Diagnoser,
+                                            bool AllowInjection,
+                                            QualType ResultTy,
                                             SourceRange Range,
                                             ArrayRef<Expr *> Args);
 
 static bool is_operator_function_template(APValue &Result, ASTContext &C,
                                           MetaActions &Meta, EvalFn Evaluator,
-                                          DiagFn Diagnoser, QualType ResultTy,
-                                          SourceRange Range,
+                                          DiagFn Diagnoser, bool AllowInjection,
+                                          QualType ResultTy, SourceRange Range,
                                           ArrayRef<Expr *> Args);
 
 static bool is_literal_operator_template(APValue &Result, ASTContext &C,
                                          MetaActions &Meta, EvalFn Evaluator,
-                                         DiagFn Diagnoser, QualType ResultTy,
-                                         SourceRange Range,
+                                         DiagFn Diagnoser, bool AllowInjection,
+                                         QualType ResultTy, SourceRange Range,
                                          ArrayRef<Expr *> Args);
 
 static bool is_constructor_template(APValue &Result, ASTContext &C,
                                     MetaActions &Meta, EvalFn Evaluator,
-                                    DiagFn Diagnoser, QualType ResultTy,
-                                    SourceRange Range, ArrayRef<Expr *> Args);
+                                    DiagFn Diagnoser, bool AllowInjection,
+                                    QualType ResultTy, SourceRange Range,
+                                    ArrayRef<Expr *> Args);
 
 static bool is_concept(APValue &Result, ASTContext &C, MetaActions &Meta,
-                       EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                       SourceRange Range, ArrayRef<Expr *> Args);
+                       EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                       QualType ResultTy, SourceRange Range,
+                       ArrayRef<Expr *> Args);
 
 static bool is_structured_binding(APValue &Result, ASTContext &C,
                                   MetaActions &Meta, EvalFn Evaluator,
-                                  DiagFn Diagnoser, QualType ResultTy,
-                                  SourceRange Range, ArrayRef<Expr *> Args);
+                                  DiagFn Diagnoser, bool AllowInjection,
+                                  QualType ResultTy, SourceRange Range,
+                                  ArrayRef<Expr *> Args);
 
 static bool is_value(APValue &Result, ASTContext &C, MetaActions &Meta,
-                     EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                     SourceRange Range, ArrayRef<Expr *> Args);
+                     EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                     QualType ResultTy, SourceRange Range,
+                     ArrayRef<Expr *> Args);
 
 static bool is_object(APValue &Result, ASTContext &C, MetaActions &Meta,
-                      EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                      SourceRange Range, ArrayRef<Expr *> Args);
+                      EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                      QualType ResultTy, SourceRange Range,
+                      ArrayRef<Expr *> Args);
 
 static bool has_template_arguments(APValue &Result, ASTContext &C,
                                    MetaActions &Meta, EvalFn Evaluator,
-                                   DiagFn Diagnoser, QualType ResultTy,
-                                   SourceRange Range, ArrayRef<Expr *> Args);
+                                   DiagFn Diagnoser, bool AllowInjection,
+                                   QualType ResultTy, SourceRange Range,
+                                   ArrayRef<Expr *> Args);
 
 static bool has_default_member_initializer(APValue &Result, ASTContext &C,
                                            MetaActions &Meta, EvalFn Evaluator,
-                                           DiagFn Diagnoser, QualType ResultTy,
-                                           SourceRange Range,
+                                           DiagFn Diagnoser,
+                                           bool AllowInjection,
+                                           QualType ResultTy, SourceRange Range,
                                            ArrayRef<Expr *> Args);
 
 static bool is_conversion_function(APValue &Result, ASTContext &C,
                                    MetaActions &Meta, EvalFn Evaluator,
-                                   DiagFn Diagnoser, QualType ResultTy,
-                                   SourceRange Range, ArrayRef<Expr *> Args);
+                                   DiagFn Diagnoser, bool AllowInjection,
+                                   QualType ResultTy, SourceRange Range,
+                                   ArrayRef<Expr *> Args);
 
 static bool is_operator_function(APValue &Result, ASTContext &C,
                                  MetaActions &Meta, EvalFn Evaluator,
-                                 DiagFn Diagnoser, QualType ResultTy,
-                                 SourceRange Range, ArrayRef<Expr *> Args);
+                                 DiagFn Diagnoser, bool AllowInjection,
+                                 QualType ResultTy, SourceRange Range,
+                                 ArrayRef<Expr *> Args);
 
 static bool is_literal_operator(APValue &Result, ASTContext &C,
                                 MetaActions &Meta, EvalFn Evaluator,
-                                DiagFn Diagnoser, QualType ResultTy,
-                                SourceRange Range, ArrayRef<Expr *> Args);
+                                DiagFn Diagnoser, bool AllowInjection,
+                                QualType ResultTy, SourceRange Range,
+                                ArrayRef<Expr *> Args);
 
 static bool is_constructor(APValue &Result, ASTContext &C, MetaActions &Meta,
                            EvalFn Evaluator, DiagFn Diagnoser,
-                           QualType ResultTy, SourceRange Range,
-                           ArrayRef<Expr *> Args);
+                           bool AllowInjection, QualType ResultTy,
+                           SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool is_default_constructor(APValue &Result, ASTContext &C,
                                    MetaActions &Meta, EvalFn Evaluator,
-                                   DiagFn Diagnoser, QualType ResultTy,
-                                   SourceRange Range, ArrayRef<Expr *> Args);
+                                   DiagFn Diagnoser, bool AllowInjection,
+                                   QualType ResultTy, SourceRange Range,
+                                   ArrayRef<Expr *> Args);
 
 static bool is_copy_constructor(APValue &Result, ASTContext &C,
                                 MetaActions &Meta, EvalFn Evaluator,
-                                DiagFn Diagnoser, QualType ResultTy,
-                                SourceRange Range, ArrayRef<Expr *> Args);
+                                DiagFn Diagnoser, bool AllowInjection,
+                                QualType ResultTy, SourceRange Range,
+                                ArrayRef<Expr *> Args);
 
 static bool is_move_constructor(APValue &Result, ASTContext &C,
                                 MetaActions &Meta, EvalFn Evaluator,
-                                DiagFn Diagnoser, QualType ResultTy,
-                                SourceRange Range, ArrayRef<Expr *> Args);
+                                DiagFn Diagnoser, bool AllowInjection,
+                                QualType ResultTy, SourceRange Range,
+                                ArrayRef<Expr *> Args);
 
 static bool is_assignment(APValue &Result, ASTContext &C, MetaActions &Meta,
-                          EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                          EvalFn Evaluator, DiagFn Diagnoser,
+                          bool AllowInjection, QualType ResultTy,
                           SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool is_copy_assignment(APValue &Result, ASTContext &C,
                                MetaActions &Meta, EvalFn Evaluator,
-                               DiagFn Diagnoser, QualType ResultTy,
-                               SourceRange Range, ArrayRef<Expr *> Args);
+                               DiagFn Diagnoser, bool AllowInjection,
+                               QualType ResultTy, SourceRange Range,
+                               ArrayRef<Expr *> Args);
 
 static bool is_move_assignment(APValue &Result, ASTContext &C,
                                MetaActions &Meta, EvalFn Evaluator,
-                               DiagFn Diagnoser, QualType ResultTy,
-                               SourceRange Range, ArrayRef<Expr *> Args);
+                               DiagFn Diagnoser, bool AllowInjection,
+                               QualType ResultTy, SourceRange Range,
+                               ArrayRef<Expr *> Args);
 
 static bool is_destructor(APValue &Result, ASTContext &C, MetaActions &Meta,
-                          EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                          EvalFn Evaluator, DiagFn Diagnoser,
+                          bool AllowInjection, QualType ResultTy,
                           SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool is_special_member_function(APValue &Result, ASTContext &C,
                                        MetaActions &Meta, EvalFn Evaluator,
-                                       DiagFn Diagnoser, QualType ResultTy,
-                                       SourceRange Range,
+                                       DiagFn Diagnoser, bool AllowInjection,
+                                       QualType ResultTy, SourceRange Range,
                                        ArrayRef<Expr *> Args);
 
 static bool is_user_provided(APValue &Result, ASTContext &C, MetaActions &Meta,
                              EvalFn Evaluator, DiagFn Diagnoser,
-                             QualType ResultTy, SourceRange Range,
-                             ArrayRef<Expr *> Args);
+                             bool AllowInjection, QualType ResultTy,
+                             SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool is_user_declared(APValue &Result, ASTContext &C, MetaActions &Meta,
                              EvalFn Evaluator, DiagFn Diagnoser,
-                             QualType ResultTy, SourceRange Range,
-                             ArrayRef<Expr *> Args);
+                             bool AllowInjection, QualType ResultTy,
+                             SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool reflect_result(APValue &Result, ASTContext &C, MetaActions &Meta,
                            EvalFn Evaluator, DiagFn Diagnoser,
-                           QualType ResultTy, SourceRange Range,
-                           ArrayRef<Expr *> Args);
+                           bool AllowInjection, QualType ResultTy,
+                           SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool data_member_spec(APValue &Result, ASTContext &C, MetaActions &Meta,
                              EvalFn Evaluator, DiagFn Diagnoser,
-                             QualType ResultTy, SourceRange Range,
-                             ArrayRef<Expr *> Args);
+                             bool AllowInjection, QualType ResultTy,
+                             SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool define_aggregate(APValue &Result, ASTContext &C, MetaActions &Meta,
                              EvalFn Evaluator, DiagFn Diagnoser,
-                             QualType ResultTy, SourceRange Range,
-                             ArrayRef<Expr *> Args);
+                             bool AllowInjection, QualType ResultTy,
+                             SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool offset_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                      EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                      SourceRange Range, ArrayRef<Expr *> Args);
+                      EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                      QualType ResultTy, SourceRange Range,
+                      ArrayRef<Expr *> Args);
 
 static bool size_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                    EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                    SourceRange Range, ArrayRef<Expr *> Args);
+                    EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                    QualType ResultTy, SourceRange Range,
+                    ArrayRef<Expr *> Args);
 
 static bool bit_offset_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                          EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                          EvalFn Evaluator, DiagFn Diagnoser,
+                          bool AllowInjection, QualType ResultTy,
                           SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool bit_size_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                        EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                        EvalFn Evaluator, DiagFn Diagnoser,
+                        bool AllowInjection, QualType ResultTy,
                         SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool alignment_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                         EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                         EvalFn Evaluator, DiagFn Diagnoser,
+                         bool AllowInjection, QualType ResultTy,
                          SourceRange Range, ArrayRef<Expr *> Args);
 
 // -----------------------------------------------------------------------------
@@ -493,52 +563,60 @@ static bool alignment_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 static bool get_ith_parameter_of(APValue &Result, ASTContext &C,
                                  MetaActions &Meta, EvalFn Evaluator,
-                                 DiagFn Diagnoser, QualType ResultTy,
-                                 SourceRange Range, ArrayRef<Expr *> Args);
+                                 DiagFn Diagnoser, bool AllowInjection,
+                                 QualType ResultTy, SourceRange Range,
+                                 ArrayRef<Expr *> Args);
 
 static bool has_consistent_identifier(APValue &Result, ASTContext &C,
                                       MetaActions &Meta, EvalFn Evaluator,
-                                      DiagFn Diagnoser, QualType ResultTy,
-                                      SourceRange Range, ArrayRef<Expr *> Args);
+                                      DiagFn Diagnoser, bool AllowInjection,
+                                      QualType ResultTy, SourceRange Range,
+                                      ArrayRef<Expr *> Args);
 
 static bool has_ellipsis_parameter(APValue &Result, ASTContext &C,
                                    MetaActions &Meta, EvalFn Evaluator,
-                                   DiagFn Diagnoser, QualType ResultTy,
-                                   SourceRange Range, ArrayRef<Expr *> Args);
+                                   DiagFn Diagnoser, bool AllowInjection,
+                                   QualType ResultTy, SourceRange Range,
+                                   ArrayRef<Expr *> Args);
 
 static bool has_default_argument(APValue &Result, ASTContext &C,
                                  MetaActions &Meta, EvalFn Evaluator,
-                                 DiagFn Diagnoser, QualType ResultTy,
-                                 SourceRange Range, ArrayRef<Expr *> Args);
+                                 DiagFn Diagnoser, bool AllowInjection,
+                                 QualType ResultTy, SourceRange Range,
+                                 ArrayRef<Expr *> Args);
 
 static bool is_explicit_object_parameter(APValue &Result, ASTContext &C,
                                          MetaActions &Meta, EvalFn Evaluator,
-                                         DiagFn Diagnoser, QualType ResultTy,
-                                         SourceRange Range,
+                                         DiagFn Diagnoser, bool AllowInjection,
+                                         QualType ResultTy, SourceRange Range,
                                          ArrayRef<Expr *> Args);
 
 static bool is_function_parameter(APValue &Result, ASTContext &C,
                                   MetaActions &Meta, EvalFn Evaluator,
-                                  DiagFn Diagnoser, QualType ResultTy,
-                                  SourceRange Range, ArrayRef<Expr *> Args);
+                                  DiagFn Diagnoser, bool AllowInjection,
+                                  QualType ResultTy, SourceRange Range,
+                                  ArrayRef<Expr *> Args);
 
 static bool return_type_of(APValue &Result, ASTContext &C, MetaActions &Meta,
                            EvalFn Evaluator, DiagFn Diagnoser,
-                           QualType ResultTy, SourceRange Range,
-                           ArrayRef<Expr *> Args);
+                           bool AllowInjection, QualType ResultTy,
+                           SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool get_ith_annotation_of(APValue &Result, ASTContext &C,
                                   MetaActions &Meta, EvalFn Evaluator,
-                                  DiagFn Diagnoser, QualType ResultTy,
-                                  SourceRange Range, ArrayRef<Expr *> Args);
+                                  DiagFn Diagnoser, bool AllowInjection,
+                                  QualType ResultTy, SourceRange Range,
+                                  ArrayRef<Expr *> Args);
 
 static bool is_annotation(APValue &Result, ASTContext &C, MetaActions &Meta,
-                          EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                          EvalFn Evaluator, DiagFn Diagnoser,
+                          bool AllowInjection, QualType ResultTy,
                           SourceRange Range, ArrayRef<Expr *> Args);
 
 static bool annotate(APValue &Result, ASTContext &C, MetaActions &Meta,
-                     EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                     SourceRange Range, ArrayRef<Expr *> Args);
+                     EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                     QualType ResultTy, SourceRange Range,
+                     ArrayRef<Expr *> Args);
 
                           // =========================
                           // Accessibility API (P3493)
@@ -546,11 +624,13 @@ static bool annotate(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 static bool current_access_context(APValue &Result, ASTContext &C,
                                    MetaActions &Meta, EvalFn Evaluator,
-                                   DiagFn Diagnoser, QualType ResultTy,
-                                   SourceRange Range, ArrayRef<Expr *> Args);
+                                   DiagFn Diagnoser, bool AllowInjection,
+                                   QualType ResultTy, SourceRange Range,
+                                   ArrayRef<Expr *> Args);
 
 static bool is_accessible(APValue &Result, ASTContext &C, MetaActions &Meta,
-                          EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                          EvalFn Evaluator, DiagFn Diagnoser,
+                          bool AllowInjection, QualType ResultTy,
                           SourceRange Range, ArrayRef<Expr *> Args);
 
 
@@ -560,13 +640,14 @@ static bool is_accessible(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 static bool is_access_specified(APValue &Result, ASTContext &C,
                                 MetaActions &Meta, EvalFn Evaluator,
-                                DiagFn Diagnoser, QualType ResultTy,
-                                SourceRange Range, ArrayRef<Expr *> Args);
+                                DiagFn Diagnoser, bool AllowInjection,
+                                QualType ResultTy, SourceRange Range,
+                                ArrayRef<Expr *> Args);
 
 static bool reflect_invoke(APValue &Result, ASTContext &C, MetaActions &Meta,
                            EvalFn Evaluator, DiagFn Diagnoser,
-                           QualType ResultTy, SourceRange Range,
-                           ArrayRef<Expr *> Args);
+                           bool AllowInjection, QualType ResultTy,
+                           SourceRange Range, ArrayRef<Expr *> Args);
 
 // -----------------------------------------------------------------------------
 // Metafunction table
@@ -710,10 +791,11 @@ constexpr const unsigned NumMetafunctions = sizeof(Metafunctions) /
 
 bool Metafunction::evaluate(APValue &Result, ASTContext &C,
                             MetaActions &Meta, EvalFn Evaluator,
-                            DiagFn Diagnoser, QualType ResultTy,
-                            SourceRange Range, ArrayRef<Expr *> Args) const {
-  return ImplFn(Result, C, Meta, Evaluator, Diagnoser, ResultTy, Range,
-                Args);
+                            DiagFn Diagnoser, bool AllowInjection,
+                            QualType ResultTy, SourceRange Range,
+                            ArrayRef<Expr *> Args) const {
+  return ImplFn(Result, C, Meta, Evaluator, Diagnoser, AllowInjection, ResultTy,
+                Range, Args);
 }
 
 bool Metafunction::Lookup(unsigned ID, const Metafunction *&result) {
@@ -1431,8 +1513,9 @@ bool DiagnoseReflectionKind(DiagFn Diagnoser, SourceRange Range,
 
 bool get_begin_enumerator_decl_of(APValue &Result, ASTContext &C,
                                   MetaActions &Meta, EvalFn Evaluator,
-                                  DiagFn Diagnoser, QualType ResultTy,
-                                  SourceRange Range, ArrayRef<Expr *> Args) {
+                                  DiagFn Diagnoser, bool AllowInjection,
+                                  QualType ResultTy, SourceRange Range,
+                                  ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.MetaInfoTy);
 
@@ -1476,8 +1559,9 @@ bool get_begin_enumerator_decl_of(APValue &Result, ASTContext &C,
 
 bool get_next_enumerator_decl_of(APValue &Result, ASTContext &C,
                                  MetaActions &Meta, EvalFn Evaluator,
-                                 DiagFn Diagnoser, QualType ResultTy,
-                                 SourceRange Range, ArrayRef<Expr *> Args) {
+                                 DiagFn Diagnoser, bool AllowInjection,
+                                 QualType ResultTy, SourceRange Range,
+                                 ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.MetaInfoTy);
 
@@ -1514,8 +1598,9 @@ bool get_next_enumerator_decl_of(APValue &Result, ASTContext &C,
 }
 
 bool get_ith_base_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                     EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                     SourceRange Range, ArrayRef<Expr *> Args) {
+                     EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                     QualType ResultTy, SourceRange Range,
+                     ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.MetaInfoTy);
 
@@ -1571,8 +1656,9 @@ bool get_ith_base_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 bool get_ith_template_argument_of(APValue &Result, ASTContext &C,
                                   MetaActions &Meta, EvalFn Evaluator,
-                                  DiagFn Diagnoser, QualType ResultTy,
-                                  SourceRange Range, ArrayRef<Expr *> Args) {
+                                  DiagFn Diagnoser, bool AllowInjection,
+                                  QualType ResultTy, SourceRange Range,
+                                  ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.MetaInfoTy);
 
@@ -1625,8 +1711,8 @@ bool get_ith_template_argument_of(APValue &Result, ASTContext &C,
 
 bool get_begin_member_decl_of(APValue &Result, ASTContext &C, MetaActions &Meta,
                               EvalFn Evaluator, DiagFn Diagnoser,
-                              QualType ResultTy, SourceRange Range,
-                              ArrayRef<Expr *> Args) {
+                              bool AllowInjection, QualType ResultTy,
+                              SourceRange Range, ArrayRef<Expr *> Args) {
   assert(ResultTy == C.MetaInfoTy);
 
   assert(Args[0]->getType()->isReflectionType());
@@ -1713,8 +1799,8 @@ bool get_begin_member_decl_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 bool get_next_member_decl_of(APValue &Result, ASTContext &C, MetaActions &Meta,
                              EvalFn Evaluator, DiagFn Diagnoser,
-                             QualType ResultTy, SourceRange Range,
-                             ArrayRef<Expr *> Args) {
+                             bool AllowInjection, QualType ResultTy,
+                             SourceRange Range, ArrayRef<Expr *> Args) {
   assert(ResultTy == C.MetaInfoTy);
 
   assert(Args[0]->getType()->isReflectionType());
@@ -1734,8 +1820,9 @@ bool get_next_member_decl_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_structural_type(APValue &Result, ASTContext &C, MetaActions &Meta,
-                        EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                        SourceRange Range, ArrayRef<Expr *> Args) {
+                        EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                        QualType ResultTy, SourceRange Range,
+                        ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -1755,8 +1842,9 @@ bool is_structural_type(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool map_decl_to_entity(APValue &Result, ASTContext &C, MetaActions &Meta,
-                        EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                        SourceRange Range, ArrayRef<Expr *> Args) {
+                        EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                        QualType ResultTy, SourceRange Range,
+                        ArrayRef<Expr *> Args) {
   assert(ResultTy == C.MetaInfoTy);
   assert(Args[0]->getType()->isReflectionType());
 
@@ -1778,8 +1866,9 @@ bool map_decl_to_entity(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool identifier_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                   EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                   SourceRange Range, ArrayRef<Expr *> Args) {
+                   EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                   QualType ResultTy, SourceRange Range,
+                   ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
 
   APValue RV;
@@ -1912,8 +2001,9 @@ bool identifier_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool has_identifier(APValue &Result, ASTContext &C, MetaActions &Meta,
-                    EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                    SourceRange Range, ArrayRef<Expr *> Args) {
+                    EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                    QualType ResultTy, SourceRange Range,
+                    ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
 
   APValue RV;
@@ -1982,8 +2072,8 @@ bool has_identifier(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool operator_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                 EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                 SourceRange Range, ArrayRef<Expr *> Args) {
+                 EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                 QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.getSizeType());
 
@@ -2034,8 +2124,9 @@ bool operator_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool source_location_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                        EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                        SourceRange Range, ArrayRef<Expr *> Args) {
+                        EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                        QualType ResultTy, SourceRange Range,
+                        ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
 
   APValue RV;
@@ -2072,8 +2163,8 @@ bool source_location_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool type_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-             EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-             SourceRange Range, ArrayRef<Expr *> Args) {
+             EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+             QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
 
   APValue RV;
@@ -2140,8 +2231,8 @@ bool type_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool parent_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-               EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-               SourceRange Range, ArrayRef<Expr *> Args) {
+               EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+               QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
 
   APValue RV;
@@ -2198,8 +2289,8 @@ bool parent_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool dealias(APValue &Result, ASTContext &C, MetaActions &Meta,
-             EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-             SourceRange Range, ArrayRef<Expr *> Args) {
+             EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+             QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.MetaInfoTy);
 
@@ -2234,8 +2325,8 @@ bool dealias(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool object_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-               EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-               SourceRange Range, ArrayRef<Expr *> Args) {
+               EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+               QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.MetaInfoTy);
 
@@ -2287,8 +2378,8 @@ bool object_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 
 bool value_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-              EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-              SourceRange Range, ArrayRef<Expr *> Args) {
+              EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+              QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.MetaInfoTy);
 
@@ -2381,8 +2472,8 @@ bool value_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool template_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                 EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                 SourceRange Range, ArrayRef<Expr *> Args) {
+                 EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                 QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.MetaInfoTy);
 
@@ -2490,8 +2581,9 @@ static TemplateArgument TArgFromReflection(ASTContext &C, EvalFn Evaluator,
 // TODO(P2996): Abstract this out, and use as an implementation detail of
 // 'substitute'.
 bool can_substitute(APValue &Result, ASTContext &C, MetaActions &Meta,
-                    EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                    SourceRange Range, ArrayRef<Expr *> Args) {
+                    EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                    QualType ResultTy, SourceRange Range,
+                    ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(
       Args[1]->getType()->getPointeeOrArrayElementType()->isReflectionType());
@@ -2551,8 +2643,8 @@ bool can_substitute(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool substitute(APValue &Result, ASTContext &C, MetaActions &Meta,
-                EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                SourceRange Range, ArrayRef<Expr *> Args) {
+                EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(
       Args[1]->getType()->getPointeeOrArrayElementType()->isReflectionType());
@@ -2669,8 +2761,8 @@ bool substitute(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 
 bool extract(APValue &Result, ASTContext &C, MetaActions &Meta,
-             EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-             SourceRange Range, ArrayRef<Expr *> Args) {
+             EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+             QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(Args[1]->getType()->isReflectionType());
 
@@ -2861,8 +2953,8 @@ bool extract(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 template <AccessSpecifier Specifier>
 bool is_ACCESS(APValue &Result, ASTContext &C, MetaActions &Meta,
-               EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-               SourceRange Range, ArrayRef<Expr *> Args) {
+               EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+               QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -2905,29 +2997,29 @@ bool is_ACCESS(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_public(APValue &Result, ASTContext &C, MetaActions &Meta,
-               EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-               SourceRange Range, ArrayRef<Expr *> Args) {
-  return is_ACCESS<AS_public>(Result, C, Meta, Evaluator, Diagnoser, ResultTy,
-                              Range, Args);
+               EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+               QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
+  return is_ACCESS<AS_public>(Result, C, Meta, Evaluator, Diagnoser,
+                              AllowInjection, ResultTy, Range, Args);
 }
 
 bool is_protected(APValue &Result, ASTContext &C, MetaActions &Meta,
-                  EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                  SourceRange Range, ArrayRef<Expr *> Args) {
+                  EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                  QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   return is_ACCESS<AS_protected>(Result, C, Meta, Evaluator, Diagnoser,
-                                 ResultTy, Range, Args);
+                                 AllowInjection, ResultTy, Range, Args);
 }
 
 bool is_private(APValue &Result, ASTContext &C, MetaActions &Meta,
-                EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                SourceRange Range, ArrayRef<Expr *> Args) {
-  return is_ACCESS<AS_private>(Result, C, Meta, Evaluator, Diagnoser, ResultTy,
-                               Range, Args);
+                EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
+  return is_ACCESS<AS_private>(Result, C, Meta, Evaluator, Diagnoser,
+                               AllowInjection, ResultTy, Range, Args);
 }
 
 bool is_virtual(APValue &Result, ASTContext &C, MetaActions &Meta,
-                EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                SourceRange Range, ArrayRef<Expr *> Args) {
+                EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -2960,8 +3052,9 @@ bool is_virtual(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_pure_virtual(APValue &Result, ASTContext &C, MetaActions &Meta,
-                     EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                     SourceRange Range, ArrayRef<Expr *> Args) {
+                     EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                     QualType ResultTy, SourceRange Range,
+                     ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -2978,8 +3071,8 @@ bool is_pure_virtual(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_override(APValue &Result, ASTContext &C, MetaActions &Meta,
-                 EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                 SourceRange Range, ArrayRef<Expr *> Args) {
+                 EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                 QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -2996,8 +3089,8 @@ bool is_override(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_deleted(APValue &Result, ASTContext &C, MetaActions &Meta,
-                EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                SourceRange Range, ArrayRef<Expr *> Args) {
+                EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3014,8 +3107,8 @@ bool is_deleted(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_defaulted(APValue &Result, ASTContext &C, MetaActions &Meta,
-                  EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                  SourceRange Range, ArrayRef<Expr *> Args) {
+                  EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                  QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3032,8 +3125,8 @@ bool is_defaulted(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_explicit(APValue &Result, ASTContext &C, MetaActions &Meta,
-                 EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                 SourceRange Range, ArrayRef<Expr *> Args) {
+                 EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                 QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3053,8 +3146,8 @@ bool is_explicit(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_noexcept(APValue &Result, ASTContext &C, MetaActions &Meta,
-                 EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                 SourceRange Range, ArrayRef<Expr *> Args) {
+                 EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                 QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3072,8 +3165,8 @@ bool is_noexcept(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_bit_field(APValue &Result, ASTContext &C, MetaActions &Meta,
-                  EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                  SourceRange Range, ArrayRef<Expr *> Args) {
+                  EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                  QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3094,8 +3187,9 @@ bool is_bit_field(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_enumerator(APValue &Result, ASTContext &C, MetaActions &Meta,
-                   EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                   SourceRange Range, ArrayRef<Expr *> Args) {
+                   EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                   QualType ResultTy, SourceRange Range,
+                   ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3111,8 +3205,8 @@ bool is_enumerator(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_const(APValue &Result, ASTContext &C, MetaActions &Meta,
-              EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-              SourceRange Range, ArrayRef<Expr *> Args) {
+              EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+              QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3151,8 +3245,8 @@ bool is_const(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_volatile(APValue &Result, ASTContext &C, MetaActions &Meta,
-                 EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                 SourceRange Range, ArrayRef<Expr *> Args) {
+                 EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                 QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3191,8 +3285,9 @@ bool is_volatile(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_mutable_member(APValue &Result, ASTContext &C, MetaActions &Meta,
-                       EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                       SourceRange Range, ArrayRef<Expr *> Args) {
+                       EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                       QualType ResultTy, SourceRange Range,
+                       ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3210,8 +3305,9 @@ bool is_mutable_member(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 bool is_lvalue_reference_qualified(APValue &Result, ASTContext &C,
                                    MetaActions &Meta, EvalFn Evaluator,
-                                   DiagFn Diagnoser, QualType ResultTy,
-                                   SourceRange Range, ArrayRef<Expr *> Args) {
+                                   DiagFn Diagnoser, bool AllowInjection,
+                                   QualType ResultTy, SourceRange Range,
+                                   ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3233,8 +3329,9 @@ bool is_lvalue_reference_qualified(APValue &Result, ASTContext &C,
 
 bool is_rvalue_reference_qualified(APValue &Result, ASTContext &C,
                                    MetaActions &Meta, EvalFn Evaluator,
-                                   DiagFn Diagnoser, QualType ResultTy,
-                                   SourceRange Range, ArrayRef<Expr *> Args) {
+                                   DiagFn Diagnoser, bool AllowInjection,
+                                   QualType ResultTy, SourceRange Range,
+                                   ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3256,8 +3353,9 @@ bool is_rvalue_reference_qualified(APValue &Result, ASTContext &C,
 
 bool has_static_storage_duration(APValue &Result, ASTContext &C,
                                  MetaActions &Meta, EvalFn Evaluator,
-                                 DiagFn Diagnoser, QualType ResultTy,
-                                 SourceRange Range, ArrayRef<Expr *> Args) {
+                                 DiagFn Diagnoser, bool AllowInjection,
+                                 QualType ResultTy, SourceRange Range,
+                                 ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3279,8 +3377,9 @@ bool has_static_storage_duration(APValue &Result, ASTContext &C,
 
 bool has_thread_storage_duration(APValue &Result, ASTContext &C,
                                  MetaActions &Meta, EvalFn Evaluator,
-                                 DiagFn Diagnoser, QualType ResultTy,
-                                 SourceRange Range, ArrayRef<Expr *> Args) {
+                                 DiagFn Diagnoser, bool AllowInjection,
+                                 QualType ResultTy, SourceRange Range,
+                                 ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3298,8 +3397,9 @@ bool has_thread_storage_duration(APValue &Result, ASTContext &C,
 
 bool has_automatic_storage_duration(APValue &Result, ASTContext &C,
                                     MetaActions &Meta, EvalFn Evaluator,
-                                    DiagFn Diagnoser, QualType ResultTy,
-                                    SourceRange Range, ArrayRef<Expr *> Args) {
+                                    DiagFn Diagnoser, bool AllowInjection,
+                                    QualType ResultTy, SourceRange Range,
+                                    ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3316,7 +3416,8 @@ bool has_automatic_storage_duration(APValue &Result, ASTContext &C,
 }
 
 bool has_internal_linkage(APValue &Result, ASTContext &C, MetaActions &Meta,
-                          EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                          EvalFn Evaluator, DiagFn Diagnoser,
+                          bool AllowInjection, QualType ResultTy,
                           SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
@@ -3344,8 +3445,9 @@ bool has_internal_linkage(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool has_module_linkage(APValue &Result, ASTContext &C, MetaActions &Meta,
-                        EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                        SourceRange Range, ArrayRef<Expr *> Args) {
+                        EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                        QualType ResultTy, SourceRange Range,
+                        ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3372,7 +3474,8 @@ bool has_module_linkage(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool has_external_linkage(APValue &Result, ASTContext &C, MetaActions &Meta,
-                          EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                          EvalFn Evaluator, DiagFn Diagnoser,
+                          bool AllowInjection, QualType ResultTy,
                           SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
@@ -3403,8 +3506,8 @@ bool has_external_linkage(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool has_linkage(APValue &Result, ASTContext &C, MetaActions &Meta,
-                 EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                 SourceRange Range, ArrayRef<Expr *> Args) {
+                 EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                 QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3431,8 +3534,9 @@ bool has_linkage(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_class_member(APValue &Result, ASTContext &C, MetaActions &Meta,
-                     EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                     SourceRange Range, ArrayRef<Expr *> Args) {
+                     EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                     QualType ResultTy, SourceRange Range,
+                     ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3440,8 +3544,8 @@ bool is_class_member(APValue &Result, ASTContext &C, MetaActions &Meta,
   bool result = false;
 
   decltype(Diagnoser) SwallowDiags {};
-  if (!parent_of(Scratch, C, Meta, Evaluator, SwallowDiags, C.MetaInfoTy, Range,
-                 Args)) {
+  if (!parent_of(Scratch, C, Meta, Evaluator, SwallowDiags, AllowInjection,
+                 C.MetaInfoTy, Range, Args)) {
     assert(Scratch.isReflection());
     result = Scratch.isReflectedType();
   }
@@ -3449,7 +3553,8 @@ bool is_class_member(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_namespace_member(APValue &Result, ASTContext &C, MetaActions &Meta,
-                         EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                         EvalFn Evaluator, DiagFn Diagnoser,
+                         bool AllowInjection, QualType ResultTy,
                          SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
@@ -3458,8 +3563,8 @@ bool is_namespace_member(APValue &Result, ASTContext &C, MetaActions &Meta,
   bool result = false;
 
   decltype(Diagnoser) SwallowDiags {};
-  if (!parent_of(Scratch, C, Meta, Evaluator, SwallowDiags, C.MetaInfoTy, Range,
-                 Args)) {
+  if (!parent_of(Scratch, C, Meta, Evaluator, SwallowDiags, AllowInjection,
+                 C.MetaInfoTy, Range, Args)) {
     assert(Scratch.isReflection());
     result = Scratch.isReflectedNamespace();
   }
@@ -3468,8 +3573,8 @@ bool is_namespace_member(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 bool is_nonstatic_data_member(APValue &Result, ASTContext &C, MetaActions &Meta,
                               EvalFn Evaluator, DiagFn Diagnoser,
-                              QualType ResultTy, SourceRange Range,
-                              ArrayRef<Expr *> Args) {
+                              bool AllowInjection, QualType ResultTy,
+                              SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3489,8 +3594,9 @@ bool is_nonstatic_data_member(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_static_member(APValue &Result, ASTContext &C, MetaActions &Meta,
-                      EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                      SourceRange Range, ArrayRef<Expr *> Args) {
+                      EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                      QualType ResultTy, SourceRange Range,
+                      ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3533,8 +3639,8 @@ bool is_static_member(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_base(APValue &Result, ASTContext &C, MetaActions &Meta,
-             EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-             SourceRange Range, ArrayRef<Expr *> Args) {
+             EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+             QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3546,7 +3652,8 @@ bool is_base(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_data_member_spec(APValue &Result, ASTContext &C, MetaActions &Meta,
-                         EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                         EvalFn Evaluator, DiagFn Diagnoser,
+                         bool AllowInjection, QualType ResultTy,
                          SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
@@ -3559,8 +3666,8 @@ bool is_data_member_spec(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_namespace(APValue &Result, ASTContext &C, MetaActions &Meta,
-                  EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                  SourceRange Range, ArrayRef<Expr *> Args) {
+                  EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                  QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3572,8 +3679,8 @@ bool is_namespace(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_function(APValue &Result, ASTContext &C, MetaActions &Meta,
-                 EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                 SourceRange Range, ArrayRef<Expr *> Args) {
+                 EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                 QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3588,8 +3695,8 @@ bool is_function(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_variable(APValue &Result, ASTContext &C, MetaActions &Meta,
-                 EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                 SourceRange Range, ArrayRef<Expr *> Args) {
+                 EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                 QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3604,8 +3711,8 @@ bool is_variable(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_type(APValue &Result, ASTContext &C, MetaActions &Meta,
-             EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-             SourceRange Range, ArrayRef<Expr *> Args) {
+             EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+             QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3617,8 +3724,8 @@ bool is_type(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_alias(APValue &Result, ASTContext &C, MetaActions &Meta,
-              EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-              SourceRange Range, ArrayRef<Expr *> Args) {
+              EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+              QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3653,8 +3760,9 @@ bool is_alias(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_complete_type(APValue &Result, ASTContext &C, MetaActions &Meta,
-                      EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                      SourceRange Range, ArrayRef<Expr *> Args) {
+                      EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                      QualType ResultTy, SourceRange Range,
+                      ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3676,8 +3784,8 @@ bool is_complete_type(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 bool has_complete_definition(APValue &Result, ASTContext &C, MetaActions &Meta,
                              EvalFn Evaluator, DiagFn Diagnoser,
-                             QualType ResultTy, SourceRange Range,
-                             ArrayRef<Expr *> Args) {
+                             bool AllowInjection, QualType ResultTy,
+                             SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3715,8 +3823,9 @@ bool has_complete_definition(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_template(APValue &Result, ASTContext &C, MetaActions &Meta,
-                 EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                 SourceRange Range, ArrayRef<Expr *> Args) {
+                 EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                 QualType ResultTy, SourceRange Range,
+                 ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3728,7 +3837,8 @@ bool is_template(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_function_template(APValue &Result, ASTContext &C, MetaActions &Meta,
-                          EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                          EvalFn Evaluator, DiagFn Diagnoser,
+                          bool AllowInjection, QualType ResultTy,
                           SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
@@ -3746,7 +3856,8 @@ bool is_function_template(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_variable_template(APValue &Result, ASTContext &C, MetaActions &Meta,
-                          EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                          EvalFn Evaluator, DiagFn Diagnoser,
+                          bool AllowInjection, QualType ResultTy,
                           SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
@@ -3764,8 +3875,9 @@ bool is_variable_template(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_class_template(APValue &Result, ASTContext &C, MetaActions &Meta,
-                       EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                       SourceRange Range, ArrayRef<Expr *> Args) {
+                       EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                       QualType ResultTy, SourceRange Range,
+                       ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3782,8 +3894,9 @@ bool is_class_template(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_alias_template(APValue &Result, ASTContext &C, MetaActions &Meta,
-                       EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                       SourceRange Range, ArrayRef<Expr *> Args) {
+                       EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                       QualType ResultTy, SourceRange Range,
+                       ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3801,8 +3914,9 @@ bool is_alias_template(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 bool is_conversion_function_template(APValue &Result, ASTContext &C,
                                      MetaActions &Meta, EvalFn Evaluator,
-                                     DiagFn Diagnoser, QualType ResultTy,
-                                     SourceRange Range, ArrayRef<Expr *> Args) {
+                                     DiagFn Diagnoser, bool AllowInjection,
+                                     QualType ResultTy, SourceRange Range,
+                                     ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3821,8 +3935,9 @@ bool is_conversion_function_template(APValue &Result, ASTContext &C,
 
 bool is_operator_function_template(APValue &Result, ASTContext &C,
                                    MetaActions &Meta, EvalFn Evaluator,
-                                   DiagFn Diagnoser, QualType ResultTy,
-                                   SourceRange Range, ArrayRef<Expr *> Args) {
+                                   DiagFn Diagnoser, bool AllowInjection,
+                                   QualType ResultTy, SourceRange Range,
+                                   ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3842,8 +3957,9 @@ bool is_operator_function_template(APValue &Result, ASTContext &C,
 
 bool is_literal_operator_template(APValue &Result, ASTContext &C,
                                   MetaActions &Meta, EvalFn Evaluator,
-                                  DiagFn Diagnoser, QualType ResultTy,
-                                  SourceRange Range, ArrayRef<Expr *> Args) {
+                                  DiagFn Diagnoser, bool AllowInjection,
+                                  QualType ResultTy, SourceRange Range,
+                                  ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3863,8 +3979,9 @@ bool is_literal_operator_template(APValue &Result, ASTContext &C,
 
 bool is_constructor_template(APValue &Result, ASTContext &C,
                              MetaActions &Meta, EvalFn Evaluator,
-                             DiagFn Diagnoser, QualType ResultTy,
-                             SourceRange Range, ArrayRef<Expr *> Args) {
+                             DiagFn Diagnoser, bool AllowInjection,
+                             QualType ResultTy, SourceRange Range,
+                             ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3882,8 +3999,8 @@ bool is_constructor_template(APValue &Result, ASTContext &C,
 }
 
 bool is_concept(APValue &Result, ASTContext &C, MetaActions &Meta,
-                EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                SourceRange Range, ArrayRef<Expr *> Args) {
+                EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3900,8 +4017,8 @@ bool is_concept(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 bool is_structured_binding(APValue &Result, ASTContext &C, MetaActions &Meta,
                            EvalFn Evaluator, DiagFn Diagnoser,
-                           QualType ResultTy, SourceRange Range,
-                           ArrayRef<Expr *> Args) {
+                           bool AllowInjection, QualType ResultTy,
+                           SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3917,8 +4034,8 @@ bool is_structured_binding(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_value(APValue &Result, ASTContext &C, MetaActions &Meta,
-              EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-              SourceRange Range, ArrayRef<Expr *> Args) {
+              EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+              QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3930,8 +4047,8 @@ bool is_value(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_object(APValue &Result, ASTContext &C, MetaActions &Meta,
-               EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-               SourceRange Range, ArrayRef<Expr *> Args) {
+               EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+               QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3948,8 +4065,8 @@ bool is_object(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 bool has_template_arguments(APValue &Result, ASTContext &C, MetaActions &Meta,
                             EvalFn Evaluator, DiagFn Diagnoser,
-                            QualType ResultTy, SourceRange Range,
-                            ArrayRef<Expr *> Args) {
+                            bool AllowInjection, QualType ResultTy,
+                            SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -3989,8 +4106,9 @@ bool has_template_arguments(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 bool has_default_member_initializer(APValue &Result, ASTContext &C,
                                     MetaActions &Meta, EvalFn Evaluator,
-                                    DiagFn Diagnoser, QualType ResultTy,
-                                    SourceRange Range, ArrayRef<Expr *> Args) {
+                                    DiagFn Diagnoser, bool AllowInjection,
+                                    QualType ResultTy, SourceRange Range,
+                                    ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -4008,8 +4126,8 @@ bool has_default_member_initializer(APValue &Result, ASTContext &C,
 
 bool is_conversion_function(APValue &Result, ASTContext &C, MetaActions &Meta,
                             EvalFn Evaluator, DiagFn Diagnoser,
-                            QualType ResultTy, SourceRange Range,
-                            ArrayRef<Expr *> Args) {
+                            bool AllowInjection, QualType ResultTy,
+                            SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -4025,7 +4143,8 @@ bool is_conversion_function(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_operator_function(APValue &Result, ASTContext &C, MetaActions &Meta,
-                          EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                          EvalFn Evaluator, DiagFn Diagnoser,
+                          bool AllowInjection, QualType ResultTy,
                           SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
@@ -4043,7 +4162,8 @@ bool is_operator_function(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_literal_operator(APValue &Result, ASTContext &C, MetaActions &Meta,
-                         EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                         EvalFn Evaluator, DiagFn Diagnoser,
+                         bool AllowInjection, QualType ResultTy,
                          SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
@@ -4062,8 +4182,9 @@ bool is_literal_operator(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_constructor(APValue &Result, ASTContext &C, MetaActions &Meta,
-                    EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                    SourceRange Range, ArrayRef<Expr *> Args) {
+                    EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                    QualType ResultTy, SourceRange Range,
+                    ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -4092,8 +4213,8 @@ bool is_constructor(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 bool is_default_constructor(APValue &Result, ASTContext &C, MetaActions &Meta,
                             EvalFn Evaluator, DiagFn Diagnoser,
-                            QualType ResultTy, SourceRange Range,
-                            ArrayRef<Expr *> Args) {
+                            bool AllowInjection, QualType ResultTy,
+                            SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -4110,7 +4231,8 @@ bool is_default_constructor(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_copy_constructor(APValue &Result, ASTContext &C, MetaActions &Meta,
-                         EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                         EvalFn Evaluator, DiagFn Diagnoser,
+                         bool AllowInjection, QualType ResultTy,
                          SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
@@ -4128,7 +4250,8 @@ bool is_copy_constructor(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_move_constructor(APValue &Result, ASTContext &C, MetaActions &Meta,
-                         EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                         EvalFn Evaluator, DiagFn Diagnoser,
+                         bool AllowInjection, QualType ResultTy,
                          SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
@@ -4146,8 +4269,9 @@ bool is_move_constructor(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_assignment(APValue &Result, ASTContext &C, MetaActions &Meta,
-                   EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                   SourceRange Range, ArrayRef<Expr *> Args) {
+                   EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                   QualType ResultTy, SourceRange Range,
+                   ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -4164,8 +4288,9 @@ bool is_assignment(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_copy_assignment(APValue &Result, ASTContext &C, MetaActions &Meta,
-                        EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                        SourceRange Range, ArrayRef<Expr *> Args) {
+                        EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                        QualType ResultTy, SourceRange Range,
+                        ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -4182,8 +4307,9 @@ bool is_copy_assignment(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_move_assignment(APValue &Result, ASTContext &C, MetaActions &Meta,
-                        EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                        SourceRange Range, ArrayRef<Expr *> Args) {
+                        EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                        QualType ResultTy, SourceRange Range,
+                        ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -4200,8 +4326,9 @@ bool is_move_assignment(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_destructor(APValue &Result, ASTContext &C, MetaActions &Meta,
-                   EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                   SourceRange Range, ArrayRef<Expr *> Args) {
+                   EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                   QualType ResultTy, SourceRange Range,
+                   ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -4230,8 +4357,9 @@ bool is_destructor(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 bool is_special_member_function(APValue &Result, ASTContext &C,
                                 MetaActions &Meta, EvalFn Evaluator,
-                                DiagFn Diagnoser, QualType ResultTy,
-                                SourceRange Range, ArrayRef<Expr *> Args) {
+                                DiagFn Diagnoser, bool AllowInjection,
+                                QualType ResultTy, SourceRange Range,
+                                ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -4268,8 +4396,9 @@ bool is_special_member_function(APValue &Result, ASTContext &C,
 }
 
 bool is_user_provided(APValue &Result, ASTContext &C, MetaActions &Meta,
-                      EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                      SourceRange Range, ArrayRef<Expr *> Args) {
+                      EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                      QualType ResultTy, SourceRange Range,
+                      ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -4289,8 +4418,9 @@ bool is_user_provided(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_user_declared(APValue &Result, ASTContext &C, MetaActions &Meta,
-                      EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                      SourceRange Range, ArrayRef<Expr *> Args) {
+                      EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                      QualType ResultTy, SourceRange Range,
+                      ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -4309,8 +4439,9 @@ bool is_user_declared(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool reflect_result(APValue &Result, ASTContext &C, MetaActions &Meta,
-                    EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                    SourceRange Range, ArrayRef<Expr *> Args) {
+                    EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                    QualType ResultTy, SourceRange Range,
+                    ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
 
   APValue ArgTy;
@@ -4356,8 +4487,9 @@ bool reflect_result(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool data_member_spec(APValue &Result, ASTContext &C, MetaActions &Meta,
-                      EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                      SourceRange Range, ArrayRef<Expr *> Args) {
+                      EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                      QualType ResultTy, SourceRange Range,
+                      ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
 
   APValue Scratch;
@@ -4464,8 +4596,9 @@ bool data_member_spec(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool define_aggregate(APValue &Result, ASTContext &C, MetaActions &Meta,
-                      EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                      SourceRange Range, ArrayRef<Expr *> Args) {
+                      EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                      QualType ResultTy, SourceRange Range,
+                      ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
 
   APValue Scratch;
@@ -4532,6 +4665,7 @@ bool define_aggregate(APValue &Result, ASTContext &C, MetaActions &Meta,
   }
 
   CXXRecordDecl *Definition = Meta.DefineClass(IncompleteDecl, MemberSpecs,
+                                               AllowInjection,
                                                Range.getBegin());
   if (!Definition)
     return true;
@@ -4541,8 +4675,8 @@ bool define_aggregate(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool offset_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-               EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-               SourceRange Range, ArrayRef<Expr *> Args) {
+               EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+               QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.getSizeType());
 
@@ -4576,8 +4710,8 @@ bool offset_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool size_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-             EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-             SourceRange Range, ArrayRef<Expr *> Args) {
+             EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+             QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.getSizeType());
 
@@ -4628,8 +4762,9 @@ bool size_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool bit_offset_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                   EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                   SourceRange Range, ArrayRef<Expr *> Args) {
+                   EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                   QualType ResultTy, SourceRange Range,
+                   ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.getSizeType());
 
@@ -4663,8 +4798,8 @@ bool bit_offset_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool bit_size_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                 EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                 SourceRange Range, ArrayRef<Expr *> Args) {
+                 EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                 QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.getSizeType());
 
@@ -4721,8 +4856,8 @@ bool bit_size_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool alignment_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                  EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                  SourceRange Range, ArrayRef<Expr *> Args) {
+                  EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                  QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.getSizeType());
 
@@ -4784,7 +4919,8 @@ bool alignment_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool get_ith_parameter_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                          EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                          EvalFn Evaluator, DiagFn Diagnoser,
+                          bool AllowInjection, QualType ResultTy,
                           SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.MetaInfoTy);
@@ -4842,8 +4978,9 @@ bool get_ith_parameter_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 bool has_consistent_identifier(APValue &Result, ASTContext &C,
                                MetaActions &Meta, EvalFn Evaluator,
-                               DiagFn Diagnoser, QualType ResultTy,
-                               SourceRange Range, ArrayRef<Expr *> Args) {
+                               DiagFn Diagnoser, bool AllowInjection,
+                               QualType ResultTy, SourceRange Range,
+                               ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -4869,16 +5006,16 @@ bool has_consistent_identifier(APValue &Result, ASTContext &C,
   case ReflectionKind::BaseSpecifier:
   case ReflectionKind::DataMemberSpec:
   case ReflectionKind::Annotation:
-    return has_identifier(Result, C, Meta, Evaluator, Diagnoser, ResultTy,
-                          Range, Args);
+    return has_identifier(Result, C, Meta, Evaluator, Diagnoser, AllowInjection,
+                          ResultTy, Range, Args);
   }
   llvm_unreachable("unknown reflection kind");
 }
 
 bool has_ellipsis_parameter(APValue &Result, ASTContext &C, MetaActions &Meta,
                             EvalFn Evaluator, DiagFn Diagnoser,
-                            QualType ResultTy, SourceRange Range,
-                            ArrayRef<Expr *> Args) {
+                            bool AllowInjection, QualType ResultTy,
+                            SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -4917,7 +5054,8 @@ bool has_ellipsis_parameter(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool has_default_argument(APValue &Result, ASTContext &C, MetaActions &Meta,
-                          EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                          EvalFn Evaluator, DiagFn Diagnoser,
+                          bool AllowInjection, QualType ResultTy,
                           SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
@@ -4950,8 +5088,9 @@ bool has_default_argument(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 bool is_explicit_object_parameter(APValue &Result, ASTContext &C,
                                   MetaActions &Meta, EvalFn Evaluator,
-                                  DiagFn Diagnoser, QualType ResultTy,
-                                  SourceRange Range, ArrayRef<Expr *> Args) {
+                                  DiagFn Diagnoser, bool AllowInjection,
+                                  QualType ResultTy, SourceRange Range,
+                                  ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -4969,8 +5108,8 @@ bool is_explicit_object_parameter(APValue &Result, ASTContext &C,
 
 bool is_function_parameter(APValue &Result, ASTContext &C, MetaActions &Meta,
                            EvalFn Evaluator, DiagFn Diagnoser,
-                           QualType ResultTy, SourceRange Range,
-                           ArrayRef<Expr *> Args) {
+                           bool AllowInjection, QualType ResultTy,
+                           SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -4986,8 +5125,9 @@ bool is_function_parameter(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool return_type_of(APValue &Result, ASTContext &C, MetaActions &Meta,
-                    EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                    SourceRange Range, ArrayRef<Expr *> Args) {
+                    EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                    QualType ResultTy, SourceRange Range,
+                    ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.MetaInfoTy);
 
@@ -4999,8 +5139,8 @@ bool return_type_of(APValue &Result, ASTContext &C, MetaActions &Meta,
   case ReflectionKind::Type: {
     if (auto *FPT = dyn_cast<FunctionProtoType>(RV.getReflectedType())) {
       QualType QT =
-          desugarType(FPT->getReturnType(), /*UnwrapAliases=*/ true, /*DropCV=*/false,
-                      /*DropRefs=*/false);
+          desugarType(FPT->getReturnType(), /*UnwrapAliases=*/ true,
+                      /*DropCV=*/false, /*DropRefs=*/false);
       return SetAndSucceed(Result, makeReflection(QT));
     }
 
@@ -5030,8 +5170,8 @@ bool return_type_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 bool get_ith_annotation_of(APValue &Result, ASTContext &C, MetaActions &Meta,
                            EvalFn Evaluator, DiagFn Diagnoser,
-                           QualType ResultTy, SourceRange Range,
-                           ArrayRef<Expr *> Args) {
+                           bool AllowInjection, QualType ResultTy,
+                           SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.MetaInfoTy);
 
@@ -5101,8 +5241,9 @@ bool get_ith_annotation_of(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_annotation(APValue &Result, ASTContext &C, MetaActions &Meta,
-                   EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                   SourceRange Range, ArrayRef<Expr *> Args) {
+                   EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                   QualType ResultTy, SourceRange Range,
+                   ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
 
@@ -5114,8 +5255,8 @@ bool is_annotation(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool annotate(APValue &Result, ASTContext &C, MetaActions &Meta,
-              EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-              SourceRange Range, ArrayRef<Expr *> Args) {
+              EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+              QualType ResultTy, SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(Args[1]->getType()->isReflectionType());
   assert(ResultTy == C.MetaInfoTy);
@@ -5176,8 +5317,8 @@ bool annotate(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 bool current_access_context(APValue &Result, ASTContext &C, MetaActions &Meta,
                             EvalFn Evaluator, DiagFn Diagnoser,
-                            QualType ResultTy, SourceRange Range,
-                            ArrayRef<Expr *> Args) {
+                            bool AllowInjection, QualType ResultTy,
+                            SourceRange Range, ArrayRef<Expr *> Args) {
   assert(ResultTy == C.MetaInfoTy);
 
   StackLocationExpr *SLE = StackLocationExpr::Create(C, SourceRange(), 1);
@@ -5190,8 +5331,9 @@ bool current_access_context(APValue &Result, ASTContext &C, MetaActions &Meta,
 }
 
 bool is_accessible(APValue &Result, ASTContext &C, MetaActions &Meta,
-                   EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                   SourceRange Range, ArrayRef<Expr *> Args) {
+                   EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                   QualType ResultTy, SourceRange Range,
+                   ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(Args[1]->getType()->isReflectionType());
   assert(Args[2]->getType()->isReflectionType());
@@ -5303,7 +5445,8 @@ bool is_accessible(APValue &Result, ASTContext &C, MetaActions &Meta,
 
 
 bool is_access_specified(APValue &Result, ASTContext &C, MetaActions &Meta,
-                         EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
+                         EvalFn Evaluator, DiagFn Diagnoser,
+                         bool AllowInjection, QualType ResultTy,
                          SourceRange Range, ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(ResultTy == C.BoolTy);
@@ -5415,8 +5558,9 @@ CXXMethodDecl *getCXXMethodDeclFromDeclRefExpr(DeclRefExpr *DRE,
 }
 
 bool reflect_invoke(APValue &Result, ASTContext &C, MetaActions &Meta,
-                    EvalFn Evaluator, DiagFn Diagnoser, QualType ResultTy,
-                    SourceRange Range, ArrayRef<Expr *> Args) {
+                    EvalFn Evaluator, DiagFn Diagnoser, bool AllowInjection,
+                    QualType ResultTy, SourceRange Range,
+                    ArrayRef<Expr *> Args) {
   assert(Args[0]->getType()->isReflectionType());
   assert(
       Args[1]->getType()->getPointeeOrArrayElementType()->isReflectionType());

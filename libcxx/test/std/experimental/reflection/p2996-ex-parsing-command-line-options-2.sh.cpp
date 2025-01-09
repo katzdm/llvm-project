@@ -86,7 +86,8 @@ struct Clap {
     // check if cmdline contains --help, etc.
 
     struct Opts;
-    static_assert(is_type(spec_to_opts(^^Opts, ^^Spec)));
+    [[maybe_unused]]
+    constexpr auto unused = spec_to_opts(^^Opts, ^^Spec);
     Opts opts;
 
     struct Z {

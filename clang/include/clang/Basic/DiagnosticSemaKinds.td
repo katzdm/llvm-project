@@ -3171,6 +3171,10 @@ def err_dependent_splice_implicit_member_reference : Error<
 def note_dependent_splice_explicit_this_may_fix : Note<
   "an explicit 'this' pointer may fix the problem">;
 
+def err_injected_decl_from_disallowed_context : Error<
+  "injected declaration for class %0 was produced by a manifestly "
+  "constant-evaluated expression that is not plainly constant-evaluated">;
+
 def err_cannot_expand_over_type : Error<
   "cannot expand over an expression of type %0">;
 

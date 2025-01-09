@@ -1445,6 +1445,9 @@ enum DeclCode {
   /// \brief A StaticAssertDecl record.
   DECL_STATIC_ASSERT,
 
+  /// \brief A ConstevalBlockDecl record.
+  DECL_CONSTEVAL_BLOCK,
+
   /// A record containing CXXBaseSpecifiers.
   DECL_CXX_BASE_SPECIFIERS,
 

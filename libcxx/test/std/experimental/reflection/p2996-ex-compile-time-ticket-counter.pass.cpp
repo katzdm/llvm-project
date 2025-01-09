@@ -42,7 +42,10 @@ public:
 };
 
 int main() {
+  constexpr auto v1 = TU_Ticket::next();
+  constexpr auto v2 = TU_Ticket::next();
+  constexpr auto v3 = TU_Ticket::next();
+
   // RUN: grep "0, 1, 2" %t.stdout
-  std::println("{}, {}, {}",
-               TU_Ticket::next(), TU_Ticket::next(), TU_Ticket::next());
+  std::println("{}, {}, {}", v1, v2, v3);
 }

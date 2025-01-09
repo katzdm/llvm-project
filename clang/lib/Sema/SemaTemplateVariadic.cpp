@@ -107,7 +107,7 @@ class CollectUnexpandedParameterPacksVisitor
 
     // Record occurrences of function and non-type template parameters packs in
     // an expression.
-    bool VisitCXXReflectExpr(CXXReflectExpr *E) {
+    bool VisitCXXReflectExpr(CXXReflectExpr *E) override {
       if (E->hasDependentSubExpr())
         return true;
 

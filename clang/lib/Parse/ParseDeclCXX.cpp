@@ -1262,21 +1262,7 @@ Decl *Parser::ParseConstevalBlockDeclaration(SourceLocation &DeclEnd) {
   if (Invocation.isInvalid())
     return nullptr;
 
-  ExprResult TrueLiteral = Actions.ActOnCXXBoolLiteral(ConstevalLoc,
-                                                       tok::kw_true);
-  assert(!TrueLiteral.isInvalid());
-
-  ExprResult AssertClause = Actions.ActOnBinOp(getCurScope(), ConstevalLoc,
-                                               tok::comma, Invocation.get(),
-                                               TrueLiteral.get());
-  assert(!AssertClause.isInvalid());
-
-  if (AssertClause.get()->containsErrors())
-    return nullptr;
-
-  return Actions.ActOnStaticAssertDeclaration(ConstevalLoc, AssertClause.get(),
-                                              nullptr,
-                                              AssertClause.get()->getEndLoc());
+  return Actions.ActOnConstevalBlockDeclaration(ConstevalLoc, Invocation.get());
 }
 
 /// ParseDecltypeSpecifier - Parse a C++11 decltype specifier.

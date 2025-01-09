@@ -131,6 +131,7 @@ namespace clang {
     void VisitFriendDecl(FriendDecl *D);
     void VisitFriendTemplateDecl(FriendTemplateDecl *D);
     void VisitStaticAssertDecl(StaticAssertDecl *D);
+    void VisitConstevalBlockDecl(ConstevalBlockDecl *D);
     void VisitBlockDecl(BlockDecl *D);
     void VisitCapturedDecl(CapturedDecl *D);
     void VisitEmptyDecl(EmptyDecl *D);
@@ -2057,6 +2058,13 @@ void ASTDeclWriter::VisitStaticAssertDecl(StaticAssertDecl *D) {
   Record.AddStmt(D->getMessage());
   Record.AddSourceLocation(D->getRParenLoc());
   Code = serialization::DECL_STATIC_ASSERT;
+}
+
+void ASTDeclWriter::VisitConstevalBlockDecl(ConstevalBlockDecl *D) {
+  VisitDecl(D);
+  Record.AddSourceLocation(D->getLocation());
+  Record.AddStmt(D->getEvaluatingExpr());
+  Code = serialization::DECL_CONSTEVAL_BLOCK;
 }
 
 /// Emit the DeclContext part of a declaration context decl.

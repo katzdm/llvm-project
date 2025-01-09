@@ -956,6 +956,7 @@ unsigned Decl::getIdentifierNamespaceForKind(Kind DeclKind) {
     case FileScopeAsm:
     case TopLevelStmt:
     case StaticAssert:
+    case ConstevalBlock:
     case ObjCPropertyImpl:
     case PragmaComment:
     case PragmaDetectMismatch:

@@ -4443,6 +4443,36 @@ public:
   static bool classofKind(Kind K) { return K == Decl::UnnamedGlobalConstant; }
 };
 
+/// Represents a C++26 consteval block declaration.
+class ConstevalBlockDecl : public Decl {
+  Expr *EvaluatingExpr;
+  SourceLocation ConstevalLoc;
+
+  ConstevalBlockDecl(DeclContext *DC, SourceLocation ConstevalLoc,
+                     Expr *EvaluatingExpr)
+      : Decl(ConstevalBlock, DC, ConstevalLoc),
+        EvaluatingExpr(EvaluatingExpr) {}
+
+  virtual void anchor();
+
+public:
+  friend class ASTDeclReader;
+
+  static ConstevalBlockDecl *Create(ASTContext &C, DeclContext *DC,
+                                    SourceLocation ConstevalLoc,
+                                    Expr *EvaluatingExpr);
+  static ConstevalBlockDecl *CreateDeserialized(ASTContext &C, GlobalDeclID ID);
+
+  Expr *getEvaluatingExpr() { return EvaluatingExpr; }
+
+  SourceRange getSourceRange() const override LLVM_READONLY {
+    return SourceRange(getLocation(), EvaluatingExpr->getEndLoc());
+  }
+
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) { return K == ConstevalBlock; }
+};
+
 /// Insertion operator for diagnostics.  This allows sending an AccessSpecifier
 /// into a diagnostic with <<.
 const StreamingDiagnostic &operator<<(const StreamingDiagnostic &DB,

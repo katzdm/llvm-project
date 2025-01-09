@@ -375,6 +375,7 @@ public:
 
   CXXRecordDecl *DefineClass(CXXRecordDecl *IncompleteDecl,
                              ArrayRef<TagDataMemberSpec *> MemberSpecs,
+                             bool AllowInjection,
                              SourceLocation DefinitionLoc) override {
     class RestoreDeclContextTy {
       Sema &S;
@@ -590,6 +591,14 @@ public:
                                         ParsedAttributesView::none());
     S.ActOnTagFinishDefinition(&ClsScope, NewDecl, DefinitionLoc);
     S.ActOnPopScope(DefinitionLoc, &ClsScope);
+
+    // The program is ill-formed if an injected declaration is produced by a
+    // manifestly constant-evaluated expression that is not plainly
+    // constant-evaluated.
+    if (!AllowInjection) {
+      S.Diag(DefinitionLoc, diag::err_injected_decl_from_disallowed_context)
+          << NewDecl;
+    }
 
     return NewDecl;
   }
@@ -825,11 +834,11 @@ const CXXMetafunctionExpr::ImplFn &Sema::getMetafunctionCb(unsigned FnID) {
             [this, Metafn](APValue &Result,
                            CXXMetafunctionExpr::EvaluateFn EvalFn,
                            CXXMetafunctionExpr::DiagnoseFn DiagFn,
-                           QualType ResultTy, SourceRange Range,
-                           ArrayRef<Expr *> Args) -> bool {
+                           bool AllowInjection, QualType ResultTy,
+                           SourceRange Range, ArrayRef<Expr *> Args) -> bool {
               MetaActionsImpl Actions(*this);
               return Metafn->evaluate(Result, Context, Actions, EvalFn, DiagFn,
-                                      ResultTy, Range, Args);
+                                      AllowInjection, ResultTy, Range, Args);
             }));
     ImplIt = MetafunctionImplCbs.try_emplace(FnID, std::move(MetafnImpl)).first;
   }
@@ -971,6 +980,11 @@ bool Sema::ActOnCXXNestedNameSpecifierReflectionSplice(
 
   SS.MakeSpliceSpecifier(Context, Expr, ColonColonLoc);
   return false;
+}
+
+Decl *Sema::ActOnConstevalBlockDeclaration(SourceLocation ConstevalLoc,
+                                           Expr *EvaluatingExpr) {
+  return BuildConstevalBlockDeclaration(ConstevalLoc, EvaluatingExpr);
 }
 
 ExprResult Sema::BuildCXXReflectExpr(SourceLocation OperatorLoc,
@@ -1570,6 +1584,23 @@ Sema::TemplateTy Sema::BuildReflectionSpliceTemplate(SourceLocation LSplice,
   }
 
   return TemplateTy::make(ER.Val.getReflectedTemplate());
+}
+
+Decl *Sema::BuildConstevalBlockDeclaration(SourceLocation ConstevalLoc,
+                                           Expr *EvaluatingExpr) {
+  Decl *Result = ConstevalBlockDecl::Create(Context, CurContext, ConstevalLoc,
+                                            EvaluatingExpr);
+  CurContext->addDecl(Result);
+
+  //static int k = 0; if (k++ >= 0) llvm_unreachable("here");
+  if (!CurContext->isDependentContext() &&
+      !CurScope->getTemplateParamParent()) {
+    Expr::EvalResult Unused;
+
+    ConstantExprKind Kind = ConstantExprKind::PlainlyConstantEvaluated;
+    EvaluatingExpr->EvaluateAsConstantExpr(Unused, Context, Kind);
+  }
+  return Result;
 }
 
 DeclContext *Sema::TryFindDeclContextOf(const Expr *E) {
