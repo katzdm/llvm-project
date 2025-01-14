@@ -50,7 +50,8 @@ private:
                              bool AllowInjection,
                              QualType ResultType,
                              SourceRange Range,
-                             ArrayRef<Expr *> Args);
+                             ArrayRef<Expr *> Args,
+                             Decl *ContainingDecl);
 
   ResultKind Kind;
   unsigned MinArgs;
@@ -80,7 +81,7 @@ public:
   bool evaluate(APValue &Result, ASTContext &C, MetaActions &Meta,
                 EvaluateFn Evaluator, DiagnoseFn Diagnoser, bool AllowInjection,
                 QualType ResultType, SourceRange Range,
-                ArrayRef<Expr *> Args) const;
+                ArrayRef<Expr *> Args, Decl *ContainingDecl) const;
 
   // Get a pointer to the metafunction with the given ID.
   // Returns true in the case of error (i.e., no such metafunction exists).

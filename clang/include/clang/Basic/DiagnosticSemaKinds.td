@@ -3174,6 +3174,10 @@ def note_dependent_splice_explicit_this_may_fix : Note<
 def err_injected_decl_from_disallowed_context : Error<
   "injected declaration for class %0 was produced by a manifestly "
   "constant-evaluated expression that is not plainly constant-evaluated">;
+def err_injected_decl_outside_cone : Error <
+  "cannot produce injected declaration of %0 from declaration of %1: scope "
+  "associated with the %select{template specialization|function}2 %3 does not "
+  "enclose both declarations">;
 
 def err_cannot_expand_over_type : Error<
   "cannot expand over an expression of type %0">;

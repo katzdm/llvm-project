@@ -1243,7 +1243,7 @@ Decl *Parser::ParseConstevalBlockDeclaration(SourceLocation &DeclEnd) {
   SourceLocation ConstevalLoc = ConsumeToken();
 
   EnterExpressionEvaluationContext ConstantEvaluated(
-      Actions, Sema::ExpressionEvaluationContext::ConstantEvaluated);
+      Actions, Sema::ExpressionEvaluationContext::ImmediateFunctionContext);
 
   LambdaIntroducer FakeIntroducer;
   FakeIntroducer.Range.setBegin(ConstevalLoc);

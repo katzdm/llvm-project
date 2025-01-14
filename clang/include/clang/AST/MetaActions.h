@@ -149,6 +149,7 @@ public:
   virtual CXXRecordDecl *DefineClass(CXXRecordDecl *IncompleteDecl,
                                      ArrayRef<TagDataMemberSpec *> MemberSpecs,
                                      bool AllowInjection,
+                                     Decl *ContainingDecl,
                                      SourceLocation DefinitionLoc) = 0;
 
                         // ============================

@@ -767,9 +767,13 @@ public:
 
   /// Evaluate an expression that is required to be a constant expression. Does
   /// not check the syntactic constraints for C and C++98 constant expressions.
+  ///
+  /// If 'Kind' is 'PlainlyConstantEvaluated', then 'ContainingDecl' is the
+  /// declaration containing the expression and must be non-null.
   bool EvaluateAsConstantExpr(
       EvalResult &Result, const ASTContext &Ctx,
-      ConstantExprKind Kind = ConstantExprKind::Normal) const;
+      ConstantExprKind Kind = ConstantExprKind::Normal,
+      Decl *ContainingDecl = nullptr) const;
 
   /// If the current Expr is a pointer, this will try to statically
   /// determine the number of bytes available where the pointer is pointing.

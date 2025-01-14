@@ -5586,8 +5586,17 @@ void Sema::InstantiateVariableInitializer(
     Var->setImplicitlyInline();
 
   if (OldVar->getInit()) {
-    EnterExpressionEvaluationContext Evaluated(
-        *this, Sema::ExpressionEvaluationContext::PotentiallyEvaluated, Var);
+    ExpressionEvaluationContext Ctx =
+        ExpressionEvaluationContext::PotentiallyEvaluated;
+    if (getLangOpts().CPlusPlus23) {
+      if (OldVar->isConstexpr())
+        Ctx = ExpressionEvaluationContext::ImmediateFunctionContext;
+      else if (const auto *A = OldVar->getAttr<ConstInitAttr>();
+               A && A->isConstinit())
+      Ctx = ExpressionEvaluationContext::ImmediateFunctionContext;
+    }
+
+    EnterExpressionEvaluationContext Evaluated(*this, Ctx, Var);
 
     currentEvaluationContext().InLifetimeExtendingContext =
         parentEvaluationContext().InLifetimeExtendingContext;

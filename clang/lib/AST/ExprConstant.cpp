@@ -882,6 +882,11 @@ namespace {
     /// evaluated, if any.
     APValue::LValueBase EvaluatingDecl;
 
+    /// ContainingDecl - This is the declaration within which the expression
+    /// under evaluation appears. Used to verify rules around injected
+    /// declarations that may be produced by plainly constant evaluations.
+    Decl *ContainingDecl;
+
     enum class EvaluatingDeclKind {
       None,
       /// We're evaluating the construction of EvaluatingDecl.
@@ -8665,7 +8670,8 @@ bool ExprEvaluatorBase<Derived>::VisitCXXMetafunctionExpr(
   APValue Result;
   const CXXMetafunctionExpr::ImplFn &Implementation = E->getImpl();
   if (Implementation(Result, Evaluator, Diagnoser, AllowInjection,
-                     E->getResultType(), Info.CurrentCall->CallRange, Args)) {
+                     E->getResultType(), Info.CurrentCall->CallRange, Args,
+                     Info.ContainingDecl)) {
     bool Result = Error(E);
     Info.addNotes(Diagnostics);
 
@@ -17007,7 +17013,8 @@ static bool EvaluateDestruction(const ASTContext &Ctx, APValue::LValueBase Base,
 }
 
 bool Expr::EvaluateAsConstantExpr(EvalResult &Result, const ASTContext &Ctx,
-                                  ConstantExprKind Kind) const {
+                                  ConstantExprKind Kind,
+                                  Decl *ContainingDecl) const {
   assert(!isValueDependent() &&
          "Expression evaluator can't be called on a dependent expression.");
   bool IsConst;
@@ -17015,8 +17022,12 @@ bool Expr::EvaluateAsConstantExpr(EvalResult &Result, const ASTContext &Ctx,
     return true;
 
   EvalInfo::EvaluationMode EM = EvalInfo::EM_ConstantExpression;
-  if (Kind == ConstantExprKind::PlainlyConstantEvaluated)
+  if (Kind == ConstantExprKind::PlainlyConstantEvaluated) {
+    assert(ContainingDecl &&
+           "must specify a ContainingDecl when evaluating a plainly "
+           "constant-evaluated expression");
     EM = EvalInfo::EM_ConstantExpressionPlainlyConstantEvaluated;
+  }
 
   ExprTimeTraceScope TimeScope(this, Ctx, "EvaluateAsConstantExpr");
   EvalInfo Info(Ctx, Result, EM);
@@ -17040,6 +17051,9 @@ bool Expr::EvaluateAsConstantExpr(EvalResult &Result, const ASTContext &Ctx,
   MaterializeTemporaryExpr BaseMTE(T, const_cast<Expr*>(this), true);
   APValue::LValueBase Base(&BaseMTE);
   Info.setEvaluatingDecl(Base, Result.Val);
+
+  // Set the containing declaration, if one was provided.
+  Info.ContainingDecl = ContainingDecl;
 
   if (Info.EnableNewConstInterp) {
     if (!Info.Ctx.getInterpContext().evaluateAsRValue(Info, this, Result.Val))
@@ -17111,6 +17125,9 @@ bool Expr::EvaluateAsInitializer(APValue &Value, const ASTContext &Ctx,
                     : EvalInfo::EM_ConstantFold);
   Info.setEvaluatingDecl(VD, Value);
   Info.InConstantContext = IsConstantInitialization;
+
+  // Use the variable as the containing declaration.
+  Info.ContainingDecl = const_cast<VarDecl *>(VD);
 
   SourceLocation DeclLoc = VD->getLocation();
   QualType DeclTy = VD->getType();

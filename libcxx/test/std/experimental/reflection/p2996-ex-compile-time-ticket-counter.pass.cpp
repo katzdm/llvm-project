@@ -41,11 +41,11 @@ public:
   }
 };
 
-int main() {
-  constexpr auto v1 = TU_Ticket::next();
-  constexpr auto v2 = TU_Ticket::next();
-  constexpr auto v3 = TU_Ticket::next();
+constexpr auto v1 = TU_Ticket::next();
+constexpr auto v2 = TU_Ticket::next();
+constexpr auto v3 = TU_Ticket::next();
 
+int main() {
   // RUN: grep "0, 1, 2" %t.stdout
   std::println("{}, {}, {}", v1, v2, v3);
 }

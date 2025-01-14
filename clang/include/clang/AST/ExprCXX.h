@@ -5426,7 +5426,8 @@ public:
   // Type of callback used to evaluate the metafunction during constant
   // evaluation. This will be a lambda with the bound 'Sema' object.
   using ImplFn = std::function<bool(APValue &, EvaluateFn, DiagnoseFn, bool,
-                                    QualType, SourceRange, ArrayRef<Expr *>)>;
+                                    QualType, SourceRange, ArrayRef<Expr *>,
+                                    Decl *ContainingDecl)>;
 
 private:
 

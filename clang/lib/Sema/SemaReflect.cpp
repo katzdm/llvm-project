@@ -25,6 +25,7 @@
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/Template.h"
 #include "clang/Sema/TemplateDeduction.h"
+#include "llvm/Support/raw_ostream.h"
 
 using namespace clang;
 using namespace sema;
@@ -90,6 +91,18 @@ Expr *CreateRefToDecl(Sema &S, ValueDecl *D,
         S.Context, NNSLocBuilder.getWithLocInContext(S.Context),
         SourceLocation(), D, false, ExprLoc, QT, ValueKind, D, nullptr);
   }
+}
+
+static Decl *findInjectionCone(Decl *ContainingDecl) {
+  for (Decl *Ctx = ContainingDecl; Ctx;
+       Ctx = cast<Decl>(Ctx->getDeclContext())) {
+    if (isa<ClassTemplateSpecializationDecl,
+            VarTemplateSpecializationDecl,
+            FunctionDecl,
+            TranslationUnitDecl>(Ctx))
+      return Ctx;
+  }
+  llvm_unreachable("should have terminated at a TranslationUnitDecl");
 }
 
 class MetaActionsImpl : public MetaActions {
@@ -376,6 +389,7 @@ public:
   CXXRecordDecl *DefineClass(CXXRecordDecl *IncompleteDecl,
                              ArrayRef<TagDataMemberSpec *> MemberSpecs,
                              bool AllowInjection,
+                             Decl *ContainingDecl,
                              SourceLocation DefinitionLoc) override {
     class RestoreDeclContextTy {
       Sema &S;
@@ -598,6 +612,35 @@ public:
     if (!AllowInjection) {
       S.Diag(DefinitionLoc, diag::err_injected_decl_from_disallowed_context)
           << NewDecl;
+    } else {
+      Decl *ExprCone = findInjectionCone(ContainingDecl);
+      Decl *NewDeclCone = findInjectionCone(
+              cast<Decl>(NewDecl->getDeclContext()));
+
+      if (ExprCone != NewDeclCone) {
+        Decl *ProblemScope = isa<TranslationUnitDecl>(ExprCone) ? NewDeclCone
+                                                                : ExprCone;
+
+        // TODO(P2996): Implement diagnostic printing of 'ConstevalBlockDecl's.
+        if (isa<ConstevalBlockDecl>(ContainingDecl)) {
+          std::string Repr;
+          llvm::raw_string_ostream ReprOut(Repr);
+
+          SourceLocation Loc = ContainingDecl->getLocation();
+          ReprOut << "'(consteval-block at "
+                  << Loc.printToString(S.Context.getSourceManager()) << ")'";
+
+          S.Diag(DefinitionLoc, diag::err_injected_decl_outside_cone)
+              << cast<NamedDecl>(NewDecl) << Repr
+              << (isa<FunctionDecl>(ProblemScope) ? 1 : 0)
+              << cast<NamedDecl>(ProblemScope);
+        } else {
+          S.Diag(DefinitionLoc, diag::err_injected_decl_outside_cone)
+              << cast<NamedDecl>(NewDecl) << cast<NamedDecl>(ContainingDecl)
+              << (isa<FunctionDecl>(ProblemScope) ? 1 : 0)
+              << cast<NamedDecl>(ProblemScope);
+        }
+      }
     }
 
     return NewDecl;
@@ -835,10 +878,12 @@ const CXXMetafunctionExpr::ImplFn &Sema::getMetafunctionCb(unsigned FnID) {
                            CXXMetafunctionExpr::EvaluateFn EvalFn,
                            CXXMetafunctionExpr::DiagnoseFn DiagFn,
                            bool AllowInjection, QualType ResultTy,
-                           SourceRange Range, ArrayRef<Expr *> Args) -> bool {
+                           SourceRange Range, ArrayRef<Expr *> Args,
+                           Decl *ContainingDecl) -> bool {
               MetaActionsImpl Actions(*this);
               return Metafn->evaluate(Result, Context, Actions, EvalFn, DiagFn,
-                                      AllowInjection, ResultTy, Range, Args);
+                                      AllowInjection, ResultTy, Range, Args,
+                                      ContainingDecl);
             }));
     ImplIt = MetafunctionImplCbs.try_emplace(FnID, std::move(MetafnImpl)).first;
   }
@@ -1598,7 +1643,7 @@ Decl *Sema::BuildConstevalBlockDeclaration(SourceLocation ConstevalLoc,
     Expr::EvalResult Unused;
 
     ConstantExprKind Kind = ConstantExprKind::PlainlyConstantEvaluated;
-    EvaluatingExpr->EvaluateAsConstantExpr(Unused, Context, Kind);
+    EvaluatingExpr->EvaluateAsConstantExpr(Unused, Context, Kind, Result);
   }
   return Result;
 }
