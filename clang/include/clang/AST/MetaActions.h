@@ -152,6 +152,12 @@ public:
                                      Decl *ContainingDecl,
                                      SourceLocation DefinitionLoc) = 0;
 
+  // Appertains the value represented by 'Value' as an annotation of 'Decl'.
+  virtual CXX26AnnotationAttr *Annotate(Decl *TargetDecl, const APValue &Value,
+                                        bool AllowInjection,
+                                        Decl *ContainingDecl,
+                                        SourceLocation DefinitionLoc) = 0;
+
                         // ============================
                         // Annotation Synthesis Support
                         // ============================

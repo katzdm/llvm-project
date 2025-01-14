@@ -5389,39 +5389,33 @@ bool annotate(APValue &Result, ASTContext &C, MetaActions &Meta,
   if (!Evaluator(Value, Args[1], true) || !Value.isReflectedValue())
     return true;
 
-  CXX26AnnotationAttr *Annot = nullptr;
-  {
-    Expr *OVE = new (C) OpaqueValueExpr(Range.getBegin(),
-                                        Value.getTypeOfReflectedResult(C),
-                                        VK_PRValue);
-    Expr *CE = ConstantExpr::Create(C, OVE, Value.getReflectedValue());
-    AttributeCommonInfo *ACI = Meta.SynthesizeAnnotation(CE, Range.getBegin());
-
-    Annot = CXX26AnnotationAttr::Create(C, CE, *ACI);
-    Annot->setValue(Value.getReflectedValue());
-    Annot->setEqLoc(Range.getBegin());
-  }
-
   switch (Appertainee.getReflectionKind()) {
   case ReflectionKind::Type: {
     Decl *D = findTypeDecl(Appertainee.getReflectedType());
-    D->getMostRecentDecl()->addAttr(Annot);
-    return SetAndSucceed(Result, makeReflection(Annot));
+    if (auto *Annot = Meta.Annotate(D->getMostRecentDecl(), Value,
+                                    AllowInjection, ContainingDecl,
+                                    Range.getBegin()))
+      return SetAndSucceed(Result, makeReflection(Annot));
+    return true;
   }
   case ReflectionKind::Declaration: {
     Decl *D = Appertainee.getReflectedDecl();
-    D->getMostRecentDecl()->addAttr(Annot);
-    return SetAndSucceed(Result, makeReflection(Annot));
+    if (!isa<VarDecl, FunctionDecl>(D))
+      return true;
+
+    if (auto *Annot = Meta.Annotate(D->getMostRecentDecl(), Value,
+                                    AllowInjection, ContainingDecl,
+                                    Range.getBegin()))
+      return SetAndSucceed(Result, makeReflection(Annot));
+    return true;
   }
   case ReflectionKind::Namespace: {
     Decl *D = Appertainee.getReflectedNamespace();
-    D->getMostRecentDecl()->addAttr(Annot);
-    return SetAndSucceed(Result, makeReflection(Annot));
-  }
-  case ReflectionKind::Template: {
-    Decl *D = Appertainee.getReflectedTemplate().getAsTemplateDecl();
-    D->getMostRecentDecl()->addAttr(Annot);
-    return SetAndSucceed(Result, makeReflection(Annot));
+    if (auto *Annot = Meta.Annotate(D->getMostRecentDecl(), Value,
+                                    AllowInjection, ContainingDecl,
+                                    Range.getBegin()))
+      return SetAndSucceed(Result, makeReflection(Annot));
+    return true;
   }
   case ReflectionKind::Null:
   case ReflectionKind::Object:

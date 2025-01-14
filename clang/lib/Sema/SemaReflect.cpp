@@ -646,6 +646,71 @@ public:
     return NewDecl;
   }
 
+  CXX26AnnotationAttr *Annotate(Decl *TargetDecl, const APValue &Value,
+                                bool AllowInjection, Decl *ContainingDecl,
+                                SourceLocation DefinitionLoc) override {
+    if (!AllowInjection) {
+      S.Diag(DefinitionLoc, diag::err_injected_decl_from_disallowed_context)
+          << cast<NamedDecl>(TargetDecl);
+      return nullptr;
+    }
+
+    Decl *ExprCone = findInjectionCone(ContainingDecl);
+    Decl *TargetDeclCone = findInjectionCone(
+            cast<Decl>(TargetDecl->getDeclContext()));
+
+    if (ExprCone != TargetDeclCone) {
+      Decl *ProblemScope = isa<TranslationUnitDecl>(ExprCone) ? TargetDeclCone
+                                                              : ExprCone;
+
+      // TODO(P2996): Implement diagnostic printing of 'ConstevalBlockDecl's.
+      if (isa<ConstevalBlockDecl>(ContainingDecl)) {
+        std::string Repr;
+        llvm::raw_string_ostream ReprOut(Repr);
+
+        SourceLocation Loc = ContainingDecl->getLocation();
+        ReprOut << "'(consteval-block at "
+                << Loc.printToString(S.Context.getSourceManager()) << ")'";
+
+        S.Diag(DefinitionLoc, diag::err_injected_decl_outside_cone)
+            << cast<NamedDecl>(TargetDecl) << Repr
+            << (isa<FunctionDecl>(ProblemScope) ? 1 : 0)
+            << cast<NamedDecl>(ProblemScope);
+      } else {
+        S.Diag(DefinitionLoc, diag::err_injected_decl_outside_cone)
+            << cast<NamedDecl>(TargetDecl) << cast<NamedDecl>(ContainingDecl)
+            << (isa<FunctionDecl>(ProblemScope) ? 1 : 0)
+            << cast<NamedDecl>(ProblemScope);
+      }
+    }
+
+    CXX26AnnotationAttr *Annot;
+    {
+      Expr *OVE = new (S.Context) OpaqueValueExpr(
+            DefinitionLoc,
+            Value.getTypeOfReflectedResult(S.Context),
+            VK_PRValue);
+      Expr *CE = ConstantExpr::Create(S.Context, OVE,
+                                      Value.getReflectedValue());
+
+      AttributeFactory AttrFactory;
+      ParsedAttributes ParsedAttrs(AttrFactory);
+
+      SourceRange Range(DefinitionLoc, DefinitionLoc);
+      IdentifierInfo &II = S.Context.Idents.get("__annotation_placeholder");
+      AttributeCommonInfo *ACI = ParsedAttrs.addNew(
+            &II, Range, nullptr, DefinitionLoc, nullptr, 0,
+            ParsedAttr::Form::Annotation());
+
+      Annot = CXX26AnnotationAttr::Create(S.Context, CE, *ACI);
+      Annot->setValue(Value.getReflectedValue());
+      Annot->setEqLoc(DefinitionLoc);
+    }
+
+    TargetDecl->addAttr(Annot);
+    return Annot;
+  }
+
   AttributeCommonInfo *SynthesizeAnnotation(Expr *CE,
                                             SourceLocation Loc) override {
     AttributeFactory AttrFactory;
