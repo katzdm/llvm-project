@@ -18576,8 +18576,17 @@ void Sema::ActOnCXXEnterDeclInitializer(Scope *S, Decl *D) {
   if (S && D->isOutOfLine())
     EnterDeclaratorContext(S, D->getDeclContext());
 
-  PushExpressionEvaluationContext(
-      ExpressionEvaluationContext::PotentiallyEvaluated, D);
+  auto Ctx = ExpressionEvaluationContext::PotentiallyEvaluated;
+  if (getLangOpts().CPlusPlus23) {
+    if (auto *VD = dyn_cast<VarDecl>(D)) {
+      if (VD->isConstexpr())
+        Ctx = ExpressionEvaluationContext::ImmediateFunctionContext;
+      else if (auto *CIA = VD->getAttr<ConstInitAttr>();
+               CIA && CIA->isConstinit())
+        Ctx = ExpressionEvaluationContext::ImmediateFunctionContext;
+    }
+  }
+  PushExpressionEvaluationContext(Ctx, D);
 }
 
 void Sema::ActOnCXXExitDeclInitializer(Scope *S, Decl *D) {

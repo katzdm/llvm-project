@@ -97,7 +97,6 @@ static Decl *findInjectionCone(Decl *ContainingDecl) {
   for (Decl *Ctx = ContainingDecl; Ctx;
        Ctx = cast<Decl>(Ctx->getDeclContext())) {
     if (isa<ClassTemplateSpecializationDecl,
-            VarTemplateSpecializationDecl,
             FunctionDecl,
             TranslationUnitDecl>(Ctx))
       return Ctx;

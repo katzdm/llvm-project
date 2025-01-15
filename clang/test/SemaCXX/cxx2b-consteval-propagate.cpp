@@ -400,7 +400,7 @@ namespace lvalue_to_rvalue_init_from_heap {
 
 struct S {
     int *value;
-    constexpr S(int v) : value(new int {v}) {}  // expected-note 2 {{heap allocation performed here}}
+    constexpr S(int v) : value(new int {v}) {}  // expected-note 1 {{heap allocation performed here}}
     constexpr ~S() { delete value; }
 };
 consteval S fn() { return S(5); }
@@ -412,9 +412,7 @@ const int c = *fn().value;
 int d = *fn().value;
 
 constexpr int e = *fn().value + fn2(); // expected-error {{must be initialized by a constant expression}} \
-                                       // expected-error {{call to consteval function 'lvalue_to_rvalue_init_from_heap::fn' is not a constant expression}} \
-                                       // expected-note {{non-constexpr function 'fn2'}} \
-                                       // expected-note {{pointer to heap-allocated object}}
+                                       // expected-note {{non-constexpr function 'fn2'}}
 
 int f = *fn().value + fn2();  // expected-error {{call to consteval function 'lvalue_to_rvalue_init_from_heap::fn' is not a constant expression}} \
                               // expected-note {{pointer to heap-allocated object}}

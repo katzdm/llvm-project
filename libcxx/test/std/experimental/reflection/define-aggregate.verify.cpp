@@ -111,6 +111,13 @@ void trigger_instantiations() {
   s.mfn2();
 }
 
+template <typename Ty>
+constexpr auto Completion = define_aggregate(^^Ty, {});
+// expected-error@-1{{not plainly constant-evaluated}}
+
+struct I4;
+constexpr auto D = Completion<I4>;
+
 }  // namespace non_plainly_constant_evaluated
 
 
@@ -161,13 +168,6 @@ consteval auto tfn() {
   return ^^I;
 }
 consteval { tfn<tfn<std::meta::info{}>()>(); }
-
-template <typename Ty>
-constexpr auto Completion = define_aggregate(^^Ty, {});
-// expected-error-re@-1{{specialization 'Completion<{{.*}}>' does not enclose}}
-
-struct I4;
-constexpr auto D = Completion<I4>;
 
 }  // namespace scope_rule_violations
 

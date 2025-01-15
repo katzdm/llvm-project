@@ -17112,11 +17112,13 @@ bool Expr::EvaluateAsInitializer(APValue &Value, const ASTContext &Ctx,
   EStatus.Diag = &Notes;
 
   EvalInfo::EvaluationMode ConstEM = EvalInfo::EM_ConstantExpression;
-  if (VD->isConstexpr())
-    ConstEM = EvalInfo::EM_ConstantExpressionPlainlyConstantEvaluated;
-  else if (const auto *A = VD->getAttr<ConstInitAttr>();
-           A && A->isConstinit())
-    ConstEM = EvalInfo::EM_ConstantExpressionPlainlyConstantEvaluated;
+  if (!isa<VarTemplateSpecializationDecl>(VD)) {
+    if (VD->isConstexpr())
+      ConstEM = EvalInfo::EM_ConstantExpressionPlainlyConstantEvaluated;
+    else if (const auto *A = VD->getAttr<ConstInitAttr>();
+             A && A->isConstinit())
+      ConstEM = EvalInfo::EM_ConstantExpressionPlainlyConstantEvaluated;
+  }
 
   EvalInfo Info(Ctx, EStatus,
                 (IsConstantInitialization &&

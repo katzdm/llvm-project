@@ -2648,6 +2648,14 @@ bool VarDecl::checkForConstantInitialization(
 
   assert(!getInit()->isValueDependent());
 
+  // TODO(P2996): A proper upstream implementation would need a means of piping
+  // back through to 'evaluateValueImpl' that the constant evaluation failed
+  // due to premature evaluation of 'define_aggregate', and not because it isn't
+  // necessarily a constant expression. As written, this is a blanket
+  // pessimization for result caching, but that need not be the case.
+  if (getDescribedVarTemplate())
+    return true;
+
   // Evaluate the initializer to check whether it's a constant expression.
   Eval->HasConstantInitialization =
       evaluateValueImpl(Notes, true) && Notes.empty();
