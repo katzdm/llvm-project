@@ -1701,9 +1701,8 @@ Decl *Sema::BuildConstevalBlockDeclaration(SourceLocation ConstevalLoc,
                                             EvaluatingExpr);
   CurContext->addDecl(Result);
 
-  //static int k = 0; if (k++ >= 0) llvm_unreachable("here");
-  if (!CurContext->isDependentContext() &&
-      !CurScope->getTemplateParamParent()) {
+  if (!EvaluatingExpr->isTypeDependent() &&
+      !EvaluatingExpr->isValueDependent()) {
     Expr::EvalResult Unused;
 
     ConstantExprKind Kind = ConstantExprKind::PlainlyConstantEvaluated;

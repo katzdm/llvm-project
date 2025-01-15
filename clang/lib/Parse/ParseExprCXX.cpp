@@ -1399,7 +1399,8 @@ static void DiagnoseStaticSpecifierRestrictions(Parser &P,
 /// ParseLambdaExpressionAfterIntroducer - Parse the rest of a lambda
 /// expression.
 ExprResult Parser::ParseLambdaExpressionAfterIntroducer(
-                     LambdaIntroducer &Intro, SourceLocation ConstevalLoc) {
+                     LambdaIntroducer &Intro, SourceLocation ConstevalLoc,
+                     TypeResult ReturnTy) {
   SourceLocation LambdaBeginLoc = Intro.Range.getBegin();
   if (getLangOpts().HLSL)
     Diag(LambdaBeginLoc, diag::ext_hlsl_lambda) << /*HLSL*/ 1;
@@ -1502,7 +1503,7 @@ ExprResult Parser::ParseLambdaExpressionAfterIntroducer(
     MaybeParseCXX11Attributes(D);
   }
 
-  TypeResult TrailingReturnType;
+  TypeResult TrailingReturnType = ReturnTy;
   SourceLocation TrailingReturnTypeLoc;
   SourceLocation LParenLoc, RParenLoc;
   SourceLocation DeclEndLoc;
@@ -1587,7 +1588,7 @@ ExprResult Parser::ParseLambdaExpressionAfterIntroducer(
   if (!HasParentheses)
     Actions.ActOnLambdaClosureQualifiers(Intro, MutableLoc);
 
-  if (HasSpecifiers || HasParentheses) {
+  if (HasSpecifiers || HasParentheses || ReturnTy.get().get() != QualType{}) {
     // Parse exception-specification[opt].
     ExceptionSpecificationType ESpecType = EST_None;
     SourceRange ESpecRange;

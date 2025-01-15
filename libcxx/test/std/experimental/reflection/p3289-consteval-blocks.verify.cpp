@@ -41,7 +41,7 @@ Tuple<int, bool, char> tup;
                          // consteval_block_annotations
                          // ===========================
 
-/*namespace consteval_block_annotations {
+namespace consteval_block_annotations {
 
 struct S {
   consteval {
@@ -51,6 +51,15 @@ struct S {
 
 static_assert(extract<int>(annotations_of(^^S)[0]) == 42);
 
-}  // namespace consteval_block_annotations*/
+}  // namespace consteval_block_annotations
+
+                             // ==================
+                             // non_void_returning
+                             // ==================
+
+namespace non_void_returning {
+consteval { return 1; }  // expected-error {{should not return a value}}
+
+}  // namespace non_void_returning
 
 int main() { }

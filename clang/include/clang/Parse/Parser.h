@@ -2047,7 +2047,8 @@ private:
 
   // Explicit 'ConstevalLoc' is allowed to facilitate C++2C consteval-blocks.
   ExprResult ParseLambdaExpressionAfterIntroducer(LambdaIntroducer &Intro,
-                                                  SourceLocation ConstevalLoc);
+                                                  SourceLocation ConstevalLoc,
+                                                  TypeResult ReturnTy = {});
   ExprResult ParseLambdaExpressionAfterIntroducer(LambdaIntroducer &Intro) {
     SourceLocation ConstevalLoc;
     return ParseLambdaExpressionAfterIntroducer(Intro, ConstevalLoc);
