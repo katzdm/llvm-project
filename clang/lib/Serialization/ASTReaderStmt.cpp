@@ -113,7 +113,7 @@ namespace clang {
     static const unsigned NumExprFields = NumStmtFields + 2;
 
     /// The number of bits required for the packing bits for the Expr class.
-    static const unsigned NumExprBits = 10;
+    static const unsigned NumExprBits = 11;
 
     /// Read and initialize a ExplicitTemplateArgumentList structure.
     void ReadTemplateKWAndArgsInfo(ASTTemplateKWAndArgsInfo &Args,
@@ -624,6 +624,7 @@ void ASTStmtReader::VisitExpr(Expr *E) {
       CurrentUnpackingBits->getNextBits(/*Width=*/2)));
   E->setObjectKind(static_cast<ExprObjectKind>(
       CurrentUnpackingBits->getNextBits(/*Width=*/3)));
+  E->setIsImmediateEscalating(CurrentUnpackingBits->getNextBit());
 
   E->setType(Record.readType());
   assert(Record.getIdx() == NumExprFields &&
@@ -697,7 +698,6 @@ void ASTStmtReader::VisitDeclRefExpr(DeclRefExpr *E) {
       CurrentUnpackingBits->getNextBit();
   E->DeclRefExprBits.NonOdrUseReason =
       CurrentUnpackingBits->getNextBits(/*Width=*/2);
-  E->DeclRefExprBits.IsImmediateEscalating = CurrentUnpackingBits->getNextBit();
   E->DeclRefExprBits.HasFoundDecl = CurrentUnpackingBits->getNextBit();
   E->DeclRefExprBits.HasQualifier = CurrentUnpackingBits->getNextBit();
   E->DeclRefExprBits.HasTemplateKWAndArgsInfo =
@@ -1830,7 +1830,6 @@ void ASTStmtReader::VisitCXXConstructExpr(CXXConstructExpr *E) {
   E->CXXConstructExprBits.StdInitListInitialization = Record.readInt();
   E->CXXConstructExprBits.ZeroInitialization = Record.readInt();
   E->CXXConstructExprBits.ConstructionKind = Record.readInt();
-  E->CXXConstructExprBits.IsImmediateEscalating = Record.readInt();
   E->CXXConstructExprBits.Loc = readSourceLocation();
   E->Constructor = readDeclAs<CXXConstructorDecl>();
   E->ParenOrBraceRange = readSourceRange();

@@ -722,6 +722,7 @@ void ASTStmtWriter::VisitExpr(Expr *E) {
   CurrentPackingBits.addBits(E->getDependence(), /*BitsWidth=*/5);
   CurrentPackingBits.addBits(E->getValueKind(), /*BitsWidth=*/2);
   CurrentPackingBits.addBits(E->getObjectKind(), /*BitsWidth=*/3);
+  CurrentPackingBits.addBits(E->isImmediateEscalating(), /*BitsWidth=*/1);
 
   Record.AddTypeRef(E->getType());
 }
@@ -790,7 +791,6 @@ void ASTStmtWriter::VisitDeclRefExpr(DeclRefExpr *E) {
   CurrentPackingBits.addBit(E->hadMultipleCandidates());
   CurrentPackingBits.addBit(E->refersToEnclosingVariableOrCapture());
   CurrentPackingBits.addBits(E->isNonOdrUse(), /*Width=*/2);
-  CurrentPackingBits.addBit(E->isImmediateEscalating());
   CurrentPackingBits.addBit(E->getDecl() != E->getFoundDecl());
   CurrentPackingBits.addBit(E->hasQualifier());
   CurrentPackingBits.addBit(E->hasTemplateKWAndArgsInfo());
@@ -1831,7 +1831,6 @@ void ASTStmtWriter::VisitCXXConstructExpr(CXXConstructExpr *E) {
   Record.push_back(E->requiresZeroInitialization());
   Record.push_back(
       llvm::to_underlying(E->getConstructionKind())); // FIXME: stable encoding
-  Record.push_back(E->isImmediateEscalating());
   Record.AddSourceLocation(E->getLocation());
   Record.AddDeclRef(E->getConstructor());
   Record.AddSourceRange(E->getParenOrBraceRange());

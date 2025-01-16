@@ -17516,20 +17516,13 @@ void Sema::MarkExpressionAsImmediateEscalating(Expr *E) {
          ExprEvalContexts.back().InImmediateEscalatingFunctionContext &&
          "Cannot mark an immediate escalating expression outside of an "
          "immediate escalating context");
-  if (auto *Call = dyn_cast<CallExpr>(E->IgnoreImplicit());
-      Call && Call->getCallee()) {
-    if (auto *DeclRef =
-            dyn_cast<DeclRefExpr>(Call->getCallee()->IgnoreImplicit()))
-      DeclRef->setIsImmediateEscalating(true);
-  } else if (auto *Ctr = dyn_cast<CXXConstructExpr>(E->IgnoreImplicit())) {
-    Ctr->setIsImmediateEscalating(true);
-  } else if (auto *DeclRef = dyn_cast<DeclRefExpr>(E->IgnoreImplicit())) {
-    DeclRef->setIsImmediateEscalating(true);
-  } else {
-    assert(false && "expected an immediately escalating expression");
-  }
+  E->setIsImmediateEscalating(true);
   if (FunctionScopeInfo *FI = getCurFunction())
     FI->FoundImmediateEscalatingExpression = true;
+}
+
+static bool IsExpressionImmediateEscalating(Expr *E) {
+  return E->isImmediateEscalating();
 }
 
 ExprResult Sema::CheckForImmediateInvocation(ExprResult E, FunctionDecl *Decl) {
@@ -17656,15 +17649,19 @@ static void RemoveNestedImmediateInvocation(
     SmallVector<Sema::ImmediateInvocationCandidate, 4>::reverse_iterator It) {
   struct ComplexRemove : TreeTransform<ComplexRemove> {
     using Base = TreeTransform<ComplexRemove>;
-    llvm::SmallPtrSetImpl<DeclRefExpr *> &DRSet;
+    llvm::SmallPtrSetImpl<DeclRefExpr *> &RefConsteval;
+    llvm::SmallPtrSetImpl<Expr *> &ConstevalOnly;
     SmallVector<Sema::ImmediateInvocationCandidate, 4> &IISet;
     SmallVector<Sema::ImmediateInvocationCandidate, 4>::reverse_iterator
         CurrentII;
-    ComplexRemove(Sema &SemaRef, llvm::SmallPtrSetImpl<DeclRefExpr *> &DR,
+    ComplexRemove(Sema &SemaRef,
+                  llvm::SmallPtrSetImpl<DeclRefExpr *> &RefConsteval,
+                  llvm::SmallPtrSetImpl<Expr *> &ConstevalOnly,
                   SmallVector<Sema::ImmediateInvocationCandidate, 4> &II,
                   SmallVector<Sema::ImmediateInvocationCandidate,
                               4>::reverse_iterator Current)
-        : Base(SemaRef), DRSet(DR), IISet(II), CurrentII(Current) {}
+        : Base(SemaRef), RefConsteval(RefConsteval),
+          ConstevalOnly(ConstevalOnly), IISet(II), CurrentII(Current) {}
     void RemoveImmediateInvocation(ConstantExpr* E) {
       auto It = std::find_if(CurrentII, IISet.rend(),
                              [E](Sema::ImmediateInvocationCandidate Elem) {
@@ -17688,9 +17685,11 @@ static void RemoveNestedImmediateInvocation(
       return Base::TransformExpr(E->getSubExpr());
     }
     /// Base::TransfromCXXOperatorCallExpr doesn't traverse the callee so
-    /// we need to remove its DeclRefExpr from the DRSet.
+    /// we need to remove its DeclRefExpr from the RefConsteval and
+    /// ConstevalOnly.
     ExprResult TransformCXXOperatorCallExpr(CXXOperatorCallExpr *E) {
-      DRSet.erase(cast<DeclRefExpr>(E->getCallee()->IgnoreImplicit()));
+      RefConsteval.erase(cast<DeclRefExpr>(E->getCallee()->IgnoreImplicit()));
+      ConstevalOnly.erase(E->getCallee()->IgnoreImplicit());
       return Base::TransformCXXOperatorCallExpr(E);
     }
     /// Base::TransformUserDefinedLiteral doesn't preserve the
@@ -17720,7 +17719,16 @@ static void RemoveNestedImmediateInvocation(
       return Base::TransformInitializer(Init, NotCopyInit);
     }
     ExprResult TransformDeclRefExpr(DeclRefExpr *E) {
-      DRSet.erase(E);
+      RefConsteval.erase(E);
+      ConstevalOnly.erase(E);
+      return E;
+    }
+    ExprResult TransformCXXReflectExpr(CXXReflectExpr *E) {
+      ConstevalOnly.erase(E);
+      return E;
+    }
+    ExprResult TransformCastExpr(CastExpr *E) {
+      ConstevalOnly.erase(E);
       return E;
     }
     ExprResult TransformLambdaExpr(LambdaExpr *E) {
@@ -17736,7 +17744,7 @@ static void RemoveNestedImmediateInvocation(
       return Res;
     }
     bool AllowSkippingFirstCXXConstructExpr = true;
-  } Transformer(SemaRef, Rec.ReferenceToConsteval,
+  } Transformer(SemaRef, Rec.ReferenceToConsteval, Rec.ConstevalOnly,
                 Rec.ImmediateInvocationCandidates, It);
 
   /// CXXConstructExpr with a single argument are getting skipped by
@@ -17762,7 +17770,7 @@ static void
 HandleImmediateInvocations(Sema &SemaRef,
                            Sema::ExpressionEvaluationContextRecord &Rec) {
   if ((Rec.ImmediateInvocationCandidates.size() == 0 &&
-       Rec.ReferenceToConsteval.size() == 0) ||
+       Rec.ReferenceToConsteval.size() == 0 && Rec.ConstevalOnly.size() == 0) ||
       Rec.isImmediateFunctionContext() || SemaRef.RebuildingImmediateInvocation)
     return;
 
@@ -17787,15 +17795,27 @@ HandleImmediateInvocations(Sema &SemaRef,
       if (!It->getInt())
         RemoveNestedImmediateInvocation(SemaRef, Rec, It);
   } else if (Rec.ImmediateInvocationCandidates.size() == 1 &&
-             Rec.ReferenceToConsteval.size()) {
+             (Rec.ReferenceToConsteval.size() || Rec.ConstevalOnly.size())) {
     struct SimpleRemove : DynamicRecursiveASTVisitor {
-      llvm::SmallPtrSetImpl<DeclRefExpr *> &DRSet;
-      SimpleRemove(llvm::SmallPtrSetImpl<DeclRefExpr *> &S) : DRSet(S) {}
+      llvm::SmallPtrSetImpl<DeclRefExpr *> &RefConsteval;
+      llvm::SmallPtrSetImpl<Expr *> &ConstevalOnly;
+      SimpleRemove(llvm::SmallPtrSetImpl<DeclRefExpr *> &RefConsteval,
+                   llvm::SmallPtrSetImpl<Expr *> &ConstevalOnly)
+          : RefConsteval(RefConsteval), ConstevalOnly(ConstevalOnly) {}
       bool VisitDeclRefExpr(DeclRefExpr *E) override {
-        DRSet.erase(E);
-        return DRSet.size();
+        RefConsteval.erase(E);
+        ConstevalOnly.erase(E);
+        return RefConsteval.size() + ConstevalOnly.size();
       }
-    } Visitor(Rec.ReferenceToConsteval);
+      bool VisitCXXReflectExpr(CXXReflectExpr *E) override {
+        ConstevalOnly.erase(E);
+        return RefConsteval.size() + ConstevalOnly.size();
+      }
+      bool VisitCastExpr(CastExpr *E) override {
+        ConstevalOnly.erase(E);
+        return RefConsteval.size() + ConstevalOnly.size();
+      }
+    } Visitor(Rec.ReferenceToConsteval, Rec.ConstevalOnly);
     Visitor.TraverseStmt(
         Rec.ImmediateInvocationCandidates.front().getPointer()->getSubExpr());
   }
@@ -17837,6 +17857,7 @@ HandleImmediateInvocations(Sema &SemaRef,
 
     if (!Rec.InImmediateEscalatingFunctionContext ||
         (SemaRef.inTemplateInstantiation() && !ImmediateEscalating)) {
+      llvm_unreachable("here");
       SemaRef.Diag(DR->getBeginLoc(), diag::err_invalid_consteval_take_address)
           << ND << isa<CXXRecordDecl>(ND) << FD->isConsteval();
       if (!FD->getBuiltinID())
@@ -17852,6 +17873,28 @@ HandleImmediateInvocations(Sema &SemaRef,
 
     } else {
       SemaRef.MarkExpressionAsImmediateEscalating(DR);
+    }
+  }
+  for (auto *E : Rec.ConstevalOnly) {
+    if (IsExpressionImmediateEscalating(E))
+      continue;
+
+    bool ImmediateEscalating = false;
+    bool IsPotentiallyEvaluated =
+        Rec.Context ==
+            Sema::ExpressionEvaluationContext::PotentiallyEvaluated ||
+        Rec.Context ==
+            Sema::ExpressionEvaluationContext::PotentiallyEvaluatedIfUsed;
+    if (SemaRef.inTemplateInstantiation() && IsPotentiallyEvaluated)
+      ImmediateEscalating = Rec.InImmediateEscalatingFunctionContext;
+
+    if (!Rec.InImmediateEscalatingFunctionContext ||
+        (SemaRef.inTemplateInstantiation() && !ImmediateEscalating)) {
+      SemaRef.Diag(E->getExprLoc(), diag::err_expr_consteval_only_type)
+          << E->getSourceRange();
+      llvm_unreachable("here!");
+    } else {
+      SemaRef.MarkExpressionAsImmediateEscalating(E);
     }
   }
 }
@@ -19411,6 +19454,7 @@ static ExprResult rebuildPotentialResultsAsNonOdrUsed(Sema &S, Expr *E,
   // Mark that this expression does not constitute an odr-use.
   auto MarkNotOdrUsed = [&] {
     S.MaybeODRUseExprs.remove(E);
+    S.ExprEvalContexts.back().ConstevalOnly.erase(E);
     if (LambdaScopeInfo *LSI = S.getCurLambda())
       LSI->markVariableExprAsNonODRUsed(E);
   };
@@ -19426,11 +19470,12 @@ static ExprResult rebuildPotentialResultsAsNonOdrUsed(Sema &S, Expr *E,
 
     // Rebuild as a non-odr-use DeclRefExpr.
     MarkNotOdrUsed();
-    return DeclRefExpr::Create(
+    auto result = DeclRefExpr::Create(
         S.Context, DRE->getQualifierLoc(), DRE->getTemplateKeywordLoc(),
         DRE->getDecl(), DRE->refersToEnclosingVariableOrCapture(),
         DRE->getNameInfo(), DRE->getType(), DRE->getValueKind(),
         DRE->getFoundDecl(), CopiedTemplateArgs(DRE), NOUR);
+    return result;
   }
 
   case Expr::FunctionParmPackExprClass: {
@@ -19678,11 +19723,19 @@ ExprResult Sema::CheckLValueToRValueConversionOperand(Expr *E) {
   if (E->getType().isVolatileQualified() || E->getType()->getAs<RecordType>())
     return E;
 
+  auto &CEO = ExprEvalContexts.back().ConstevalOnly;
+  bool ReplaceConstevalOnly = E->getType()->isConstevalOnly() &&
+                              CEO.find(E) != CEO.end();
+
   ExprResult Result =
       rebuildPotentialResultsAsNonOdrUsed(*this, E, NOUR_Constant);
   if (Result.isInvalid())
     return ExprError();
-  return Result.get() ? Result : E;
+
+  Result = Result.get() ? Result : E;
+  if (ReplaceConstevalOnly)
+    CEO.insert(Result.get());
+  return Result;
 }
 
 ExprResult Sema::ActOnConstantExpression(ExprResult Res) {
@@ -20058,11 +20111,22 @@ void Sema::MarkDeclRefReferenced(DeclRefExpr *E, const Expr *Base) {
 
   if (auto *FD = dyn_cast<FunctionDecl>(E->getDecl())) {
     if (!isUnevaluatedContext() && !isConstantEvaluatedContext() &&
-        !isImmediateFunctionContext() &&
-        !isCheckingDefaultArgumentOrInitializer() &&
-        FD->isImmediateFunction() && !RebuildingImmediateInvocation &&
-        !FD->isDependentContext())
-      ExprEvalContexts.back().ReferenceToConsteval.insert(E);
+        !isImmediateFunctionContext()) {
+      if (!isCheckingDefaultArgumentOrInitializer() &&
+          FD->isImmediateFunction() && !RebuildingImmediateInvocation &&
+          !FD->isDependentContext())
+        ExprEvalContexts.back().ReferenceToConsteval.insert(E);
+
+      if (FD->getType()->isConstevalOnly()) {
+        ExprEvalContexts.back().ConstevalOnly.insert(E);
+      }
+    }
+  } else if (auto *VD = dyn_cast<VarDecl>(E->getDecl())) {
+    if (VD->getType()->isConstevalOnly() &&
+        !isUnevaluatedContext() && !isImmediateFunctionContext() &&
+        !isConstantEvaluatedContext() && !RebuildingImmediateInvocation) {
+      ExprEvalContexts.back().ConstevalOnly.insert(E);
+    }
   }
   MarkExprReferenced(*this, E->getLocation(), E->getDecl(), E, OdrUse,
                      RefsMinusAssignments);

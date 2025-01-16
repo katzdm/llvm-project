@@ -3687,12 +3687,18 @@ ExprResult Parser::ParseCXXMemberInitializer(Decl *D, bool IsFunction,
 
   bool IsFieldInitialization = isa_and_present<FieldDecl>(D);
 
-  EnterExpressionEvaluationContext Context(
-      Actions,
-      IsFieldInitialization
-          ? Sema::ExpressionEvaluationContext::PotentiallyEvaluatedIfUsed
-          : Sema::ExpressionEvaluationContext::PotentiallyEvaluated,
-      D);
+  static auto Ctx = Sema::ExpressionEvaluationContext::PotentiallyEvaluated;
+  if (IsFieldInitialization)
+    Ctx = Sema::ExpressionEvaluationContext::PotentiallyEvaluatedIfUsed;
+  else if (auto *VD = dyn_cast_or_null<VarDecl>(D)) {
+    if (VD->isConstexpr())
+      Ctx = Sema::ExpressionEvaluationContext::ImmediateFunctionContext;
+    else if (auto *CIA = VD->getAttr<ConstInitAttr>();
+             CIA && CIA->isConstinit())
+      Ctx = Sema::ExpressionEvaluationContext::ImmediateFunctionContext;
+  }
+
+  EnterExpressionEvaluationContext Context(Actions, Ctx, D);
 
   // CWG2760
   // Default member initializers used to initialize a base or member subobject

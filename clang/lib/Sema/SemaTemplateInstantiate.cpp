@@ -2605,6 +2605,7 @@ TemplateInstantiator::TransformDeclRefExpr(DeclRefExpr *E) {
 
 ExprResult
 TemplateInstantiator::TransformCXXReflectExpr(CXXReflectExpr *E) {
+  Sema::ConstevalOnlyRecorder RecordConsteval(getSema());
   EnterExpressionEvaluationContext Context(
       getSema(), Sema::ExpressionEvaluationContext::ReflectionContext);
 
@@ -2613,7 +2614,8 @@ TemplateInstantiator::TransformCXXReflectExpr(CXXReflectExpr *E) {
     if (Result.isInvalid())
       return ExprError();
 
-    return getSema().BuildCXXReflectExpr(E->getOperatorLoc(), Result.get());
+    return RecordConsteval.RecordAndReturn(
+            getSema().BuildCXXReflectExpr(E->getOperatorLoc(), Result.get()));
   }
 
   if (E->getReflection().isReflectedDecl()) {
@@ -2627,7 +2629,8 @@ TemplateInstantiator::TransformCXXReflectExpr(CXXReflectExpr *E) {
       if (Result.isInvalid())
         return ExprError();
 
-      return getSema().BuildCXXReflectExpr(E->getOperatorLoc(), Result.get());
+      return RecordConsteval.RecordAndReturn(
+              getSema().BuildCXXReflectExpr(E->getOperatorLoc(), Result.get()));
     }
 
     // Handle references to function parameter packs.
@@ -2636,11 +2639,12 @@ TemplateInstantiator::TransformCXXReflectExpr(CXXReflectExpr *E) {
       if (Result.isInvalid())
         return ExprError();
 
-      return getSema().BuildCXXReflectExpr(E->getOperatorLoc(), Result.get());
+      return RecordConsteval.RecordAndReturn(
+              getSema().BuildCXXReflectExpr(E->getOperatorLoc(), Result.get()));
     }
   }
 
-  return inherited::TransformCXXReflectExpr(E);
+  return RecordConsteval.RecordAndReturn(inherited::TransformCXXReflectExpr(E));
 }
 
 ExprResult TemplateInstantiator::TransformCXXDefaultArgExpr(
@@ -4684,6 +4688,9 @@ ExprResult Sema::SubstConstraintExprWithoutSatisfaction(
     Expr *E, const MultiLevelTemplateArgumentList &TemplateArgs) {
   if (!E)
     return E;
+
+  EnterExpressionEvaluationContext Context(
+      *this, ExpressionEvaluationContext::Unevaluated);
 
   TemplateInstantiator Instantiator(*this, TemplateArgs, SourceLocation(),
                                     DeclarationName());

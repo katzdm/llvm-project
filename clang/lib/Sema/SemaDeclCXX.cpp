@@ -57,6 +57,7 @@
 #include <map>
 #include <optional>
 #include <set>
+#include <iostream>
 
 using namespace clang;
 
@@ -13831,13 +13832,17 @@ bool SpecialMemberExceptionSpecInfo::visitField(FieldDecl *FD) {
   if (CSM == CXXSpecialMemberKind::DefaultConstructor &&
       FD->hasInClassInitializer()) {
     Expr *E = FD->getInClassInitializer();
-    if (!E)
+    if (!E) {
+      EnterExpressionEvaluationContext Context(
+          S, Sema::ExpressionEvaluationContext::ImmediateFunctionContext);
+
       // FIXME: It's a little wasteful to build and throw away a
       // CXXDefaultInitExpr here.
       // FIXME: We should have a single context note pointing at Loc, and
       // this location should be MD->getLocation() instead, since that's
       // the location where we actually use the default init expression.
       E = S.BuildCXXDefaultInitExpr(Loc, FD).get();
+    }
     if (E)
       ExceptSpec.CalledExpr(E);
   } else if (auto *RT = S.Context.getBaseElementType(FD->getType())

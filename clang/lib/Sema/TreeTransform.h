@@ -9027,6 +9027,7 @@ TreeTransform<Derived>::TransformCoyieldExpr(CoyieldExpr *E) {
 template<typename Derived>
 ExprResult
 TreeTransform<Derived>::TransformCXXReflectExpr(CXXReflectExpr *E) {
+  Sema::ConstevalOnlyRecorder RecordConstevalOnly(getSema());
   EnterExpressionEvaluationContext Context(
       getSema(), Sema::ExpressionEvaluationContext::ReflectionContext);
 
@@ -9035,8 +9036,9 @@ TreeTransform<Derived>::TransformCXXReflectExpr(CXXReflectExpr *E) {
     if (Result.isInvalid())
       return ExprError();
 
-    return getSema().BuildCXXReflectExpr(E->getOperatorLoc(),
-                                         Result.get());
+    return RecordConstevalOnly.RecordAndReturn(
+            getSema().BuildCXXReflectExpr(E->getOperatorLoc(),
+                                          Result.get()));
   }
 
   APValue RV = E->getReflection();
@@ -9053,15 +9055,18 @@ TreeTransform<Derived>::TransformCXXReflectExpr(CXXReflectExpr *E) {
     if (New.isNull()) {
       return ExprError();
     }
-    return getSema().BuildCXXReflectExpr(E->getOperatorLoc(),
-                                         E->getOperandRange().getBegin(), New);
+    return RecordConstevalOnly.RecordAndReturn(
+            getSema().BuildCXXReflectExpr(E->getOperatorLoc(),
+                                          E->getOperandRange().getBegin(),
+                                          New));
   }
   case ReflectionKind::Declaration: {
     Decl *Transformed = getDerived().TransformDecl(E->getExprLoc(),
                                                    RV.getReflectedDecl());
-    return getSema().BuildCXXReflectExpr(E->getOperatorLoc(),
-                                         E->getOperandRange().getBegin(),
-                                         cast<ValueDecl>(Transformed));
+    return RecordConstevalOnly.RecordAndReturn(
+            getSema().BuildCXXReflectExpr(E->getOperatorLoc(),
+                                          E->getOperandRange().getBegin(),
+                                          cast<ValueDecl>(Transformed)));
   }
   case ReflectionKind::Template: {
     TemplateName TName = RV.getReflectedTemplate();
@@ -9090,17 +9095,19 @@ TreeTransform<Derived>::TransformCXXReflectExpr(CXXReflectExpr *E) {
     if (Template.isNull())
       return true;
 
-    return getSema().BuildCXXReflectExpr(E->getOperatorLoc(),
-                                         E->getOperandRange().getBegin(),
-                                         Template);
+    return RecordConstevalOnly.RecordAndReturn(
+            getSema().BuildCXXReflectExpr(E->getOperatorLoc(),
+                                          E->getOperandRange().getBegin(),
+                                          Template));
   }
   case ReflectionKind::Namespace: {
     Decl *Transformed =
           getDerived().TransformDecl(E->getExprLoc(),
                                      RV.getReflectedNamespace());
-    return getSema().BuildCXXReflectExpr(E->getOperatorLoc(),
-                                         E->getOperandRange().getBegin(),
-                                         Transformed);
+    return RecordConstevalOnly.RecordAndReturn(
+            getSema().BuildCXXReflectExpr(E->getOperatorLoc(),
+                                          E->getOperandRange().getBegin(),
+                                          Transformed));
   }
   case ReflectionKind::Object:
   case ReflectionKind::Value:

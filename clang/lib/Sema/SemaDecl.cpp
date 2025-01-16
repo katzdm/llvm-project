@@ -14318,6 +14318,13 @@ StmtResult Sema::ActOnCXXForRangeIdentifier(Scope *S, SourceLocation IdentLoc,
 void Sema::CheckCompleteVariableDeclaration(VarDecl *var) {
   if (var->isInvalidDecl()) return;
 
+  if (var->getType()->isConstevalOnly() && !var->isConstexpr() &&
+      !isUnevaluatedContext() && !isImmediateFunctionContext() &&
+      !isAlwaysConstantEvaluatedContext()) {
+    //Diag(var->getLocation(), diag::err_decl_consteval_only_type) << var;
+    //llvm_unreachable("here!");
+  }
+
   CUDA().MaybeAddConstantAttr(var);
 
   if (getLangOpts().OpenCL) {
@@ -16375,6 +16382,8 @@ Decl *Sema::ActOnFinishFunctionBody(Decl *dcl, Stmt *Body,
   } // Pops the ExitFunctionBodyRAII scope, which needs to happen before we pop
     // the declaration context below. Otherwise, we're unable to transform
     // 'this' expressions when transforming immediate context functions.
+
+  CheckImmediateEscalatingFunctionDefinition(FD, FSI);
 
   if (!IsInstantiation)
     PopDeclContext();

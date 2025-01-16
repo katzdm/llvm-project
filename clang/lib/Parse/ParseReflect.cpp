@@ -21,6 +21,7 @@ using namespace clang;
 ExprResult Parser::ParseCXXReflectExpression(SourceLocation OpLoc) {
   SourceLocation OperandLoc = Tok.getLocation();
 
+  Sema::ConstevalOnlyRecorder RecordConstevalOnly(Actions);
   EnterExpressionEvaluationContext EvalContext(
         Actions, Sema::ExpressionEvaluationContext::ReflectionContext);
 
@@ -65,8 +66,9 @@ ExprResult Parser::ParseCXXReflectExpression(SourceLocation OpLoc) {
 
       if (!AssumeType) {
         TentativeAction.Commit();
-        return Actions.ActOnCXXReflectExpr(OpLoc, TemplateKWLoc, SS,
-                                           UnqualName);
+        return RecordConstevalOnly.RecordAndReturn(
+                Actions.ActOnCXXReflectExpr(OpLoc, TemplateKWLoc, SS,
+                                            UnqualName));
       }
     }
   } else if (SS.isValid() &&
@@ -75,7 +77,8 @@ ExprResult Parser::ParseCXXReflectExpression(SourceLocation OpLoc) {
     TentativeAction.Commit();
 
     Decl *TUDecl = Actions.getASTContext().getTranslationUnitDecl();
-    return Actions.ActOnCXXReflectExpr(OpLoc, SourceLocation(), TUDecl);
+    return RecordConstevalOnly.RecordAndReturn(
+            Actions.ActOnCXXReflectExpr(OpLoc, SourceLocation(), TUDecl));
   }
   TentativeAction.Revert();
 
@@ -92,7 +95,8 @@ ExprResult Parser::ParseCXXReflectExpression(SourceLocation OpLoc) {
     if (TR.isInvalid())
       return ExprError();
 
-    return Actions.ActOnCXXReflectExpr(OpLoc, TR);
+    return RecordConstevalOnly.RecordAndReturn(
+            Actions.ActOnCXXReflectExpr(OpLoc, TR));
   }
 
   Diag(OperandLoc, diag::err_cannot_reflect_operand);
@@ -133,12 +137,7 @@ bool Parser::ParseCXXSpliceSpecifier(SourceLocation TemplateKWLoc) {
   if (SpliceTokens.expectAndConsume())
     return true;
 
-  ExprResult ER;
-  {
-    EnterExpressionEvaluationContext EvalContext(
-        Actions, Sema::ExpressionEvaluationContext::ConstantEvaluated);
-    ER = ParseConstantExpression();
-  }
+  ExprResult ER = ParseConstantExpression();
   if (ER.isInvalid()) {
     SpliceTokens.skipToEnd();
     return true;

@@ -3120,7 +3120,14 @@ def err_type_constraint_missing_arguments : Error<
 def err_placeholder_constraints_not_satisfied : Error<
   "deduced type %0 does not satisfy %1">;
 
-// Reflection
+// Reflection (P2996)
+def err_expr_consteval_only_type : Error<
+  "expressions of consteval-only type are only allowed in constant-evaluated "
+  "contexts">;
+def err_decl_consteval_only_type : Error<
+  "variable %0 of consteval-only type must either be constexpr or in a "
+  "constant-evaluated context">;
+
 def err_reflect_general_expression : Error<
   "reflection operand must be a named entity">;
 def err_reflect_overload_set : Error<
@@ -3129,17 +3136,6 @@ def err_template_arg_bad_reflection_kind : Error<
   "reflection of this kind cannot appear as a template argument">;
 def err_reflect_dependent_splice : Error<
   "cannot take the reflection of a dependent splice expression">;
-
-def err_metafunction_empty_args : Error<
-  "__metafunction requires arguments">;
-def err_metafunction_leading_arg_type : Error<
-  "leading argument of __metafunction must have integral type">;
-def err_metafunction_not_constexpr : Error<
-  "arguments of __metafunction must be constant expressions">;
-def err_unknown_metafunction : Error<
-  "leading argument to __metafunction does not identify a metafunction">;
-def err_metafunction_arity : Error<
-  "expected between %0 and %1 arguments (%2 given)">;
 
 def err_splice_operand_not_reflection : Error<
   "splice operand must be a reflection">;
@@ -3170,6 +3166,17 @@ def err_dependent_splice_implicit_member_reference : Error<
   "cannot implicitly reference a class member through a splice">;
 def note_dependent_splice_explicit_this_may_fix : Note<
   "an explicit 'this' pointer may fix the problem">;
+
+def err_metafunction_empty_args : Error<
+  "__metafunction requires arguments">;
+def err_metafunction_leading_arg_type : Error<
+  "leading argument of __metafunction must have integral type">;
+def err_metafunction_not_constexpr : Error<
+  "arguments of __metafunction must be constant expressions">;
+def err_unknown_metafunction : Error<
+  "leading argument to __metafunction does not identify a metafunction">;
+def err_metafunction_arity : Error<
+  "expected between %0 and %1 arguments (%2 given)">;
 
 def err_injected_decl_from_disallowed_context : Error<
   "injected declaration for class %0 was produced by a manifestly "

@@ -35,6 +35,7 @@
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
+#include <iostream>
 
 using namespace clang;
 
@@ -7586,6 +7587,17 @@ ExprResult InitializationSequence::Perform(Sema &S,
                                            const InitializationKind &Kind,
                                            MultiExprArg Args,
                                            QualType *ResultType) {
+  auto on_complete = [&](ExprResult Res) {
+    if (!Entity.getDecl() && Res.get() &&
+        Res.get()->getType()->isConstevalOnly() && !S.isUnevaluatedContext() &&
+        !S.isImmediateFunctionContext() &&
+        !S.isAlwaysConstantEvaluatedContext()) {
+      S.ExprEvalContexts.back().ConstevalOnly.insert(Res.get());
+    }
+
+    return Res;
+  };
+
   if (Failed()) {
     Diagnose(S, Entity, Kind, Args);
     return ExprError();
@@ -7659,18 +7671,18 @@ ExprResult InitializationSequence::Perform(Sema &S,
         !Kind.isExplicitCast()) {
       // Rebuild the ParenListExpr.
       SourceRange ParenRange = Kind.getParenOrBraceRange();
-      return S.ActOnParenListExpr(ParenRange.getBegin(), ParenRange.getEnd(),
-                                  Args);
+      return S.ActOnParenListExpr(ParenRange.getBegin(),
+                                  ParenRange.getEnd(), Args);
     }
     assert(Kind.getKind() == InitializationKind::IK_Copy ||
            Kind.isExplicitCast() ||
            Kind.getKind() == InitializationKind::IK_DirectList);
-    return ExprResult(Args[0]);
+    return on_complete(ExprResult(Args[0]));
   }
 
   // No steps means no initialization.
   if (Steps.empty())
-    return ExprResult((Expr *)nullptr);
+    return on_complete(ExprResult((Expr *)nullptr));
 
   if (S.getLangOpts().CPlusPlus11 && Entity.getType()->isReferenceType() &&
       Args.size() == 1 && isa<InitListExpr>(Args[0]) &&
@@ -8558,7 +8570,7 @@ ExprResult InitializationSequence::Perform(Sema &S,
   CheckMoveOnConstruction(S, Init,
                           Entity.getKind() == InitializedEntity::EK_Result);
 
-  return Init;
+  return on_complete(Init);
 }
 
 /// Somewhere within T there is an uninitialized reference subobject.

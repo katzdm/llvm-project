@@ -125,6 +125,7 @@ protected:
     ExprBits.Dependent = 0;
     ExprBits.ValueKind = VK;
     ExprBits.ObjectKind = OK;
+    //ExprBits.IsImmediateEscalating = false;
     assert(ExprBits.ObjectKind == OK && "truncated kind");
     setType(T);
   }
@@ -457,6 +458,14 @@ public:
 
   /// setObjectKind - Set the object kind produced by this expression.
   void setObjectKind(ExprObjectKind Cat) { ExprBits.ObjectKind = Cat; }
+
+  bool isImmediateEscalating() const {
+    return ExprBits.IsImmediateEscalating;
+  }
+
+  void setIsImmediateEscalating(bool Set) {
+    ExprBits.IsImmediateEscalating = Set;
+  }
 
 private:
   Classification ClassifyImpl(ASTContext &Ctx, SourceLocation *Loc) const;
@@ -1481,14 +1490,6 @@ public:
   /// variable?
   bool refersToEnclosingVariableOrCapture() const {
     return DeclRefExprBits.RefersToEnclosingVariableOrCapture;
-  }
-
-  bool isImmediateEscalating() const {
-    return DeclRefExprBits.IsImmediateEscalating;
-  }
-
-  void setIsImmediateEscalating(bool Set) {
-    DeclRefExprBits.IsImmediateEscalating = Set;
   }
 
   bool isCapturedByCopyInLambdaWithExplicitObjectParameter() const {

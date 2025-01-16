@@ -1830,15 +1830,10 @@ void ScalarExprEmitter::EmitBinOpCheck(
 //===----------------------------------------------------------------------===//
 
 Value *ScalarExprEmitter::VisitExpr(Expr *E) {
-  if (E->getType()->isConstevalOnly()) {
-    assert(!E->isIntegerConstantExpr(CGF.getContext()) &&
-           "constexpr expressions should not reach here");
-    CGF.ErrorNonConstexprConstevalOnlyType(E);
-  } else {
-    CGF.ErrorUnsupported(E, "scalar expression");
-    if (E->getType()->isVoidType())
-      return nullptr;
-  }
+  CGF.ErrorUnsupported(E, "scalar expression");
+  llvm_unreachable("here");
+  if (E->getType()->isVoidType())
+    return nullptr;
   return llvm::PoisonValue::get(CGF.ConvertType(E->getType()));
 }
 
