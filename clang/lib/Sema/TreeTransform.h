@@ -4585,7 +4585,15 @@ Sema::ConditionResult TreeTransform<Derived>::TransformCondition(
   }
 
   if (Expr) {
-    ExprResult CondExpr = getDerived().TransformExpr(Expr);
+    ExprResult CondExpr;
+    if (Kind == Sema::ConditionKind::ConstexprIf) {
+      EnterExpressionEvaluationContext Context(
+            getSema(),
+            Sema::ExpressionEvaluationContext::ImmediateFunctionContext);
+      CondExpr = getDerived().TransformExpr(Expr);
+    } else {
+      CondExpr = getDerived().TransformExpr(Expr);
+    }
 
     if (CondExpr.isInvalid())
       return Sema::ConditionError();

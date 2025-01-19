@@ -733,7 +733,9 @@ Sema::ConstevalOnlyRecorder::~ConstevalOnlyRecorder() {
     return;
 
   if (!S.isUnevaluatedContext() && !S.isImmediateFunctionContext() &&
-      !S.isAlwaysConstantEvaluatedContext())
+      !S.isConstantEvaluatedContext() &&
+      !S.isCheckingDefaultArgumentOrInitializer() &&
+      !S.RebuildingImmediateInvocation && !TheExpr->isValueDependent())
     S.ExprEvalContexts.back().ConstevalOnly.insert(TheExpr);
 }
 

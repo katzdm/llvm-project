@@ -125,7 +125,7 @@ protected:
     ExprBits.Dependent = 0;
     ExprBits.ValueKind = VK;
     ExprBits.ObjectKind = OK;
-    //ExprBits.IsImmediateEscalating = false;
+    ExprBits.IsImmediateEscalating = false;
     assert(ExprBits.ObjectKind == OK && "truncated kind");
     setType(T);
   }

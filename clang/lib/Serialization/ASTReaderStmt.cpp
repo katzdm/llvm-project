@@ -110,10 +110,10 @@ namespace clang {
 
     /// The number of record fields required for the Expr class
     /// itself.
-    static const unsigned NumExprFields = NumStmtFields + 2;
+    static const unsigned NumExprFields = NumStmtFields + 3;
 
     /// The number of bits required for the packing bits for the Expr class.
-    static const unsigned NumExprBits = 11;
+    static const unsigned NumExprBits = 12;
 
     /// Read and initialize a ExplicitTemplateArgumentList structure.
     void ReadTemplateKWAndArgsInfo(ASTTemplateKWAndArgsInfo &Args,

@@ -7589,10 +7589,13 @@ ExprResult InitializationSequence::Perform(Sema &S,
                                            QualType *ResultType) {
   auto on_complete = [&](ExprResult Res) {
     if (!Entity.getDecl() && Res.get() &&
+        !S.isCheckingDefaultArgumentOrInitializer() && !S.RebuildingImmediateInvocation &&
         Res.get()->getType()->isConstevalOnly() && !S.isUnevaluatedContext() &&
         !S.isImmediateFunctionContext() &&
-        !S.isAlwaysConstantEvaluatedContext()) {
-      S.ExprEvalContexts.back().ConstevalOnly.insert(Res.get());
+        !S.isAlwaysConstantEvaluatedContext() &&
+        Entity.getKind() != InitializedEntity::EK_Member &&
+        Entity.getKind() != InitializedEntity::EK_Base) {
+      //S.ExprEvalContexts.back().ConstevalOnly.insert(Res.get());
     }
 
     return Res;
@@ -7671,8 +7674,8 @@ ExprResult InitializationSequence::Perform(Sema &S,
         !Kind.isExplicitCast()) {
       // Rebuild the ParenListExpr.
       SourceRange ParenRange = Kind.getParenOrBraceRange();
-      return S.ActOnParenListExpr(ParenRange.getBegin(),
-                                  ParenRange.getEnd(), Args);
+      return S.ActOnParenListExpr(ParenRange.getBegin(), ParenRange.getEnd(),
+                                  Args);
     }
     assert(Kind.getKind() == InitializationKind::IK_Copy ||
            Kind.isExplicitCast() ||

@@ -565,9 +565,6 @@ protected:
     /// True if the call expression is a must-elide call to a coroutine.
     unsigned IsCoroElideSafe : 1;
 
-    /// Padding used to align OffsetToTrailingObjects to a byte multiple.
-    //unsigned : 24 - 4 - NumExprBits;
-
     /// The offset in bytes from the this pointer to the start of the
     /// trailing objects belonging to CallExpr. Intentionally byte sized
     /// for faster access.
@@ -1186,14 +1183,6 @@ protected:
 
   //===--- C++26 Reflect Expression bitfields classes ---===//
 
-  class CXXReflectExprBitfields {
-    friend class ASTStmtReader;
-    friend class CXXReflectExpr;
-
-    LLVM_PREFERRED_TYPE(ExprBitfields)
-    unsigned : NumExprBits;
-  };
-
   class CXXSpliceExprBitfields {
     friend class ASTStmtReader;
     friend class CXXSpliceExpr;
@@ -1310,7 +1299,6 @@ protected:
     CoawaitExprBitfields CoawaitBits;
 
     // C++ Reflection expressions
-    CXXReflectExprBitfields CXXReflectExprBits;
     CXXSpliceExprBitfields CXXSpliceExprBits;
 
     // Obj-C Expressions

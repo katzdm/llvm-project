@@ -16376,6 +16376,7 @@ Decl *Sema::ActOnFinishFunctionBody(Decl *dcl, Stmt *Body,
              "Leftover temporaries in function");
       assert(!Cleanup.exprNeedsCleanups() &&
              "Unaccounted cleanups in function");
+      if (!MaybeODRUseExprs.empty()) MaybeODRUseExprs.front()->dump();
       assert(MaybeODRUseExprs.empty() &&
              "Leftover expressions for odr-use checking");
     }

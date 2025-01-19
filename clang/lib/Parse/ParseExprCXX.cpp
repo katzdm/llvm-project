@@ -2250,7 +2250,14 @@ Parser::ParseCXXCondition(StmtResult *InitStmt, SourceLocation Loc,
     }
 
     // Parse the expression.
-    ExprResult Expr = ParseExpression(); // expression
+    ExprResult Expr;
+    if (CK == Sema::ConditionKind::ConstexprIf) {
+      EnterExpressionEvaluationContext Ctx(
+        Actions, Sema::ExpressionEvaluationContext::ImmediateFunctionContext);
+      Expr = ParseExpression();
+    } else {
+      Expr = ParseExpression(); // expression
+    }
     if (Expr.isInvalid())
       return Sema::ConditionError();
 

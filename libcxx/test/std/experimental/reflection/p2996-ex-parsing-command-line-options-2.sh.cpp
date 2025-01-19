@@ -125,10 +125,10 @@ struct Clap {
         // The following needs to be decomposed, as clang seems to have a bug
         // around short-circuiting of compound 'if constexpr'-conditions:
         //   https://godbolt.org/z/9b4faz96T
-        if constexpr (has_template_arguments(type_of(om))) {
-          if (template_of(type_of(om)) == ^^std::optional)
-            // the type is optional, so the argument is too
-            return;
+        if constexpr (has_template_arguments(type_of(om)) &&
+                      template_of(type_of(om)) == ^^std::optional) {
+          // the type is optional, so the argument is too
+          return;
         } else if (cur.initializer) {
           // the type isn't optional, but an initializer is provided, use that
           opts.[:om:] = *cur.initializer;
