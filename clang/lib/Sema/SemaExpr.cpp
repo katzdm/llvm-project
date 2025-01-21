@@ -17517,7 +17517,12 @@ void Sema::MarkExpressionAsImmediateEscalating(Expr *E) {
          ExprEvalContexts.back().InImmediateEscalatingFunctionContext &&
          "Cannot mark an immediate escalating expression outside of an "
          "immediate escalating context");
-  E->setIsImmediateEscalating(true);
+  E = E->IgnoreImplicit();
+  if (auto *Call = dyn_cast<CallExpr>(E); Call && Call->getCallee())
+    Call->getCallee()->IgnoreImplicit()->setIsImmediateEscalating(true);
+  else
+    E->setIsImmediateEscalating(true);
+
   if (FunctionScopeInfo *FI = getCurFunction())
     FI->FoundImmediateEscalatingExpression = true;
 }
@@ -17595,9 +17600,8 @@ ExprResult Sema::CheckForImmediateInvocation(ExprResult E, FunctionDecl *Decl) {
     Res->MoveIntoResult(Cached, getASTContext());
   /// Value-dependent constant expressions should not be immediately
   /// evaluated until they are instantiated.
-  if (!Res->isValueDependent()) {
+  if (!Res->isValueDependent())
     ExprEvalContexts.back().ImmediateInvocationCandidates.emplace_back(Res, 0);
-  }
   if (Res->getType()->isConstevalOnly())
     ExprEvalContexts.back().ConstevalOnly.insert(Res);
 
@@ -20535,10 +20539,9 @@ Sema::ConditionResult Sema::ActOnCondition(Scope *S, SourceLocation Loc,
     Cond = CheckBooleanCondition(Loc, SubExpr);
     break;
 
-  case ConditionKind::ConstexprIf: {
+  case ConditionKind::ConstexprIf:
     Cond = CheckBooleanCondition(Loc, SubExpr, true);
     break;
-  }
 
   case ConditionKind::Switch:
     Cond = CheckSwitchCondition(Loc, SubExpr);

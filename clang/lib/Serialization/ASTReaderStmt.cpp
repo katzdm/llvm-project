@@ -110,10 +110,10 @@ namespace clang {
 
     /// The number of record fields required for the Expr class
     /// itself.
-    static const unsigned NumExprFields = NumStmtFields + 3;
+    static const unsigned NumExprFields = NumStmtFields + 2;
 
     /// The number of bits required for the packing bits for the Expr class.
-    static const unsigned NumExprBits = 12;
+    static const unsigned NumExprBits = 11;
 
     /// Read and initialize a ExplicitTemplateArgumentList structure.
     void ReadTemplateKWAndArgsInfo(ASTTemplateKWAndArgsInfo &Args,
@@ -620,11 +620,11 @@ void ASTStmtReader::VisitExpr(Expr *E) {
   CurrentUnpackingBits.emplace(Record.readInt());
   E->setDependence(static_cast<ExprDependence>(
       CurrentUnpackingBits->getNextBits(/*Width=*/5)));
+  E->setIsImmediateEscalating(CurrentUnpackingBits->getNextBit());  // Width=1
   E->setValueKind(static_cast<ExprValueKind>(
       CurrentUnpackingBits->getNextBits(/*Width=*/2)));
   E->setObjectKind(static_cast<ExprObjectKind>(
       CurrentUnpackingBits->getNextBits(/*Width=*/3)));
-  E->setIsImmediateEscalating(CurrentUnpackingBits->getNextBit());
 
   E->setType(Record.readType());
   assert(Record.getIdx() == NumExprFields &&
@@ -3220,7 +3220,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
 
     case EXPR_DECL_REF: {
       BitsUnpacker DeclRefExprBits(Record[ASTStmtReader::NumExprFields]);
-      DeclRefExprBits.advance(5);
+      DeclRefExprBits.advance(4);
       bool HasFoundDecl = DeclRefExprBits.getNextBit();
       bool HasQualifier = DeclRefExprBits.getNextBit();
       bool HasTemplateKWAndArgsInfo = DeclRefExprBits.getNextBit();

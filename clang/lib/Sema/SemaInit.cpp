@@ -35,7 +35,6 @@
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
-#include <iostream>
 
 using namespace clang;
 
@@ -7588,14 +7587,14 @@ ExprResult InitializationSequence::Perform(Sema &S,
                                            MultiExprArg Args,
                                            QualType *ResultType) {
   auto on_complete = [&](ExprResult Res) {
-    if (!Entity.getDecl() && Res.get() &&
-        !S.isCheckingDefaultArgumentOrInitializer() && !S.RebuildingImmediateInvocation &&
-        Res.get()->getType()->isConstevalOnly() && !S.isUnevaluatedContext() &&
+    if (Res.get() && Res.get()->getType()->isConstevalOnly() &&
+        !Entity.getDecl() && !S.isCheckingDefaultArgumentOrInitializer() &&
+        !S.RebuildingImmediateInvocation && !S.isUnevaluatedContext() &&
         !S.isImmediateFunctionContext() &&
         !S.isAlwaysConstantEvaluatedContext() &&
         Entity.getKind() != InitializedEntity::EK_Member &&
         Entity.getKind() != InitializedEntity::EK_Base) {
-      //S.ExprEvalContexts.back().ConstevalOnly.insert(Res.get());
+      S.ExprEvalContexts.back().ConstevalOnly.insert(Res.get());
     }
 
     return Res;

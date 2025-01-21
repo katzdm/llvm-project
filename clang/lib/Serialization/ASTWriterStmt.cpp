@@ -720,9 +720,9 @@ void ASTStmtWriter::VisitExpr(Expr *E) {
 
   CurrentPackingBits.updateBits();
   CurrentPackingBits.addBits(E->getDependence(), /*BitsWidth=*/5);
+  CurrentPackingBits.addBits(E->isImmediateEscalating(), /*BitsWidth=*/1);
   CurrentPackingBits.addBits(E->getValueKind(), /*BitsWidth=*/2);
   CurrentPackingBits.addBits(E->getObjectKind(), /*BitsWidth=*/3);
-  CurrentPackingBits.addBits(E->isImmediateEscalating(), /*BitsWidth=*/1);
 
   Record.AddTypeRef(E->getType());
 }

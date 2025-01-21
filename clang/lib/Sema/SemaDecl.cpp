@@ -14322,7 +14322,6 @@ void Sema::CheckCompleteVariableDeclaration(VarDecl *var) {
       !isUnevaluatedContext() && !isImmediateFunctionContext() &&
       !isAlwaysConstantEvaluatedContext()) {
     //Diag(var->getLocation(), diag::err_decl_consteval_only_type) << var;
-    //llvm_unreachable("here!");
   }
 
   CUDA().MaybeAddConstantAttr(var);
@@ -15615,8 +15614,9 @@ Decl *Sema::ActOnStartOfFunctionDef(Scope *FnBodyScope, Decl *D,
     // potentially evaluated and either: its innermost enclosing non-block scope
     // is a function parameter scope of an immediate function.
     PushExpressionEvaluationContext(
-        FD->isConsteval() ? ExpressionEvaluationContext::ImmediateFunctionContext
-                          : ExprEvalContexts.back().Context);
+        FD->isImmediateFunction() ?
+        ExpressionEvaluationContext::ImmediateFunctionContext :
+        ExprEvalContexts.back().Context);
 
   // Each ExpressionEvaluationContextRecord also keeps track of whether the
   // context is nested in an immediate function context, so smaller contexts
@@ -16383,8 +16383,6 @@ Decl *Sema::ActOnFinishFunctionBody(Decl *dcl, Stmt *Body,
   } // Pops the ExitFunctionBodyRAII scope, which needs to happen before we pop
     // the declaration context below. Otherwise, we're unable to transform
     // 'this' expressions when transforming immediate context functions.
-
-  CheckImmediateEscalatingFunctionDefinition(FD, FSI);
 
   if (!IsInstantiation)
     PopDeclContext();
