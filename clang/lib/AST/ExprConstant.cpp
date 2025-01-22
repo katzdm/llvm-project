@@ -2384,6 +2384,14 @@ static bool CheckLValueConstantExpression(EvalInfo &Info, SourceLocation Loc,
     return false;
   }
 
+  if (!Type->isConstevalOnly() &&
+      ((BaseE && BaseE->getType()->isConstevalOnly()) ||
+       (BaseVD && BaseVD->getType()->isConstevalOnly()))) {
+    Info.FFDiag(Loc, diag::note_consteval_only_smuggling)
+        << !Type->isAnyPointerType();
+    return false;
+  }
+
   // Check that the object is a global. Note that the fake 'this' object we
   // manufacture when checking potential constant expressions is conservatively
   // assumed to be global here.

@@ -116,3 +116,32 @@ void fn() {
 }
 
 }  // namespace immediate_escalation
+
+
+                               // ===============
+                               // alias_smuggling
+                               // ===============
+
+namespace alias_smuggling {
+struct Base { };
+struct Derived : Base {
+  info k;
+  consteval Derived() : Base(), k(^^int) {}
+};
+consteval const Base &fn1() {
+  static constexpr Derived d;
+  return d;
+}
+constexpr auto &ref = fn1();
+// expected-error@-1 {{'ref' must be initialized by a constant expression}}
+// expected-note@-2 {{reference into an object of consteval-only type}}
+
+consteval void *fn2() {
+  static constexpr auto v = ^^int;
+  return (void *)&v;
+}
+constexpr const void *ptr = fn2();
+// expected-error@-1 {{'ptr' must be initialized by a constant expression}}
+// expected-note@-2 {{pointer into an object of consteval-only type}}
+
+}  // namespace alias_smuggling
