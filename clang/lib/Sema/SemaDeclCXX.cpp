@@ -2551,8 +2551,8 @@ bool Sema::CheckImmediateEscalatingFunctionDefinition(
   if (!getLangOpts().CPlusPlus20 || !FD->isImmediateEscalating())
     return true;
   FD->setBodyContainsImmediateEscalatingExpressions(
-      FSI->FoundImmediateEscalatingExpression);
-  if (FSI->FoundImmediateEscalatingExpression) {
+      FSI->FoundImmediateEscalatingConstruct);
+  if (FSI->FoundImmediateEscalatingConstruct) {
     auto it = UndefinedButUsed.find(FD->getCanonicalDecl());
     if (it != UndefinedButUsed.end()) {
       Diag(it->second, diag::err_immediate_function_used_before_definition)
@@ -2603,6 +2603,7 @@ void Sema::DiagnoseImmediateEscalatingReason(FunctionDecl *FD) {
           << (CurrentInit && !CurrentInit->isWritten())
           << InitializedField << Range;
     }
+
     bool TraverseCallExpr(CallExpr *E) override {
       if (const auto *DR =
               dyn_cast<DeclRefExpr>(E->getCallee()->IgnoreImplicit());

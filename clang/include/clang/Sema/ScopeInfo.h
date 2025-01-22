@@ -176,7 +176,7 @@ public:
   unsigned char FirstCoroutineStmtKind : 2;
 
   /// Whether we found an immediate-escalating expression.
-  bool FoundImmediateEscalatingExpression : 1;
+  bool FoundImmediateEscalatingConstruct : 1;
 
   /// First coroutine statement in the current function.
   /// (ex co_return, co_await, co_yield)
@@ -397,7 +397,7 @@ public:
         HasPotentialAvailabilityViolations(false), ObjCShouldCallSuper(false),
         ObjCIsDesignatedInit(false), ObjCWarnForNoDesignatedInitChain(false),
         ObjCIsSecondaryInit(false), ObjCWarnForNoInitDelegation(false),
-        NeedsCoroutineSuspends(true), FoundImmediateEscalatingExpression(false),
+        NeedsCoroutineSuspends(true), FoundImmediateEscalatingConstruct(false),
         ErrorTrap(Diag) {}
 
   virtual ~FunctionScopeInfo();

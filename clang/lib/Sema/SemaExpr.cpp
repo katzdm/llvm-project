@@ -17524,7 +17524,7 @@ void Sema::MarkExpressionAsImmediateEscalating(Expr *E) {
     E->setIsImmediateEscalating(true);
 
   if (FunctionScopeInfo *FI = getCurFunction())
-    FI->FoundImmediateEscalatingExpression = true;
+    FI->FoundImmediateEscalatingConstruct = true;
 }
 
 ExprResult Sema::CheckForImmediateInvocation(ExprResult E, FunctionDecl *Decl) {

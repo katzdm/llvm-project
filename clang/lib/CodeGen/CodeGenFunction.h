@@ -2656,10 +2656,6 @@ public:
   /// specified stmt yet.
   void ErrorUnsupported(const Stmt *S, const char *Type);
 
-  /// ErrorNonConstexprConstevalOnlyType - Print out an error that values of
-  /// consteval-only types must be constexpr.
-  void ErrorNonConstexprConstevalOnlyType(const Stmt *S);
-
   //===--------------------------------------------------------------------===//
   //                                  Helpers
   //===--------------------------------------------------------------------===//

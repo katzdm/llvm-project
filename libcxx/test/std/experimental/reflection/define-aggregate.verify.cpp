@@ -90,6 +90,7 @@ namespace non_plainly_constant_evaluated {
 struct I1;
 auto u1 = define_aggregate(^^I1, {});
 // expected-error@-1 {{not plainly constant-evaluated}}
+// expected-error@-2 {{'u1' of consteval-only type must either be constexpr}}
 
 template <typename>
 struct S1 {
