@@ -723,6 +723,34 @@ public:
 };
 }  // anonymous namespace
 
+Sema::ConstevalOnlyRecorder::ConstevalOnlyRecorder(Sema &S)
+    : S(S), TheExpr(nullptr) { }
+
+Sema::ConstevalOnlyRecorder::~ConstevalOnlyRecorder() {
+  assert(S.ExprEvalContexts.size() > 0 && "no evaluation context?");
+
+  if (!TheExpr)
+    return;
+
+  if (!S.isUnevaluatedContext() && !S.isImmediateFunctionContext() &&
+      !S.isConstantEvaluatedContext() &&
+      !S.isCheckingDefaultArgumentOrInitializer() &&
+      !S.RebuildingImmediateInvocation && !TheExpr->isValueDependent())
+    S.ExprEvalContexts.back().ConstevalOnly.insert(TheExpr);
+}
+
+ExprResult Sema::ConstevalOnlyRecorder::RecordAndReturn(ExprResult Res) {
+  assert(!TheExpr && "TheExpr was already set");
+  if (Res.isInvalid())
+    return Res;
+
+  Expr *E = Res.get();
+  assert(E->getType()->isConstevalOnly() &&
+         "expected an expression of consteval-only type");
+  TheExpr = E;
+  return Res;
+}
+
 ExprResult Sema::ActOnCXXReflectExpr(SourceLocation OpLoc,
                                      SourceLocation TemplateKWLoc,
                                      CXXScopeSpec &SS, UnqualifiedId &Id) {

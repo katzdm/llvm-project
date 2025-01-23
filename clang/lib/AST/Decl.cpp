@@ -3294,6 +3294,8 @@ bool FunctionDecl::isImmediateEscalating() const {
     return true;
   // - a function that results from the instantiation of a templated entity
   // defined with the constexpr specifier.
+  if (getDeclContext()->isDependentContext())
+    return true;
   TemplatedKind TK = getTemplatedKind();
   if (TK != TK_NonTemplate && TK != TK_DependentNonTemplate &&
       isConstexprSpecified())

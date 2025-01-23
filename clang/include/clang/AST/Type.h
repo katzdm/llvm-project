@@ -4650,7 +4650,8 @@ public:
 protected:
   FunctionType(TypeClass tc, QualType res, QualType Canonical,
                TypeDependence Dependence, ExtInfo Info)
-      : Type(tc, Canonical, Dependence, /*ConstevalOnly=*/false), ResultType(res) {
+      : Type(tc, Canonical, Dependence,
+             /*ConstevalOnly=*/res->isConstevalOnly()), ResultType(res) {
     FunctionTypeBits.ExtInfo = Info.Bits;
   }
 
@@ -6557,7 +6558,8 @@ protected:
                                     ? TypeDependence::None
                                     : DeducedAsType->getDependence() &
                                           ~TypeDependence::VariablyModified),
-             /*ConstevalOnly=*/false),
+             /*ConstevalOnly=*/!DeducedAsType.isNull() ?
+                               DeducedAsType->isConstevalOnly() : false),
         DeducedAsType(DeducedAsType) {}
 
 public:

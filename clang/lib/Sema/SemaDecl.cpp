@@ -14318,6 +14318,16 @@ StmtResult Sema::ActOnCXXForRangeIdentifier(Scope *S, SourceLocation IdentLoc,
 void Sema::CheckCompleteVariableDeclaration(VarDecl *var) {
   if (var->isInvalidDecl()) return;
 
+  if (var->getType()->isConstevalOnly() && !var->isConstexpr() &&
+      !isCheckingDefaultArgumentOrInitializer() &&
+      !RebuildingImmediateInvocation && !isUnevaluatedContext() &&
+      !isImmediateFunctionContext() && !isAlwaysConstantEvaluatedContext()) {
+    if (!ExprEvalContexts.back().InImmediateEscalatingFunctionContext)
+      Diag(var->getLocation(), diag::err_decl_consteval_only_type) << var;
+    else if (FunctionScopeInfo *FI = getCurFunction())
+      FI->FoundImmediateEscalatingConstruct = true;
+  }
+
   CUDA().MaybeAddConstantAttr(var);
 
   if (getLangOpts().OpenCL) {

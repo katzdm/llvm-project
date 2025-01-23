@@ -1196,7 +1196,6 @@ CXXConstructExpr::CXXConstructExpr(
   CXXConstructExprBits.StdInitListInitialization = StdInitListInitialization;
   CXXConstructExprBits.ZeroInitialization = ZeroInitialization;
   CXXConstructExprBits.ConstructionKind = llvm::to_underlying(ConstructKind);
-  CXXConstructExprBits.IsImmediateEscalating = false;
   CXXConstructExprBits.Loc = Loc;
 
   Stmt **TrailingArgs = getTrailingArgs();
@@ -2018,7 +2017,7 @@ CXXSpliceExpr::CXXSpliceExpr(QualType ResultTy, ExprValueKind ValueKind,
   : Expr(CXXSpliceExprClass, ResultTy, ValueKind, OK_Ordinary),
     LSpliceLoc(LSpliceLoc), Operand(Operand), RSpliceLoc(RSpliceLoc),
     AllowMemberReference(AllowMemberReference) {
-  SpliceExprBits.HasTemplateKWAndArgsInfo =
+  CXXSpliceExprBits.HasTemplateKWAndArgsInfo =
       (TArgs != nullptr ) || TemplateKWLoc.isValid();
 
   if (TArgs) {

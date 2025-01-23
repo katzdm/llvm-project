@@ -1926,6 +1926,7 @@ void Parser::ParseClassSpecifier(tok::TokenKind TagTokKind,
 #include "clang/Basic/TransformTypeTraits.def"
           tok::kw___is_abstract,
           tok::kw___is_aggregate,
+          tok::kw___is_consteval_only,
           tok::kw___is_arithmetic,
           tok::kw___is_array,
           tok::kw___is_assignable,
@@ -3687,12 +3688,19 @@ ExprResult Parser::ParseCXXMemberInitializer(Decl *D, bool IsFunction,
 
   bool IsFieldInitialization = isa_and_present<FieldDecl>(D);
 
-  EnterExpressionEvaluationContext Context(
-      Actions,
-      IsFieldInitialization
-          ? Sema::ExpressionEvaluationContext::PotentiallyEvaluatedIfUsed
-          : Sema::ExpressionEvaluationContext::PotentiallyEvaluated,
-      D);
+  auto Ctx = Sema::ExpressionEvaluationContext::PotentiallyEvaluated;
+  if (IsFieldInitialization)
+    Ctx = Sema::ExpressionEvaluationContext::PotentiallyEvaluatedIfUsed;
+  else if (auto *VD = dyn_cast_or_null<VarDecl>(D);
+           VD && getLangOpts().CPlusPlus23) {
+    if (VD->isConstexpr())
+      Ctx = Sema::ExpressionEvaluationContext::ImmediateFunctionContext;
+    else if (auto *CIA = VD->getAttr<ConstInitAttr>();
+             CIA && CIA->isConstinit())
+      Ctx = Sema::ExpressionEvaluationContext::ImmediateFunctionContext;
+  }
+
+  EnterExpressionEvaluationContext Context(Actions, Ctx, D);
 
   // CWG2760
   // Default member initializers used to initialize a base or member subobject

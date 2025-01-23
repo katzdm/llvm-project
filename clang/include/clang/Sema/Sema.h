@@ -6381,6 +6381,10 @@ public:
     /// context not already known to be immediately invoked.
     llvm::SmallPtrSet<DeclRefExpr *, 4> ReferenceToConsteval;
 
+    /// Set of expressions having consteval-only type when used in a context
+    /// not already known to be immediately invoked.
+    llvm::SmallPtrSet<Expr *, 4> ConstevalOnly;
+
     /// P2718R0 - Lifetime extension in range-based for loops.
     /// MaterializeTemporaryExprs in for-range-init expressions which need to
     /// extend lifetime. Add MaterializeTemporaryExpr* if the value of
@@ -15262,6 +15266,21 @@ public:
     ~SuppressDiagnosticsRAII() { S.SuppressDiagnostics = PreviousValue; }
   };
   bool suppressDiagnostics() const { return SuppressDiagnostics; }
+
+  /// RAII object for recording a consteval-only expression on its destruction.
+  /// Useful for recording such an expression following the exit from an
+  /// EnterExpressionEvaluationContext scope (e.g., when constructing a
+  /// CXXReflectExpr).
+  class ConstevalOnlyRecorder {
+    Sema &S;
+    Expr *TheExpr;
+
+  public:
+    ConstevalOnlyRecorder(Sema &S);
+    ~ConstevalOnlyRecorder();
+
+    ExprResult RecordAndReturn(ExprResult Res);
+  };
 
   ExprResult ActOnCXXReflectExpr(SourceLocation OpLoc,
                                  SourceLocation TemplateKWLoc,

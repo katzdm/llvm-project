@@ -3689,6 +3689,9 @@ FunctionProtoType::FunctionProtoType(QualType result, ArrayRef<QualType> params,
     addDependence(params[i]->getDependence() &
                   ~TypeDependence::VariablyModified);
     argSlot[i] = params[i];
+
+    if (params[i]->isConstevalOnly())
+      setConstevalOnly(true);
   }
 
   // Propagate the SME ACLE attributes.

@@ -359,10 +359,12 @@ protected:
     unsigned ValueKind : 2;
     LLVM_PREFERRED_TYPE(ExprObjectKind)
     unsigned ObjectKind : 3;
+    LLVM_PREFERRED_TYPE(bool)
+    unsigned IsImmediateEscalating : 1;
     LLVM_PREFERRED_TYPE(ExprDependence)
     unsigned Dependent : llvm::BitWidth<ExprDependence>;
   };
-  enum { NumExprBits = NumStmtBits + 5 + llvm::BitWidth<ExprDependence> };
+  enum { NumExprBits = NumStmtBits + 6 + llvm::BitWidth<ExprDependence> };
 
   class ConstantExprBitfields {
     friend class ASTStmtReader;
@@ -446,8 +448,6 @@ protected:
     unsigned CapturedByCopyInLambdaWithExplicitObjectParameter : 1;
     LLVM_PREFERRED_TYPE(NonOdrUseReason)
     unsigned NonOdrUseReason : 2;
-    LLVM_PREFERRED_TYPE(bool)
-    unsigned IsImmediateEscalating : 1;
 
     /// The location of the declaration name itself.
     SourceLocation Loc;
@@ -564,9 +564,6 @@ protected:
 
     /// True if the call expression is a must-elide call to a coroutine.
     unsigned IsCoroElideSafe : 1;
-
-    /// Padding used to align OffsetToTrailingObjects to a byte multiple.
-    unsigned : 24 - 4 - NumExprBits;
 
     /// The offset in bytes from the this pointer to the start of the
     /// trailing objects belonging to CallExpr. Intentionally byte sized
@@ -998,8 +995,6 @@ protected:
     unsigned ZeroInitialization : 1;
     LLVM_PREFERRED_TYPE(CXXConstructionKind)
     unsigned ConstructionKind : 3;
-    LLVM_PREFERRED_TYPE(bool)
-    unsigned IsImmediateEscalating : 1;
 
     SourceLocation Loc;
   };
@@ -1186,6 +1181,8 @@ protected:
     unsigned IsImplicit : 1;
   };
 
+  //===--- C++26 Reflect Expression bitfields classes ---===//
+
   class CXXSpliceExprBitfields {
     friend class ASTStmtReader;
     friend class CXXSpliceExpr;
@@ -1302,7 +1299,7 @@ protected:
     CoawaitExprBitfields CoawaitBits;
 
     // C++ Reflection expressions
-    CXXSpliceExprBitfields SpliceExprBits;
+    CXXSpliceExprBitfields CXXSpliceExprBits;
 
     // Obj-C Expressions
     ObjCIndirectCopyRestoreExprBitfields ObjCIndirectCopyRestoreExprBits;
