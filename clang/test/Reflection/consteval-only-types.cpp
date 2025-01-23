@@ -28,7 +28,8 @@ constexpr S s3 = {^^int};
 constexpr info *p1 = nullptr;
 constexpr const info *p2 = &r1;
 
-void fn() { static constexpr info r = ^^int; }
+void fn1() { static constexpr info r = ^^int; }
+void fn2() { extern info r; }
 consteval info cfn1() { return ^^int; }
 consteval void cfn2() { (void) static_cast<const void *>(p2); }
 

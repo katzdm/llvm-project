@@ -4193,9 +4193,6 @@ void CodeGenModule::EmitMultiVersionFunctionDefinition(GlobalDecl GD,
 void CodeGenModule::EmitGlobalDefinition(GlobalDecl GD, llvm::GlobalValue *GV) {
   const auto *D = cast<ValueDecl>(GD.getDecl());
 
-  if (auto *FD = dyn_cast<FunctionDecl>(D); FD && FD->isImmediateFunction())
-    return;
-
   PrettyStackTraceDecl CrashInfo(const_cast<ValueDecl *>(D), D->getLocation(),
                                  Context.getSourceManager(),
                                  "Generating code for declaration");

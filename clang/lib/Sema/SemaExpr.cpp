@@ -17827,7 +17827,7 @@ HandleImmediateInvocations(Sema &SemaRef,
       }
       bool VisitDeclRefExpr(DeclRefExpr *E) override {
         RefConsteval.erase(E);
-        RefConsteval.erase(E);
+        ConstevalOnly.erase(E);
         return RefConsteval.size() + ConstevalOnly.size();
       }
     } Visitor(Rec.ReferenceToConsteval, Rec.ConstevalOnly, RootExpr);
@@ -20130,10 +20130,6 @@ void Sema::MarkDeclRefReferenced(DeclRefExpr *E, const Expr *Base) {
 
       if (FD->getType()->isConstevalOnly())
         ExprEvalContexts.back().ConstevalOnly.insert(E);
-      // TODO: We're inserting the DeclRefExpr naming 'fn' but not the CallExpr
-      // invoking it, because the CallExpr is value-dependent, even though the
-      // DeclRefExpr is not. Consequently, no tree-walk ever removed the
-      // DeclRefExpr as a subexpression of the CallExpr. Interesting.
     } else if (auto *VD = dyn_cast<VarDecl>(E->getDecl());
                VD && VD->getType()->isConstevalOnly()) {
       ExprEvalContexts.back().ConstevalOnly.insert(E);

@@ -2603,7 +2603,6 @@ void Sema::DiagnoseImmediateEscalatingReason(FunctionDecl *FD) {
           << (CurrentInit && !CurrentInit->isWritten())
           << InitializedField << Range;
     }
-
     bool TraverseCallExpr(CallExpr *E) override {
       if (const auto *DR =
               dyn_cast<DeclRefExpr>(E->getCallee()->IgnoreImplicit());
