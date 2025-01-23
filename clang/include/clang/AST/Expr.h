@@ -769,6 +769,9 @@ public:
     /// evaluation is not part of the evaluation, but all other temporaries
     /// are destroyed.
     ImmediateInvocation,
+    /// An immediate invocation which may be an immediate-escalating expression
+    /// if it turns out not to be a constant expression.
+    EscalatoryImmediateInvocation,
     /// A plainly constant-evaluated expression. Such an expression may produce
     /// injected declarations.
     PlainlyConstantEvaluated,

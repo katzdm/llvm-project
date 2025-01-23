@@ -304,4 +304,20 @@ struct S2;
 
 }  // namespace repeat_calls
 
+                            // ====================
+                            // immediate_escalating
+                            // ====================
+
+namespace immediate_escalating {
+struct S;
+
+auto L = [] {
+  define_aggregate(^^S, {});
+  return 0;
+};
+
+[[maybe_unused]] constexpr auto r = L();
+S s;
+}  // namespace immediate_escalating
+
 int main() { }

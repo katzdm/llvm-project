@@ -161,6 +161,7 @@ namespace {
     case ConstantExprKind::Normal:
     case ConstantExprKind::ClassTemplateArgument:
     case ConstantExprKind::ImmediateInvocation:
+    case ConstantExprKind::EscalatoryImmediateInvocation:
     case ConstantExprKind::PlainlyConstantEvaluated:
       // Note that non-type template arguments of class type are emitted as
       // template parameter objects.
@@ -176,6 +177,7 @@ namespace {
     switch (Kind) {
     case ConstantExprKind::Normal:
     case ConstantExprKind::ImmediateInvocation:
+    case ConstantExprKind::EscalatoryImmediateInvocation:
     case ConstantExprKind::PlainlyConstantEvaluated:
       return false;
 
@@ -990,6 +992,11 @@ namespace {
     /// Note that we still need to evaluate the expression normally when this
     /// is set; this is used when evaluating ICEs in C.
     bool CheckingForUndefinedBehavior = false;
+
+    /// Whether we're evaluating an immediate invocation that may escalate.
+    /// If so, do not fail on constructs that may become in an immediate
+    /// function context later.
+    bool IsImmediateEscalating = false;
 
     enum EvaluationMode {
       /// Evaluate as a constant expression. Stop if we find that the expression
@@ -8674,12 +8681,23 @@ bool ExprEvaluatorBase<Derived>::VisitCXXMetafunctionExpr(
       (Info.EvalMode ==
        EvalInfo::EM_ConstantExpressionPlainlyConstantEvaluated);
 
+  // Derive the ContainingDecl. Set to 'nullptr' if we're speculatively
+  // evaluating, or if we're evaluating an immediate-invocation that may be
+  // immediate-escalating.
+  //
+  // TODO(P2996): Represent this bit more explicitly.
+  Decl *ContainingDecl = Info.ContainingDecl;
+  if (Info.SpeculativeEvaluationDepth > 0 || Info.IsImmediateEscalating) {
+    ContainingDecl = nullptr;
+    AllowInjection = true;
+  }
+
   // Evaluate the metafunction.
   APValue Result;
   const CXXMetafunctionExpr::ImplFn &Implementation = E->getImpl();
   if (Implementation(Result, Evaluator, Diagnoser, AllowInjection,
                      E->getResultType(), Info.CurrentCall->CallRange, Args,
-                     Info.ContainingDecl)) {
+                     ContainingDecl)) {
     bool Result = Error(E);
     Info.addNotes(Diagnostics);
 
@@ -17040,6 +17058,8 @@ bool Expr::EvaluateAsConstantExpr(EvalResult &Result, const ASTContext &Ctx,
   ExprTimeTraceScope TimeScope(this, Ctx, "EvaluateAsConstantExpr");
   EvalInfo Info(Ctx, Result, EM);
   Info.InConstantContext = true;
+  Info.IsImmediateEscalating =
+      (Kind == ConstantExprKind::EscalatoryImmediateInvocation);
 
   if (Info.EnableNewConstInterp) {
     if (!Info.Ctx.getInterpContext().evaluate(Info, this, Result.Val, Kind))

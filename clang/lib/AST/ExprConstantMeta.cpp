@@ -4774,6 +4774,11 @@ bool define_aggregate(APValue &Result, ASTContext &C, MetaActions &Meta,
     IncompleteDecl = cast<CXXRecordDecl>(ND);
   }
 
+  // We are speculatively evaluating: Fail the constant expression, but do not
+  // diagnose.
+  if (AllowInjection && ContainingDecl == nullptr)
+    return true;
+
   CXXRecordDecl *Definition = Meta.DefineClass(IncompleteDecl, MemberSpecs,
                                                AllowInjection, ContainingDecl,
                                                Range.getBegin());
@@ -5387,6 +5392,11 @@ bool annotate(APValue &Result, ASTContext &C, MetaActions &Meta,
 
   APValue Value;
   if (!Evaluator(Value, Args[1], true) || !Value.isReflectedValue())
+    return true;
+
+  // We are speculatively evaluating: Fail the constant expression, but do not
+  // diagnose.
+  if (AllowInjection && ContainingDecl == nullptr)
     return true;
 
   switch (Appertainee.getReflectionKind()) {

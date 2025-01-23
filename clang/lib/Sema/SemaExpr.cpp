@@ -17555,8 +17555,11 @@ ExprResult Sema::CheckForImmediateInvocation(ExprResult E, FunctionDecl *Decl) {
     llvm::SmallVector<PartialDiagnosticAt, 8> Notes;
     Expr::EvalResult Eval;
     Eval.Diag = &Notes;
-    bool Res = E.get()->EvaluateAsConstantExpr(
-        Eval, getASTContext(), ConstantExprKind::ImmediateInvocation);
+
+    auto CEK = ExprEvalContexts.back().InImmediateEscalatingFunctionContext ?
+               ConstantExprKind::EscalatoryImmediateInvocation :
+               ConstantExprKind::ImmediateInvocation;
+    bool Res = E.get()->EvaluateAsConstantExpr(Eval, getASTContext(), CEK);
     if (Res && Notes.empty()) {
       Cached = std::move(Eval.Val);
       return true;
