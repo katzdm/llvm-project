@@ -318,6 +318,21 @@ auto L = [] {
 
 [[maybe_unused]] constexpr auto r = L();
 S s;
+
 }  // namespace immediate_escalating
+
+                             // ===================
+                             // checks_for_overflow
+                             // ===================
+
+namespace check_for_overflow {
+struct Incomplete;
+struct S {
+  int member = (define_aggregate(^^Incomplete, {}), 1);
+};
+static_assert(!is_complete_type(^^Incomplete));
+
+}  // namespace check_for_overflow
+
 
 int main() { }

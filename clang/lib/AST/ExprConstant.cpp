@@ -8687,7 +8687,8 @@ bool ExprEvaluatorBase<Derived>::VisitCXXMetafunctionExpr(
   //
   // TODO(P2996): Represent this bit more explicitly.
   Decl *ContainingDecl = Info.ContainingDecl;
-  if (Info.SpeculativeEvaluationDepth > 0 || Info.IsImmediateEscalating) {
+  if (Info.SpeculativeEvaluationDepth > 0 || Info.IsImmediateEscalating ||
+      Info.checkingForUndefinedBehavior()) {
     ContainingDecl = nullptr;
     AllowInjection = true;
   }
