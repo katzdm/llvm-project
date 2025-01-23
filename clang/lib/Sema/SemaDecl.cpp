@@ -15618,9 +15618,8 @@ Decl *Sema::ActOnStartOfFunctionDef(Scope *FnBodyScope, Decl *D,
     // potentially evaluated and either: its innermost enclosing non-block scope
     // is a function parameter scope of an immediate function.
     PushExpressionEvaluationContext(
-        FD->isImmediateFunction() ?
-        ExpressionEvaluationContext::ImmediateFunctionContext :
-        ExprEvalContexts.back().Context);
+        FD->isConsteval() ? ExpressionEvaluationContext::ImmediateFunctionContext
+                          : ExprEvalContexts.back().Context);
 
   // Each ExpressionEvaluationContextRecord also keeps track of whether the
   // context is nested in an immediate function context, so smaller contexts

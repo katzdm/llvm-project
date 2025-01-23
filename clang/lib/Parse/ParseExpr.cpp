@@ -790,6 +790,7 @@ bool Parser::isRevertibleTypeTrait(const IdentifierInfo *II,
 
     REVERTIBLE_TYPE_TRAIT(__is_abstract);
     REVERTIBLE_TYPE_TRAIT(__is_aggregate);
+    REVERTIBLE_TYPE_TRAIT(__is_consteval_only);
     REVERTIBLE_TYPE_TRAIT(__is_arithmetic);
     REVERTIBLE_TYPE_TRAIT(__is_array);
     REVERTIBLE_TYPE_TRAIT(__is_assignable);
@@ -1047,6 +1048,7 @@ ExprResult Parser::ParseBuiltinPtrauthTypeDiscriminator() {
 ///
 /// [Clang] unary-type-trait:
 ///                   '__is_aggregate'
+///                   '__is_consteval_only'
 ///                   '__trivially_copyable'
 ///
 ///       binary-type-trait:

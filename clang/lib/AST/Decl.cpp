@@ -3314,12 +3314,6 @@ bool FunctionDecl::isImmediateFunction() const {
   if (isImmediateEscalating() && BodyContainsImmediateEscalatingExpressions())
     return true;
 
-  // P2996: Any function template specialization of consteval-only type is
-  // immediate.
-  TemplatedKind TK = getTemplatedKind();
-  if (isFunctionTemplateSpecialization() && getType()->isConstevalOnly())
-    return true;
-
   if (const auto *MD = dyn_cast<CXXMethodDecl>(this);
       MD && MD->isLambdaStaticInvoker())
     return MD->getParent()->getLambdaCallOperator()->isImmediateFunction();
