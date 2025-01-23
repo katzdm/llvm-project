@@ -334,5 +334,52 @@ static_assert(!is_complete_type(^^Incomplete));
 
 }  // namespace check_for_overflow
 
+                           // =======================
+                           // out_of_scope_injections
+                           // =======================
+
+namespace out_of_scope_injections {
+namespace {
+struct I;
+struct S {
+  std::meta::info member = ^^I;
+
+  [[maybe_unused]]
+  static constexpr std::meta::info s = define_aggregate(^^I, {});
+};
+}  // namespace
+
+namespace {
+[[maybe_unused]] void fn() {
+  struct I;
+  {
+    [[maybe_unused]] constexpr auto b = define_aggregate(^^I, {});
+    [[maybe_unused]] I i;
+  }
+  [[maybe_unused]] I i;
+}
+}  // namespace
+
+namespace {
+struct I;
+
+consteval void *fn1() {
+  static constexpr auto r = ^^I;
+  return (void *)&r;
+}
+
+consteval int fn2(void *ptr) {
+  define_aggregate(*(std::meta::info *)ptr, {});
+  return 12;
+}
+
+namespace a {
+[[maybe_unused]] constinit int i = fn2(fn1());
+}  // namespace
+[[maybe_unused]] I i;
+
+}  // namespace
+
+}  // namespace out_of_scope_injections
 
 int main() { }

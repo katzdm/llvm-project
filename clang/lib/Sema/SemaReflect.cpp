@@ -479,22 +479,20 @@ public:
         for (auto *TAnnot : CleanupList)
           TAnnot->Destroy();
       } else {
-        // If necessary, inject the tag declaration that is to be completed into
+        // Inject the tag declaration that is to be completed into
         // the current scope. This is needed to ensure that the created Decl is
         // constructed as a redeclaration of the provided incomplete Decl.
         //
         // A more robust design might allow 'ActOnTag' to take a 'PrevDecl' as
         // an input, rather than require that it be found by name lookup.
-        bool InjectDecl = true;
-        for (Scope *Sc = S.getCurScope(); Sc; Sc = Sc->getParent())
-          if (Sc->isDeclScope(IncompleteDecl)) {
-            InjectDecl = false;
+        Scope *Sc = S.getCurScope();
+        for (; Sc; Sc = Sc->getParent())
+          if (Sc->isDeclScope(IncompleteDecl))
             break;
-          }
-        if (InjectDecl) {
-          S.getCurScope()->AddDecl(IncompleteDecl);
-          S.IdResolver.AddDecl(IncompleteDecl);
-        }
+        if (!Sc)
+          Sc = S.getCurScope();
+        S.IdResolver.AddDecl(IncompleteDecl);
+        Sc->AddDecl(IncompleteDecl);
 
         // Create the new tag in the current scope.
         CXXScopeSpec SS;
@@ -502,7 +500,7 @@ public:
         bool OwnedDecl = true, IsDependent = false;
 
         NewDeclResult = S.ActOnTag(
-                S.getCurScope(), TypeSpec, TagUseKind::Definition,
+                Sc, TypeSpec, TagUseKind::Definition,
                 DefinitionLoc, SS, IncompleteDecl->getIdentifier(),
                 IncompleteDecl->getBeginLoc(), ParsedAttributesView::none(),
                 AS_none, SourceLocation{}, MTP, OwnedDecl, IsDependent,
