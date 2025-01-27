@@ -1290,8 +1290,7 @@ static bool isReflectableDecl(MetaActions &Meta, Decl *D) {
       FD && !Meta.HasSatisfiedConstraints(FD))
     return false;
 
-  if (isa<ClassTemplatePartialSpecializationDecl,
-          VarTemplatePartialSpecializationDecl>(D))
+  if (isa<ClassTemplateSpecializationDecl, VarTemplateSpecializationDecl>(D))
     return false;
 
   return D->getCanonicalDecl() == D;

@@ -156,9 +156,17 @@ struct Cls {};
 using Alias = int;
 
 template <typename T1, typename T2> class TCls {};
+template <typename T2> class TCls<bool, T2> {};
+template <> class TCls<int, bool> {};
+  // Specializations should not be represented in 'members_of'.
+
 template <typename T> void TFn() {}
 ;  // Empty declarations should not be represented in 'members_of'.
 template <typename T1, typename T2> int TVar = 0;
+template <typename T2> int TVar<bool, T2> = 1;
+template <> int TVar<int, bool> = 2;
+  // Specializations should not be represented in 'members_of'.
+
 template <typename T> using TAlias = int;
 template <typename T> concept Concept = requires { true; };
 
