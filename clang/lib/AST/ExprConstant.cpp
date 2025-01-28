@@ -8681,24 +8681,12 @@ bool ExprEvaluatorBase<Derived>::VisitCXXMetafunctionExpr(
       (Info.EvalMode ==
        EvalInfo::EM_ConstantExpressionPlainlyConstantEvaluated);
 
-  // Derive the ContainingDecl. Set to 'nullptr' if we're speculatively
-  // evaluating, or if we're evaluating an immediate-invocation that may be
-  // immediate-escalating.
-  //
-  // TODO(P2996): Represent this bit more explicitly.
-  Decl *ContainingDecl = Info.ContainingDecl;
-  if (Info.SpeculativeEvaluationDepth > 0 || Info.IsImmediateEscalating ||
-      Info.checkingForUndefinedBehavior()) {
-    ContainingDecl = nullptr;
-    AllowInjection = true;
-  }
-
   // Evaluate the metafunction.
   APValue Result;
   const CXXMetafunctionExpr::ImplFn &Implementation = E->getImpl();
   if (Implementation(Result, Evaluator, Diagnoser, AllowInjection,
                      E->getResultType(), Info.CurrentCall->CallRange, Args,
-                     ContainingDecl)) {
+                     Info.ContainingDecl)) {
     bool Result = Error(E);
     Info.addNotes(Diagnostics);
 

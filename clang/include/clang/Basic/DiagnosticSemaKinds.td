@@ -3178,9 +3178,6 @@ def err_unknown_metafunction : Error<
 def err_metafunction_arity : Error<
   "expected between %0 and %1 arguments (%2 given)">;
 
-def err_injected_decl_from_disallowed_context : Error<
-  "injected declaration for class %0 was produced by a manifestly "
-  "constant-evaluated expression that is not plainly constant-evaluated">;
 def err_injected_decl_outside_cone : Error <
   "cannot produce injected declaration of %0 from declaration of %1: scope "
   "associated with the %select{template specialization|function}2 %3 does not "

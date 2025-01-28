@@ -4773,14 +4773,13 @@ bool define_aggregate(APValue &Result, ASTContext &C, MetaActions &Meta,
     IncompleteDecl = cast<CXXRecordDecl>(ND);
   }
 
-  // We are speculatively evaluating: Fail the constant expression, but do not
-  // diagnose.
-  if (AllowInjection && ContainingDecl == nullptr)
-    return true;
+  if (!AllowInjection)
+    return Diagnoser(Range.getBegin(),
+                     diag::metafn_injected_decl_non_plainly_consteval);
 
-  CXXRecordDecl *Definition = Meta.DefineClass(IncompleteDecl, MemberSpecs,
-                                               AllowInjection, ContainingDecl,
-                                               Range.getBegin());
+  CXXRecordDecl *Definition = Meta.DefineAggregate(IncompleteDecl, MemberSpecs,
+                                                   ContainingDecl,
+                                                   Range.getBegin());
   if (!Definition)
     return true;
 
@@ -5393,17 +5392,15 @@ bool annotate(APValue &Result, ASTContext &C, MetaActions &Meta,
   if (!Evaluator(Value, Args[1], true) || !Value.isReflectedValue())
     return true;
 
-  // We are speculatively evaluating: Fail the constant expression, but do not
-  // diagnose.
-  if (AllowInjection && ContainingDecl == nullptr)
-    return true;
+  if (!AllowInjection)
+    return Diagnoser(Range.getBegin(),
+                     diag::metafn_injected_decl_non_plainly_consteval);
 
   switch (Appertainee.getReflectionKind()) {
   case ReflectionKind::Type: {
     Decl *D = findTypeDecl(Appertainee.getReflectedType());
     if (auto *Annot = Meta.Annotate(D->getMostRecentDecl(), Value,
-                                    AllowInjection, ContainingDecl,
-                                    Range.getBegin()))
+                                    ContainingDecl, Range.getBegin()))
       return SetAndSucceed(Result, makeReflection(Annot));
     return true;
   }
@@ -5413,16 +5410,14 @@ bool annotate(APValue &Result, ASTContext &C, MetaActions &Meta,
       return true;
 
     if (auto *Annot = Meta.Annotate(D->getMostRecentDecl(), Value,
-                                    AllowInjection, ContainingDecl,
-                                    Range.getBegin()))
+                                    ContainingDecl, Range.getBegin()))
       return SetAndSucceed(Result, makeReflection(Annot));
     return true;
   }
   case ReflectionKind::Namespace: {
     Decl *D = Appertainee.getReflectedNamespace();
     if (auto *Annot = Meta.Annotate(D->getMostRecentDecl(), Value,
-                                    AllowInjection, ContainingDecl,
-                                    Range.getBegin()))
+                                    ContainingDecl, Range.getBegin()))
       return SetAndSucceed(Result, makeReflection(Annot));
     return true;
   }

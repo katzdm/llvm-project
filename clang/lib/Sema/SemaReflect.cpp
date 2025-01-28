@@ -385,11 +385,10 @@ public:
     return Result.get();
   }
 
-  CXXRecordDecl *DefineClass(CXXRecordDecl *IncompleteDecl,
-                             ArrayRef<TagDataMemberSpec *> MemberSpecs,
-                             bool AllowInjection,
-                             Decl *ContainingDecl,
-                             SourceLocation DefinitionLoc) override {
+  CXXRecordDecl *DefineAggregate(CXXRecordDecl *IncompleteDecl,
+                                 ArrayRef<TagDataMemberSpec *> MemberSpecs,
+                                 Decl *ContainingDecl,
+                                 SourceLocation DefinitionLoc) override {
     class RestoreDeclContextTy {
       Sema &S;
       DeclContext *DC;
@@ -603,40 +602,32 @@ public:
     S.ActOnTagFinishDefinition(&ClsScope, NewDecl, DefinitionLoc);
     S.ActOnPopScope(DefinitionLoc, &ClsScope);
 
-    // The program is ill-formed if an injected declaration is produced by a
-    // manifestly constant-evaluated expression that is not plainly
-    // constant-evaluated.
-    if (!AllowInjection) {
-      S.Diag(DefinitionLoc, diag::err_injected_decl_from_disallowed_context)
-          << NewDecl;
-    } else {
-      Decl *ExprCone = findInjectionCone(ContainingDecl);
-      Decl *NewDeclCone = findInjectionCone(
-              cast<Decl>(NewDecl->getDeclContext()));
+    Decl *ExprCone = findInjectionCone(ContainingDecl);
+    Decl *NewDeclCone = findInjectionCone(
+            cast<Decl>(NewDecl->getDeclContext()));
 
-      if (ExprCone != NewDeclCone) {
-        Decl *ProblemScope = isa<TranslationUnitDecl>(ExprCone) ? NewDeclCone
-                                                                : ExprCone;
+    if (ExprCone != NewDeclCone) {
+      Decl *ProblemScope = isa<TranslationUnitDecl>(ExprCone) ? NewDeclCone
+                                                              : ExprCone;
 
-        // TODO(P2996): Implement diagnostic printing of 'ConstevalBlockDecl's.
-        if (isa<ConstevalBlockDecl>(ContainingDecl)) {
-          std::string Repr;
-          llvm::raw_string_ostream ReprOut(Repr);
+      // TODO(P2996): Implement diagnostic printing of 'ConstevalBlockDecl's.
+      if (isa<ConstevalBlockDecl>(ContainingDecl)) {
+        std::string Repr;
+        llvm::raw_string_ostream ReprOut(Repr);
 
-          SourceLocation Loc = ContainingDecl->getLocation();
-          ReprOut << "'(consteval-block at "
-                  << Loc.printToString(S.Context.getSourceManager()) << ")'";
+        SourceLocation Loc = ContainingDecl->getLocation();
+        ReprOut << "'(consteval-block at "
+                << Loc.printToString(S.Context.getSourceManager()) << ")'";
 
-          S.Diag(DefinitionLoc, diag::err_injected_decl_outside_cone)
-              << cast<NamedDecl>(NewDecl) << Repr
-              << (isa<FunctionDecl>(ProblemScope) ? 1 : 0)
-              << cast<NamedDecl>(ProblemScope);
-        } else {
-          S.Diag(DefinitionLoc, diag::err_injected_decl_outside_cone)
-              << cast<NamedDecl>(NewDecl) << cast<NamedDecl>(ContainingDecl)
-              << (isa<FunctionDecl>(ProblemScope) ? 1 : 0)
-              << cast<NamedDecl>(ProblemScope);
-        }
+        S.Diag(DefinitionLoc, diag::err_injected_decl_outside_cone)
+            << cast<NamedDecl>(NewDecl) << Repr
+            << (isa<FunctionDecl>(ProblemScope) ? 1 : 0)
+            << cast<NamedDecl>(ProblemScope);
+      } else {
+        S.Diag(DefinitionLoc, diag::err_injected_decl_outside_cone)
+            << cast<NamedDecl>(NewDecl) << cast<NamedDecl>(ContainingDecl)
+            << (isa<FunctionDecl>(ProblemScope) ? 1 : 0)
+            << cast<NamedDecl>(ProblemScope);
       }
     }
 
@@ -644,14 +635,8 @@ public:
   }
 
   CXX26AnnotationAttr *Annotate(Decl *TargetDecl, const APValue &Value,
-                                bool AllowInjection, Decl *ContainingDecl,
+                                Decl *ContainingDecl,
                                 SourceLocation DefinitionLoc) override {
-    if (!AllowInjection) {
-      S.Diag(DefinitionLoc, diag::err_injected_decl_from_disallowed_context)
-          << cast<NamedDecl>(TargetDecl);
-      return nullptr;
-    }
-
     Decl *ExprCone = findInjectionCone(ContainingDecl);
     Decl *TargetDeclCone = findInjectionCone(
             cast<Decl>(TargetDecl->getDeclContext()));

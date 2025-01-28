@@ -89,21 +89,25 @@ constexpr auto r4 = fn4<int>();
 namespace non_plainly_constant_evaluated {
 struct I1;
 auto u1 = define_aggregate(^^I1, {});
-// expected-error@-1 {{not plainly constant-evaluated}}
+// expected-error@-1 {{not a constant expression}}
 // expected-error@-2 {{'u1' of consteval-only type must either be constexpr}}
+// expected-error@-3 {{expressions of consteval-only type}}
+// expected-note@-4 {{non-plainly constant-evaluated context}}
 
 template <typename>
 struct S1 {
   struct I1;
 
   void mfn1() requires((define_aggregate(^^I1, {}), false)) {}
-  // expected-error@-1 {{not plainly constant-evaluated}}
+  // expected-error@-1 {{non-constant expression}}
+  // expected-note@-2 {{non-plainly constant-evaluated context}}
 
   void mfn1() requires(true) {}
 
   struct I2;
   void mfn2() noexcept((define_aggregate(^^I2, {}), false)) {}
-  // expected-error@-1 {{not plainly constant-evaluated}}
+  // expected-error@-1 {{not a constant expression}}
+  // expected-note@-2 {{non-plainly constant-evaluated}}
 };
 
 void trigger_instantiations() {
@@ -114,10 +118,12 @@ void trigger_instantiations() {
 
 template <typename Ty>
 constexpr auto Completion = define_aggregate(^^Ty, {});
-// expected-error@-1{{not plainly constant-evaluated}}
+// expected-error@-1 {{must be initialized by a constant expression}}
+// expected-note@-2 {{non-plainly constant-evaluated}}
 
 struct I4;
 constexpr auto D = Completion<I4>;
+// expected-error@-1 {{must be initialized by a constant expression}}
 
 }  // namespace non_plainly_constant_evaluated
 
@@ -171,5 +177,35 @@ consteval auto tfn() {
 consteval { tfn<tfn<std::meta::info{}>()>(); }
 
 }  // namespace scope_rule_violations
+
+                      // =================================
+                      // speculative_and_trial_evaluations
+                      // =================================
+
+namespace speculative_and_trial_evaluations {
+struct S1;
+consteval auto fn() {
+  return members_of(define_aggregate(^^S1, {})).empty() ? new int : nullptr;
+};
+
+consteval void fn2() {
+  delete fn();
+};
+
+consteval { fn2(); }
+[[maybe_unused]] S1 s1;
+
+
+consteval int fn3(int p) { return p; }
+
+struct S2;
+constexpr auto r = [](int p) {
+  [[maybe_unused]] const auto v = (define_aggregate(^^S2, {}), fn3(p));
+  return p;
+}(5);
+
+[[maybe_unused]] S2 s2;
+
+}  // namespace speculative_and_trial_evaluations
 
 int main() { }

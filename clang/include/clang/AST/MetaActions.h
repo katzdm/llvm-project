@@ -146,15 +146,14 @@ public:
                            // =======================
 
   // Returns a new definition of 'D' having the members specified by 'Mems'.
-  virtual CXXRecordDecl *DefineClass(CXXRecordDecl *IncompleteDecl,
-                                     ArrayRef<TagDataMemberSpec *> MemberSpecs,
-                                     bool AllowInjection,
-                                     Decl *ContainingDecl,
-                                     SourceLocation DefinitionLoc) = 0;
+  virtual
+  CXXRecordDecl *DefineAggregate(CXXRecordDecl *IncompleteDecl,
+                                 ArrayRef<TagDataMemberSpec *> MemberSpecs,
+                                 Decl *ContainingDecl,
+                                 SourceLocation DefinitionLoc) = 0;
 
   // Appertains the value represented by 'Value' as an annotation of 'Decl'.
   virtual CXX26AnnotationAttr *Annotate(Decl *TargetDecl, const APValue &Value,
-                                        bool AllowInjection,
                                         Decl *ContainingDecl,
                                         SourceLocation DefinitionLoc) = 0;
 
