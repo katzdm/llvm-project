@@ -340,16 +340,6 @@ static_assert(!is_complete_type(^^Incomplete));
 
 namespace out_of_scope_injections {
 namespace {
-struct I;
-struct S {
-  std::meta::info member = ^^I;
-
-  [[maybe_unused]]
-  static constexpr std::meta::info s = define_aggregate(^^I, {});
-};
-}  // namespace
-
-namespace {
 [[maybe_unused]] void fn() {
   struct I;
   {

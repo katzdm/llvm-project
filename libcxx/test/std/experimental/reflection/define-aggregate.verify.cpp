@@ -35,36 +35,33 @@ constinit auto r2 = define_aggregate(^^I2, {});
 struct I3;
 consteval { define_aggregate(^^I3, {}); }
 
-struct I4;
 struct S {
+  struct I4;
   consteval { define_aggregate(^^I4, {}); }
-
-  struct I5;
-  consteval { define_aggregate(^^I5, {}); }
 };
 
 template <typename>
 struct TCls {
-  struct I6;
-  consteval { define_aggregate(^^I6, {}); }
+  struct I5;
+  consteval { define_aggregate(^^I5, {}); }
 
-  struct I7;
-  static constexpr auto r = define_aggregate(^^I7, {});
+  struct I6;
+  static constexpr auto r = define_aggregate(^^I6, {});
 };
 static constexpr auto r3 = TCls<int>::r;
 
 consteval auto fn1(std::meta::info r) {
   return define_aggregate(r, {});
 }
-struct I8;
-consteval { fn1(^^I8); }
+struct I7;
+consteval { fn1(^^I7); }
 
 template <typename>
 consteval auto fn2(std::meta::info r) {
   return define_aggregate(r, {});
 }
-struct I9;
-consteval { fn2<int>(^^I9); }
+struct I8;
+consteval { fn2<int>(^^I8); }
 
 consteval void fn3() {
   struct S;
@@ -158,12 +155,12 @@ struct I3;
 template <typename>
 struct TCls1 {
   consteval { define_aggregate(^^I3, {}); }
-  // expected-error@-1 {{specialization 'TCls1<int>' does not enclose both}}
+  // expected-error@-1 {{class 'TCls1<int>' does not enclose both}}
 
   struct I;
 };
 consteval { define_aggregate(^^TCls1<int>::I, {}); }
-// expected-error@-1 {{specialization 'TCls1<int>' does not enclose both}}
+// expected-error@-1 {{class 'TCls1<int>' does not enclose both}}
 
 template <std::meta::info R>
 consteval auto tfn() {
@@ -176,6 +173,11 @@ consteval auto tfn() {
 }
 consteval { tfn<tfn<std::meta::info{}>()>(); }
 
+struct I4;
+struct S1 {
+  consteval { define_aggregate(^^I4, {}); }
+  // expected-error@-1 {{class 'S1' does not enclose both}}
+};
 }  // namespace scope_rule_violations
 
                       // =================================

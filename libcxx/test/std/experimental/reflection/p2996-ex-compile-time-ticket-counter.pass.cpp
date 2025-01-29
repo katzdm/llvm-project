@@ -23,8 +23,9 @@
 #include <print>
 
 
+template<int N> struct Helper;
+
 class TU_Ticket {
-  template<int N> struct Helper;
 public:
   static consteval int next() {
     int k = 0;

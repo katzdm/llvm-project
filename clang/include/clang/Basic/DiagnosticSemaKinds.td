@@ -3180,8 +3180,8 @@ def err_metafunction_arity : Error<
 
 def err_injected_decl_outside_cone : Error <
   "cannot produce injected declaration of %0 from declaration of %1: scope "
-  "associated with the %select{template specialization|function}2 %3 does not "
-  "enclose both declarations">;
+  "associated with the %select{class|function}2 %3 does not enclose both "
+  "declarations">;
 
 def err_cannot_expand_over_type : Error<
   "cannot expand over an expression of type %0">;

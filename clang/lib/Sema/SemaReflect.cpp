@@ -96,9 +96,7 @@ Expr *CreateRefToDecl(Sema &S, ValueDecl *D,
 static Decl *findInjectionCone(Decl *ContainingDecl) {
   for (Decl *Ctx = ContainingDecl; Ctx;
        Ctx = cast<Decl>(Ctx->getDeclContext())) {
-    if (isa<ClassTemplateSpecializationDecl,
-            FunctionDecl,
-            TranslationUnitDecl>(Ctx))
+    if (isa<RecordDecl, FunctionDecl, TranslationUnitDecl>(Ctx))
       return Ctx;
   }
   llvm_unreachable("should have terminated at a TranslationUnitDecl");
@@ -606,7 +604,7 @@ public:
     Decl *NewDeclCone = findInjectionCone(
             cast<Decl>(NewDecl->getDeclContext()));
 
-    if (ExprCone != NewDeclCone) {
+    if (ExprCone != NewDeclCone && !declaresSameEntity(NewDecl, ExprCone)) {
       Decl *ProblemScope = isa<TranslationUnitDecl>(ExprCone) ? NewDeclCone
                                                               : ExprCone;
 
@@ -641,7 +639,8 @@ public:
     Decl *TargetDeclCone = findInjectionCone(
             cast<Decl>(TargetDecl->getDeclContext()));
 
-    if (ExprCone != TargetDeclCone) {
+    if (ExprCone != TargetDeclCone &&
+        !declaresSameEntity(TargetDecl, ExprCone)) {
       Decl *ProblemScope = isa<TranslationUnitDecl>(ExprCone) ? TargetDeclCone
                                                               : ExprCone;
 

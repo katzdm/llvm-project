@@ -222,17 +222,16 @@ static_assert(annotations_of(^^fn)[p4 + 2] == i2);
 namespace ledger_based_consteval_variable {
 struct Counter {
 private:
-  static int ledger;
 
 public:
   static consteval int next(int i = 1) {
-    auto history = annotations_of(^^ledger);
+    auto history = annotations_of(^^Counter);
 
     int entry = i;
     if (history.size() > 0)
       entry += extract<int>(history.back());
 
-    annotate(^^ledger, std::meta::reflect_value(entry));
+    annotate(^^Counter, std::meta::reflect_value(entry));
     return entry;
   }
 };
