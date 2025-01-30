@@ -17129,7 +17129,8 @@ bool Expr::EvaluateAsInitializer(APValue &Value, const ASTContext &Ctx,
   EStatus.Diag = &Notes;
 
   EvalInfo::EvaluationMode ConstEM = EvalInfo::EM_ConstantExpression;
-  if (!isa<VarTemplateSpecializationDecl>(VD)) {
+  if (VD->getStorageDuration() == SD_Static &&
+      !isa<VarTemplateSpecializationDecl>(VD)) {
     if (VD->isConstexpr())
       ConstEM = EvalInfo::EM_ConstantExpressionPlainlyConstantEvaluated;
     else if (const auto *A = VD->getAttr<ConstInitAttr>();

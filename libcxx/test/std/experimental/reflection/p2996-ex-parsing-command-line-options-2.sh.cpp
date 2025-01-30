@@ -87,7 +87,7 @@ struct Clap {
 
     struct Opts;
     [[maybe_unused]]
-    constexpr auto unused = spec_to_opts(^^Opts, ^^Spec);
+    static constexpr auto unused = spec_to_opts(^^Opts, ^^Spec);
     Opts opts;
 
     struct Z {

@@ -122,6 +122,13 @@ struct I4;
 constexpr auto D = Completion<I4>;
 // expected-error@-1 {{must be initialized by a constant expression}}
 
+void fn() {
+  struct I5;
+  [[maybe_unused]] constexpr auto r = define_aggregate(^^I5, {});
+    // expected-error@-1 {{must be initialized by a constant expression}}
+    // expected-note@-2 {{non-plainly constant-evaluated}}
+}
+
 }  // namespace non_plainly_constant_evaluated
 
 

@@ -189,7 +189,7 @@ S s;
 namespace completion_of_local_class {
 consteval int fn() {
   struct S;
-  [[maybe_unused]] constexpr auto unused = define_aggregate(^^S, {
+  [[maybe_unused]] static constexpr auto unused = define_aggregate(^^S, {
       data_member_spec(^^int, {.name="member"})
   });
 
@@ -343,7 +343,7 @@ namespace {
 [[maybe_unused]] void fn() {
   struct I;
   {
-    [[maybe_unused]] constexpr auto b = define_aggregate(^^I, {});
+    [[maybe_unused]] static constexpr auto b = define_aggregate(^^I, {});
     [[maybe_unused]] I i;
   }
   [[maybe_unused]] I i;
