@@ -25,28 +25,31 @@
 
 template<int N> struct Helper;
 
-class TU_Ticket {
-public:
-  static consteval int next() {
+struct TU_Ticket {
+  static consteval int latest() {
     int k = 0;
-
-    // Search for the next incomplete 'Helper<k>'.
-    std::meta::info r;
-    while (is_complete_type(r = substitute(^^Helper,
-                                             { std::meta::reflect_value(k) })))
+    while (is_complete_type(substitute(^^Helper,
+                                       { std::meta::reflect_value(k) })))
       ++k;
-
-    // Define 'Helper<k>' and return its index.
-    define_aggregate(r, {});
     return k;
+  }
+
+  static consteval void increment() {
+    define_aggregate(substitute(^^Helper,
+                                { std::meta::reflect_value(latest())}),
+                     {});
   }
 };
 
-constexpr auto v1 = TU_Ticket::next();
-constexpr auto v2 = TU_Ticket::next();
-constexpr auto v3 = TU_Ticket::next();
+constexpr int x = TU_Ticket::latest();  // x initialized to 0.
+
+consteval { TU_Ticket::increment(); }
+constexpr int y = TU_Ticket::latest();  // y initialized to 1.
+
+consteval { TU_Ticket::increment(); }
+constexpr int z = TU_Ticket::latest();  // z initialized to 2.
 
 int main() {
   // RUN: grep "0, 1, 2" %t.stdout
-  std::println("{}, {}, {}", v1, v2, v3);
+  std::println("{}, {}, {}", x, y, z);
 }

@@ -1002,7 +1002,7 @@ Parser::ParseExternalDeclaration(ParsedAttributes &Attrs,
     }
 
   case tok::kw_consteval:
-    if (getLangOpts().ConstevalBlocks && NextToken().is(tok::l_brace)) {
+    if (getLangOpts().Reflection && NextToken().is(tok::l_brace)) {
       SourceLocation DeclEnd;
       return ParseDeclaration(DeclaratorContext::File, DeclEnd, Attrs,
                               DeclSpecAttrs);

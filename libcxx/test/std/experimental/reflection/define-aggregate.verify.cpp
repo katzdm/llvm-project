@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03 || c++11 || c++14 || c++17 || c++20
-// ADDITIONAL_COMPILE_FLAGS: -freflection -fconsteval-blocks
+// ADDITIONAL_COMPILE_FLAGS: -freflection
 // ADDITIONAL_COMPILE_FLAGS: -Wno-unneeded-internal-declaration
 // ADDITIONAL_COMPILE_FLAGS: -Wno-unused-private-field
 
@@ -27,41 +27,34 @@
 
 namespace well_formed {
 struct I1;
-constexpr auto r1 = define_aggregate(^^I1, {});
-
-struct I2;
-constinit auto r2 = define_aggregate(^^I2, {});
-
-struct I3;
-consteval { define_aggregate(^^I3, {}); }
+consteval { define_aggregate(^^I1, {}); }
 
 struct S {
-  struct I4;
-  consteval { define_aggregate(^^I4, {}); }
+  struct I2;
+  consteval { define_aggregate(^^I2, {}); }
 };
 
 template <typename>
 struct TCls {
-  struct I5;
-  consteval { define_aggregate(^^I5, {}); }
-
-  struct I6;
-  static constexpr auto r = define_aggregate(^^I6, {});
+  struct I3;
+  consteval { define_aggregate(^^I3, {}); }
 };
-static constexpr auto r3 = TCls<int>::r;
+TCls<int>::I3 i1;
 
 consteval auto fn1(std::meta::info r) {
   return define_aggregate(r, {});
 }
-struct I7;
-consteval { fn1(^^I7); }
+struct I4;
+consteval { fn1(^^I4); }
+I4 i2;
 
 template <typename>
 consteval auto fn2(std::meta::info r) {
   return define_aggregate(r, {});
 }
-struct I8;
-consteval { fn2<int>(^^I8); }
+struct I5;
+consteval { fn2<int>(^^I5); }
+I5 i3;
 
 consteval void fn3() {
   struct S;
@@ -74,7 +67,7 @@ consteval auto fn4() {
   consteval { define_aggregate(^^S, {}); }
   return ^^S;
 }
-constexpr auto r4 = fn4<int>();
+constexpr auto i4 = fn4<int>();
 
 }  // namespace well_formed
 
@@ -85,11 +78,9 @@ constexpr auto r4 = fn4<int>();
 
 namespace non_plainly_constant_evaluated {
 struct I1;
-auto u1 = define_aggregate(^^I1, {});
-// expected-error@-1 {{not a constant expression}}
-// expected-error@-2 {{'u1' of consteval-only type must either be constexpr}}
-// expected-error@-3 {{expressions of consteval-only type}}
-// expected-note@-4 {{non-plainly constant-evaluated context}}
+constexpr auto u1 = define_aggregate(^^I1, {});
+// expected-error@-1 {{must be initialized by a constant expression}}
+// expected-note@-2 {{non-plainly constant-evaluated context}}
 
 template <typename>
 struct S1 {
@@ -124,7 +115,7 @@ constexpr auto D = Completion<I4>;
 
 void fn() {
   struct I5;
-  [[maybe_unused]] constexpr auto r = define_aggregate(^^I5, {});
+  [[maybe_unused]] static constexpr auto r = define_aggregate(^^I5, {});
     // expected-error@-1 {{must be initialized by a constant expression}}
     // expected-note@-2 {{non-plainly constant-evaluated}}
 }
@@ -208,10 +199,12 @@ consteval { fn2(); }
 consteval int fn3(int p) { return p; }
 
 struct S2;
-constexpr auto r = [](int p) {
-  [[maybe_unused]] const auto v = (define_aggregate(^^S2, {}), fn3(p));
-  return p;
-}(5);
+consteval {
+  (void) [](int p) {
+    [[maybe_unused]] const auto v = (define_aggregate(^^S2, {}), fn3(p));
+    return p;
+  }(5);
+}
 
 [[maybe_unused]] S2 s2;
 

@@ -28,10 +28,9 @@
 
 template<typename... Ts> struct Tuple {
   struct storage;
-
-  [[maybe_unused]]
-  static constexpr auto unused = define_aggregate(^^storage,
-                                                  {data_member_spec(^^Ts)...});
+  consteval {
+    define_aggregate(^^storage, {data_member_spec(^^Ts)...});
+  }
   storage data;
 
   Tuple(): data{} {}

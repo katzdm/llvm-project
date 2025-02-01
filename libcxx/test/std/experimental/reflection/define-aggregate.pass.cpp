@@ -35,9 +35,11 @@ union U;
 static_assert(!is_complete_type(^^S));
 static_assert(!is_complete_type(^^C));
 static_assert(!is_complete_type(^^U));
-[[maybe_unused]] constexpr auto u1 = define_aggregate(^^S, {});
-[[maybe_unused]] constinit auto u2 = define_aggregate(^^C, {});
-[[maybe_unused]] constexpr auto u3 = define_aggregate(^^U, {});
+consteval {
+  define_aggregate(^^S, {});
+  define_aggregate(^^C, {});
+  define_aggregate(^^U, {});
+}
 static_assert(is_complete_type(^^S));
 static_assert(is_complete_type(^^C));
 static_assert(is_complete_type(^^U));
@@ -57,12 +59,14 @@ U u;
 namespace test_all_flags {
 struct S;
 static_assert(!is_complete_type(^^S));
-[[maybe_unused]] constexpr auto u1 = define_aggregate(^^S, {
+consteval {
+  define_aggregate(^^S, {
     data_member_spec(^^int, {.name="count", .alignment=16}),
     data_member_spec(^^bool, {.name="flag"}),
     data_member_spec(^^int, {.width=0}),
     data_member_spec(^^int, {.width=5}),
-});
+  });
+}
 static_assert(is_complete_type(^^S));
 // unnamed bitfields are not nonstatic data members.
 static_assert(nonstatic_data_members_of(^^S).size() == 3);
@@ -79,10 +83,12 @@ static_assert(s.[:nonstatic_data_members_of(^^S)[2]:] == 11);
 
 struct Empty {};
 struct WithEmpty;
-[[maybe_unused]] constexpr auto u2 = define_aggregate(^^WithEmpty, {
+consteval {
+  define_aggregate(^^WithEmpty, {
     data_member_spec(^^int, {}),
     data_member_spec(^^Empty, {.no_unique_address=true}),
-});
+  });
+}
 static_assert(sizeof(WithEmpty) == sizeof(int));
 }  // namespace test_all_flags
 
@@ -92,10 +98,12 @@ static_assert(sizeof(WithEmpty) == sizeof(int));
 namespace class_completion {
 class C;
 static_assert(!is_complete_type(^^C));
-[[maybe_unused]] constexpr auto u1 = define_aggregate(^^C, {
+consteval {
+  define_aggregate(^^C, {
     data_member_spec(^^int, {.name="count"}),
     data_member_spec(^^bool, {.name="flag"}),
-});
+  });
+}
 static_assert(is_complete_type(^^C));
 static_assert(nonstatic_data_members_of(^^C).size() == 2);
 static_assert(
@@ -114,10 +122,12 @@ C c;
 namespace union_completion {
 union U;
 static_assert(!is_complete_type(^^U));
-[[maybe_unused]] constexpr auto u1 = define_aggregate(^^U, {
+consteval {
+  define_aggregate(^^U, {
     data_member_spec(^^int, {.name="count"}),
     data_member_spec(^^bool, {.name="flag"}),
-});
+  });
+}
 static_assert(is_complete_type(^^U));
 static_assert(size_of(^^U) == size_of(^^U::count));
 static_assert(nonstatic_data_members_of(^^U).size() == 2);
@@ -143,14 +153,16 @@ consteval int nextIncompleteIdx() {
     if (!is_complete_type(substitute(^^S, {std::meta::reflect_value(Idx)})))
       return Idx;
 }
-[[maybe_unused]]
-constexpr auto u1 = define_aggregate(^^S<nextIncompleteIdx()>, {
+consteval {
+  define_aggregate(^^S<nextIncompleteIdx()>, {
     data_member_spec(^^int, {.name="mem"}),
-});
-[[maybe_unused]]
-constexpr auto u2 = define_aggregate(^^S<nextIncompleteIdx()>, {
+  });
+}
+consteval {
+  define_aggregate(^^S<nextIncompleteIdx()>, {
     data_member_spec(^^bool, {.name="mem"}),
-});
+  });
+}
 
 static_assert(nonstatic_data_members_of(^^S<0>).size() == 0);
 static_assert(nonstatic_data_members_of(^^S<1>).size() == 1);
@@ -173,9 +185,10 @@ consteval bool completeDefn() {
 
 struct S;
 static_assert(!is_complete_type(^^S));
-[[maybe_unused]] constexpr auto unused =
-    completeDefn<S, data_member_spec(^^bool, {.name="flag"}),
-                    data_member_spec(^^int, {.name="count"})>();
+consteval {
+  completeDefn<S, data_member_spec(^^bool, {.name="flag"}),
+                  data_member_spec(^^int, {.name="count"})>();
+}
 static_assert(is_complete_type(^^S));
 static_assert(nonstatic_data_members_of(^^S).size() == 2);
 
@@ -189,9 +202,11 @@ S s;
 namespace completion_of_local_class {
 consteval int fn() {
   struct S;
-  [[maybe_unused]] static constexpr auto unused = define_aggregate(^^S, {
+  consteval {
+    define_aggregate(^^S, {
       data_member_spec(^^int, {.name="member"})
-  });
+    });
+  }
 
   S s = {13};
   return s.member;
@@ -207,15 +222,13 @@ namespace completion_of_template_with_pack_param {
 template <typename...>
 struct foo;
 
-[[maybe_unused]] constexpr auto u1 = define_aggregate(^^foo<>, {
-    data_member_spec(^^int, {.name="mem1"})
-});
-[[maybe_unused]] constexpr auto u2 = define_aggregate(^^foo<int>, {
-  data_member_spec(^^int, {.name="mem2"})
-});
-[[maybe_unused]] constexpr auto u3 = define_aggregate(^^foo<bool, char>, {
-  data_member_spec(^^int, {.name="mem3"})
-});
+consteval {
+  define_aggregate(^^foo<>, { data_member_spec(^^int, {.name="mem1"}) });
+  define_aggregate(^^foo<int>, { data_member_spec(^^int, {.name="mem2"}) });
+  define_aggregate(^^foo<bool, char>, {
+    data_member_spec(^^int, {.name="mem3"})
+  });
+}
 
 constexpr foo<> f1 = {1};
 constexpr foo<int> f2 = {2};
@@ -229,7 +242,8 @@ static_assert(f1.mem1 + f2.mem2 + f3.mem3 == 6);
 
 namespace with_non_contiguous_range {
 struct foo;
-[[maybe_unused]] constexpr auto unused = define_aggregate(
+consteval {
+  define_aggregate(
     ^^foo,
     std::views::join(std::vector<std::vector<std::pair<bool,
                                                        std::meta::info>>> {
@@ -241,7 +255,9 @@ struct foo;
       }
     }) |
     std::views::filter([](auto P) { return P.first; }) |
-    std::views::transform([](auto P) { return P.second; }));
+    std::views::transform([](auto P) { return P.second;
+  }));
+}
 
 static_assert(type_of(^^foo::i) == ^^int);
 static_assert(type_of(^^foo::b) == ^^bool);
@@ -256,9 +272,11 @@ namespace utf8_identifier_of_roundtrip {
 class Kühl { };
 
 class Cls1;
-[[maybe_unused]] constexpr auto unused = define_aggregate(^^Cls1, {
+consteval {
+  define_aggregate(^^Cls1, {
     data_member_spec(^^int, {.name=u8identifier_of(^^Kühl)})
-});
+  });
+}
 static_assert(u8identifier_of(nonstatic_data_members_of(^^Cls1)[0]) ==
               u8"Kühl");
 static_assert(identifier_of(nonstatic_data_members_of(^^Cls1)[0]) == "Kühl");
@@ -289,18 +307,22 @@ static_assert(data_member_spec(^^Alias, {}) != data_member_spec(^^int, {}));
 
 namespace repeat_calls {
 struct S1;
-[[maybe_unused]] constexpr auto u1 = define_aggregate(^^S1, {});
-[[maybe_unused]] constexpr auto u2 = define_aggregate(^^S1, {});
+consteval {
+  define_aggregate(^^S1, {});
+  define_aggregate(^^S1, {});
+}
 
 struct S2;
-[[maybe_unused]] constexpr auto u3 = define_aggregate(^^S2, {
+consteval {
+  define_aggregate(^^S2, {
     data_member_spec(^^int, {.name="member1"}),
     data_member_spec(^^bool, {.name="member2"}),
-});
-[[maybe_unused]] constexpr auto u4 = define_aggregate(^^S2, {
+  });
+  define_aggregate(^^S2, {
     data_member_spec(^^int, {.name="member1"}),
     data_member_spec(^^bool, {.name="member2"}),
-});
+  });
+}
 
 }  // namespace repeat_calls
 
@@ -316,7 +338,7 @@ auto L = [] {
   return 0;
 };
 
-[[maybe_unused]] constexpr auto r = L();
+consteval { L(); }
 S s;
 
 }  // namespace immediate_escalating
@@ -343,7 +365,7 @@ namespace {
 [[maybe_unused]] void fn() {
   struct I;
   {
-    [[maybe_unused]] static constexpr auto b = define_aggregate(^^I, {});
+    consteval { define_aggregate(^^I, {}); }
     [[maybe_unused]] I i;
   }
   [[maybe_unused]] I i;
@@ -364,7 +386,7 @@ consteval int fn2(void *ptr) {
 }
 
 namespace a {
-[[maybe_unused]] constinit int i = fn2(fn1());
+consteval { (void) fn2(fn1()); }
 }  // namespace
 [[maybe_unused]] I i;
 

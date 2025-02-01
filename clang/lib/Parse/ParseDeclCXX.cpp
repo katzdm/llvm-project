@@ -3132,7 +3132,7 @@ Parser::DeclGroupPtrTy Parser::ParseCXXClassMemberDeclaration(
   }
 
   if (!TemplateInfo.Kind &&
-      getLangOpts().ConstevalBlocks && Tok.is(tok::kw_consteval) &&
+      getLangOpts().Reflection && Tok.is(tok::kw_consteval) &&
       NextToken().is(tok::l_brace)) {
     SourceLocation DeclEnd;
     return DeclGroupPtrTy::make(

@@ -3567,11 +3567,6 @@ defm annotation_attributes : BoolFOption<"annotation-attributes",
   PosFlag<SetTrue, [], [ClangOption, CC1Option],
           "Enable proposed annotation attributes as described by P3394">,
   NegFlag<SetFalse>>;
-defm consteval_blocks : BoolFOption<"consteval-blocks",
-  LangOpts<"ConstevalBlocks">, DefaultFalse,
-  PosFlag<SetTrue, [], [ClangOption, CC1Option],
-          "Enable proposed consteval blocks as described by P3289">,
-  NegFlag<SetFalse>>;
 defm access_contexts : BoolFOption<"access-contexts",
   LangOpts<"AccessContexts">, DefaultFalse,
   PosFlag<SetTrue, [], [ClangOption, CC1Option],

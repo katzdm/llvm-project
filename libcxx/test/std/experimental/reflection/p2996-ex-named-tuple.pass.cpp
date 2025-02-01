@@ -57,9 +57,9 @@ consteval auto make_named_tuple(std::meta::info type, Tags... tags) {
 }
 
 struct R;
-[[maybe_unused]]
-constexpr auto unused = make_named_tuple(^^R, pair<int, "x">{},
-                                              pair<double, "y">{});
+consteval {
+  make_named_tuple(^^R, pair<int, "x">{}, pair<double, "y">{});
+}
 
 static_assert(type_of(nonstatic_data_members_of(^^R)[0]) == ^^int);
 static_assert(type_of(nonstatic_data_members_of(^^R)[1]) == ^^double);

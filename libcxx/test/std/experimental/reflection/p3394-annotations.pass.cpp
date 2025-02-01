@@ -169,12 +169,14 @@ template <std::meta::info R>
 
 static_assert(annotations_of(^^fn).size() == 0);
 
-constexpr auto a1 = annotate(^^fn, std::meta::reflect_value(1));
-static_assert(annotations_of(^^fn) == std::vector {a1});
-static_assert(extract<int>(a1) == 1);
+consteval {
+  annotate(^^fn, std::meta::reflect_value(1));
+}
+static_assert(annotations_of(^^fn).size() == 1);
+static_assert(extract<int>(annotations_of(^^fn)[0]) == 1);
 
-constexpr auto a2 = tfn<^^fn>(std::meta::reflect_value(2.0f));
-static_assert(annotations_of(^^fn) == std::vector {a1, a2});
+consteval { tfn<^^fn>(std::meta::reflect_value(2.0f)); }
+static_assert(annotations_of(^^fn).size() == 2);
 static_assert(annotation_of_type<float>(^^fn) == 2.0f);
 }  // namespace annotation_injection
 
@@ -187,11 +189,11 @@ void fn();
 static_assert(annotations_of(^^fn).size() == 0);
 [[=1, =2]] void fn();
 static_assert(annotations_of(^^fn).size() == 2);
-constexpr auto i1 = annotate(^^fn, std::meta::reflect_value(3));
+consteval { annotate(^^fn, std::meta::reflect_value(3)); }
 static_assert(annotations_of(^^fn).size() == 3);
 [[=4, =5]] void fn();
 static_assert(annotations_of(^^fn).size() == 5);
-constexpr auto i2 = annotate(^^fn, std::meta::reflect_value(6));
+consteval { annotate(^^fn, std::meta::reflect_value(6)); }
 static_assert(annotations_of(^^fn).size() == 6);
 void fn();
 static_assert(annotations_of(^^fn).size() == 6);
@@ -208,11 +210,11 @@ constexpr auto p1 = idxOf(1), p4 = idxOf(4);
 
 static_assert(extract<int>(annotations_of(^^fn)[p1]) == 1);
 static_assert(extract<int>(annotations_of(^^fn)[p1 + 1]) == 2);
-static_assert(annotations_of(^^fn)[p1 + 2] == i1);
+static_assert(extract<int>(annotations_of(^^fn)[p1 + 2]) == 3);
 
 static_assert(extract<int>(annotations_of(^^fn)[p4]) == 4);
 static_assert(extract<int>(annotations_of(^^fn)[p4 + 1]) == 5);
-static_assert(annotations_of(^^fn)[p4 + 2] == i2);
+static_assert(extract<int>(annotations_of(^^fn)[p4 + 2]) == 6);
 }  // namespace accumulation_over_declarations
 
                        // ===============================
@@ -224,26 +226,29 @@ struct Counter {
 private:
 
 public:
-  static consteval int next(int i = 1) {
+  static consteval int current() {
     auto history = annotations_of(^^Counter);
+    return history.empty() ? 0 : extract<int>(history.back());
+  }
 
-    int entry = i;
-    if (history.size() > 0)
-      entry += extract<int>(history.back());
-
-    annotate(^^Counter, std::meta::reflect_value(entry));
-    return entry;
+  static consteval int increment(int i = 1) {
+    int value = current() + i;
+    annotate(^^Counter, std::meta::reflect_value(value));
+    return value;
   }
 };
-constexpr auto c1 = Counter::next();
-constexpr auto c2 = Counter::next();
-constexpr auto c3 = Counter::next(-2);
-constexpr auto c4 = Counter::next(5);
+constexpr auto c1 = Counter::current();
+consteval { Counter::increment(); }
+constexpr auto c2 = Counter::current();
+consteval { Counter::increment(-2); }
+constexpr auto c3 = Counter::current();
+consteval { Counter::increment(5); }
+constexpr auto c4 = Counter::current();
 
-static_assert(c1 == 1);
-static_assert(c2 == 2);
-static_assert(c3 == 0);
-static_assert(c4 == 5);
+static_assert(c1 == 0);
+static_assert(c2 == 1);
+static_assert(c3 == -1);
+static_assert(c4 == 4);
 }  // namespace ledger_based_consteval_variable
 
 int main() { }

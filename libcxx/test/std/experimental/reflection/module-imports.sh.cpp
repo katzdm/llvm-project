@@ -81,8 +81,9 @@ static_assert(is_data_member_spec(Example::rTDMS));
 static_assert(type_of(Example::rTDMS) == ^^int);
 
 struct S;
-[[maybe_unused]] constexpr auto unused = define_aggregate(^^S,
-                                                          {Example::rTDMS});
+consteval {
+  define_aggregate(^^S, {Example::rTDMS});
+}
 
                                // ==============
                                // Driver program

@@ -2090,7 +2090,7 @@ Parser::DeclGroupPtrTy Parser::ParseDeclaration(DeclaratorContext Context,
     SingleDecl = ParseStaticAssertDeclaration(DeclEnd);
     break;
   case tok::kw_consteval:
-    if (getLangOpts().ConstevalBlocks && NextToken().is(tok::l_brace)) {
+    if (getLangOpts().Reflection && NextToken().is(tok::l_brace)) {
       ProhibitAttributes(DeclAttrs);
       ProhibitAttributes(DeclSpecAttrs);
       SingleDecl = ParseConstevalBlockDeclaration(DeclEnd);

@@ -67,7 +67,7 @@ bool Parser::isCXXDeclarationStatement(
     return true;
   case tok::kw_consteval:
     // consteval-block-declaration
-    if (getLangOpts().ConstevalBlocks)
+    if (getLangOpts().Reflection)
       return NextToken().is(tok::l_brace);
     return isCXXSimpleDeclaration(/*AllowForRangeDecl=*/false);
   case tok::coloncolon:

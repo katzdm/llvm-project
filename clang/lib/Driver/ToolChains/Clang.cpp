@@ -7178,7 +7178,6 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back("-freflection");
     CmdArgs.push_back("-fparameter-reflection");
     CmdArgs.push_back("-fannotation-attributes");
-    CmdArgs.push_back("-fconsteval-blocks");
     if (!Args.hasArg(options::OPT_fno_access_contexts))
       CmdArgs.push_back("-faccess-contexts");
     CmdArgs.push_back("-fexpansion-statements");
@@ -7535,9 +7534,6 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
   // -fannotation-attributes is likewise off by default.
   Args.addOptInFlag(CmdArgs, options::OPT_fannotation_attributes,
                     options::OPT_fno_annotation_attributes);
-  // -fconsteval-blocks is likewise off by default.
-  Args.addOptInFlag(CmdArgs, options::OPT_fconsteval_blocks,
-                    options::OPT_fno_consteval_blocks);
   // -faccess-contexts is likewise off by default.
   Args.addOptInFlag(CmdArgs, options::OPT_faccess_contexts,
                     options::OPT_fno_access_contexts);
