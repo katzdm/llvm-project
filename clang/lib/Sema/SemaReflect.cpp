@@ -1140,8 +1140,14 @@ ExprResult Sema::BuildCXXReflectExpr(SourceLocation OperatorLoc,
 
 ExprResult Sema::BuildCXXReflectExpr(SourceLocation OperatorLoc, Expr *E) {
   // Don't try to evaluate now if it's a value-dependent subexpression.
-  if (E->isValueDependent())
+  if (E->isValueDependent()) {
+    if (auto *DRE = dyn_cast<DeclRefExpr>(E);
+        DRE && isa<NonTypeTemplateParmDecl>(DRE->getDecl())) {
+      Diag(E->getExprLoc(), diag::err_reflect_nttp) << E->getSourceRange();
+      return ExprError();
+    }
     return CXXReflectExpr::Create(Context, OperatorLoc, E);
+  }
 
   // Check if this is a reference to a declared entity.
   if (auto *DRE = dyn_cast<DeclRefExpr>(E))
@@ -1150,10 +1156,6 @@ ExprResult Sema::BuildCXXReflectExpr(SourceLocation OperatorLoc, Expr *E) {
   // Special case for '^[:splice:]'.
   if (auto *SE = dyn_cast<CXXSpliceExpr>(E))
     return BuildCXXReflectExpr(OperatorLoc, SE);
-
-  // Always allow '^P' where 'P' is a template parameter.
-  if (auto *SNTTPE = dyn_cast<SubstNonTypeTemplateParmExpr>(E))
-    return BuildCXXReflectExpr(OperatorLoc, SNTTPE);
 
   // Handles cases like '^fn<int>'.
   if (auto *ULE = dyn_cast<UnresolvedLookupExpr>(E))

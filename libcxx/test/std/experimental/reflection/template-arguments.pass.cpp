@@ -206,54 +206,66 @@ void instantiations() {
 
 namespace properties_of_non_types {
 template <int P> void fn_int_value() {
-  static_assert(is_value(^^P));
-  static_assert(type_of(^^P) == ^^int);
-  static_assert([:^^P:] == 1);
+  static_assert(is_value(std::meta::reflect_value(P)));
+  static_assert(type_of(std::meta::reflect_value(P)) == ^^int);
+  static_assert([:std::meta::reflect_value(P):] == 1);
 }
 
 template <const int &P> void fn_int_ref() {
-  static_assert(is_object(^^P));
-  static_assert(!is_variable(^^P));
-  if constexpr (is_const(^^P)) {
-    static_assert(type_of(^^P) == ^^const int);
-    static_assert([:^^P:] == 2);
+  static constexpr auto R = std::meta::reflect_object(P);
+
+  static_assert(is_object(R));
+  static_assert(!is_variable(R));
+  if constexpr (is_const(R)) {
+    static_assert(type_of(R) == ^^const int);
+    static_assert([:R:] == 2);
   } else {
-    static_assert(type_of(^^P) == ^^int);
+    static_assert(type_of(R) == ^^int);
   }
 }
 
 template <const int &P> void fn_int_subobject_ref() {
-  static_assert(is_object(^^P));
-  static_assert(!is_variable(^^P));
-  static_assert(type_of(^^P) == ^^const int);
-  static_assert([:^^P:] == 3);
+  static constexpr auto R = std::meta::reflect_object(P);
+
+  static_assert(is_object(R));
+  static_assert(!is_variable(R));
+  static_assert(type_of(R) == ^^const int);
+  static_assert([:R:] == 3);
 }
 
 struct S { int m; };
 
 template <S P> void fn_cls_value() {
-  static_assert(is_object(^^P));
-  static_assert(!is_variable(^^P));  // template-parameter-object
-  static_assert(type_of(^^P) == ^^const S);
-  static_assert([:^^P:].m == 5);
+  static constexpr auto R = std::meta::reflect_object(P);
+
+  static_assert(is_object(R));
+  static_assert(!is_variable(R));  // template-parameter-object
+  static_assert(type_of(R) == ^^const S);
+  static_assert([:R:].m == 5);
 }
 
 template <S &P> void fn_cls_ref() {
-  static_assert(is_object(^^P));
-  static_assert(!is_variable(^^P));
-  static_assert(type_of(^^P) == ^^S);
+  static constexpr auto R = std::meta::reflect_object(P);
+
+  static_assert(is_object(R));
+  static_assert(!is_variable(R));
+  static_assert(type_of(R) == ^^S);
 }
 
 template <void(&P)()> void fn_fn_ref_param() {
-  static_assert(is_function(^^P));
-  static_assert(type_of(^^P) == ^^void());
-  static_assert(identifier_of(^^P) == "instantiations");
+  static constexpr auto R = std::meta::reflect_function(P);
+
+  static_assert(is_function(R));
+  static_assert(type_of(R) == ^^void());
+  static_assert(identifier_of(R) == "instantiations");
 }
 
 template <void(*P)()> void fn_fn_ptr_param() {
-  static_assert(is_value(^^P));
-  static_assert(!is_function(^^P));
-  static_assert(type_of(^^P) == ^^void(*)());
+  static constexpr auto R = std::meta::reflect_value(P);
+
+  static_assert(is_value(R));
+  static_assert(!is_function(R));
+  static_assert(type_of(R) == ^^void(*)());
 }
 
 void instantiations() {

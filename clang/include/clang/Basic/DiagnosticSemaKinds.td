@@ -3132,6 +3132,8 @@ def err_reflect_general_expression : Error<
   "reflection operand must be a named entity">;
 def err_reflect_overload_set : Error<
   "cannot take the reflection of an overload set">;
+def err_reflect_nttp : Error<
+  "cannot take the reflection of a non-type template parameter">;
 def err_template_arg_bad_reflection_kind : Error<
   "reflection of this kind cannot appear as a template argument">;
 def err_reflect_dependent_splice : Error<
