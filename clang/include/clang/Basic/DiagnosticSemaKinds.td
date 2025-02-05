@@ -3178,6 +3178,9 @@ def err_unknown_metafunction : Error<
 def err_metafunction_arity : Error<
   "expected between %0 and %1 arguments (%2 given)">;
 
+def err_consteval_block_not_constexpr : Error<
+  "evaluating expression of a consteval block must be a constant expression">;
+
 def err_injected_decl_outside_cone : Error <
   "cannot produce injected declaration of %0 from declaration of %1: scope "
   "associated with the %select{class|function}2 %3 does not enclose both "

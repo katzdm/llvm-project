@@ -1713,10 +1713,16 @@ Decl *Sema::BuildConstevalBlockDeclaration(SourceLocation ConstevalLoc,
 
   if (!EvaluatingExpr->isTypeDependent() &&
       !EvaluatingExpr->isValueDependent()) {
-    Expr::EvalResult Unused;
+    SmallVector<PartialDiagnosticAt, 4> Diags;
+    Expr::EvalResult ER;
+    ER.Diag = &Diags;
 
     ConstantExprKind Kind = ConstantExprKind::PlainlyConstantEvaluated;
-    EvaluatingExpr->EvaluateAsConstantExpr(Unused, Context, Kind, Result);
+    if (!EvaluatingExpr->EvaluateAsConstantExpr(ER, Context, Kind, Result)) {
+      Diag(ConstevalLoc, diag::err_consteval_block_not_constexpr);
+      for (PartialDiagnosticAt PD : Diags)
+        Diag(PD.first, PD.second);
+    }
   }
   return Result;
 }
