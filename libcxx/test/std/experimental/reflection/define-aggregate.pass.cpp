@@ -301,31 +301,6 @@ using Alias = int;
 static_assert(data_member_spec(^^Alias, {}) != data_member_spec(^^int, {}));
 }  // namespace data_member_spec_comparison
 
-                                // ============
-                                // repeat_calls
-                                // ============
-
-namespace repeat_calls {
-struct S1;
-consteval {
-  define_aggregate(^^S1, {});
-  define_aggregate(^^S1, {});
-}
-
-struct S2;
-consteval {
-  define_aggregate(^^S2, {
-    data_member_spec(^^int, {.name="member1"}),
-    data_member_spec(^^bool, {.name="member2"}),
-  });
-  define_aggregate(^^S2, {
-    data_member_spec(^^int, {.name="member1"}),
-    data_member_spec(^^bool, {.name="member2"}),
-  });
-}
-
-}  // namespace repeat_calls
-
                             // ====================
                             // immediate_escalating
                             // ====================

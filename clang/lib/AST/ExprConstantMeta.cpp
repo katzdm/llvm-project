@@ -4762,11 +4762,12 @@ bool define_aggregate(APValue &Result, ASTContext &C, MetaActions &Meta,
   {
     NamedDecl *ND;
     if (!ToComplete->isIncompleteType(&ND)) {
-      unsigned PriorHash;
+      // NOTE: Uncomment following lines for 'define_aggregate' idempotency.
+      /*unsigned PriorHash;
       if (C.checkClassMemberSpecHash(ToComplete, PriorHash) &&
           MemberSpecHash == PriorHash)
         return SetAndSucceed(Result, makeReflection(ToComplete));
-      else
+      else*/
         return Diagnoser(Range.getBegin(), diag::metafn_already_complete_type)
           << ToComplete << Range;
     }

@@ -210,4 +210,30 @@ consteval {
 
 }  // namespace speculative_and_trial_evaluations
 
+                                // ============
+                                // repeat_calls
+                                // ============
+
+namespace repeat_calls {
+struct S1;
+consteval { // expected-error {{consteval block must be a constant expression}}
+  define_aggregate(^^S1, {});
+  define_aggregate(^^S1, {});  // expected-note {{already a complete type}}
+}
+
+struct S2;
+consteval { // expected-error {{consteval block must be a constant expression}}
+  define_aggregate(^^S2, {
+    data_member_spec(^^int, {.name="member1"}),
+    data_member_spec(^^bool, {.name="member2"}),
+  });
+  define_aggregate(^^S2, {  // expected-note {{already a complete type}}
+    data_member_spec(^^int, {.name="member1"}),
+    data_member_spec(^^bool, {.name="member2"}),
+  });
+}
+
+}  // namespace repeat_calls
+
+
 int main() { }
