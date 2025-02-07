@@ -69,6 +69,9 @@ def metafn_function_is_not_member_of_object : Note<
 def metafn_function_returns_void : Note<
    "cannot invoke reflection of void-returning function">;
 
+// Accessibility.
+def metafn_access_query_class_being_defined : Note<
+  "cannot query the access of a member of class %0 currently being defined">;
 
 // Extraction.
 def metafn_cannot_extract : Note<

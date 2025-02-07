@@ -5498,11 +5498,25 @@ bool is_accessible(APValue &Result, ASTContext &C, MetaActions &Meta,
   if (!Evaluator(RV, Args[0], true))
     return true;
 
+  auto validate = [&](Decl *D) -> bool {
+    if (!D || !D->getDeclContext() || !isa<CXXRecordDecl>(D->getDeclContext()))
+      return DiagnoseReflectionKind(Diagnoser, Range, "a class member");
+
+    auto *Ctx = cast<CXXRecordDecl>(D->getDeclContext());
+    if (auto *Ctx = cast<CXXRecordDecl>(D->getDeclContext());
+        Ctx->isBeingDefined())
+      return Diagnoser(Range.getBegin(),
+                       diag::metafn_access_query_class_being_defined)
+          << Ctx << Range;
+
+    return false;
+  };
+
   switch (RV.getReflectionKind()) {
   case ReflectionKind::Type: {
     NamedDecl *D = findTypeDecl(RV.getReflectedType());
-    if (!D || !D->getDeclContext() || !isa<CXXRecordDecl>(D->getDeclContext()))
-      return DiagnoseReflectionKind(Diagnoser, Range, "a class member");
+    if (validate(D))
+      return true;
 
     if (!NamingCls)
       NamingCls = cast<CXXRecordDecl>(D->getDeclContext());
@@ -5512,8 +5526,8 @@ bool is_accessible(APValue &Result, ASTContext &C, MetaActions &Meta,
   }
   case ReflectionKind::Declaration: {
     ValueDecl *D = RV.getReflectedDecl();
-    if (!D->getDeclContext() || !isa<CXXRecordDecl>(D->getDeclContext()))
-      return DiagnoseReflectionKind(Diagnoser, Range, "a class member");
+    if (validate(D))
+      return true;
 
     if (!NamingCls)
       NamingCls = cast<CXXRecordDecl>(D->getDeclContext());
@@ -5524,8 +5538,8 @@ bool is_accessible(APValue &Result, ASTContext &C, MetaActions &Meta,
   }
   case ReflectionKind::Template: {
     TemplateDecl *D = RV.getReflectedTemplate().getAsTemplateDecl();
-    if (!D->getDeclContext() || !isa<CXXRecordDecl>(D->getDeclContext()))
-      return DiagnoseReflectionKind(Diagnoser, Range, "a class member");
+    if (validate(D))
+      return true;
 
     if (!NamingCls)
       NamingCls = cast<CXXRecordDecl>(D->getDeclContext());
@@ -5540,6 +5554,12 @@ bool is_accessible(APValue &Result, ASTContext &C, MetaActions &Meta,
     assert(Base && "base class has no type declaration?");
 
     QualType BaseTy = BaseSpec->getType();
+
+    CXXRecordDecl *DerivedDecl = BaseSpec->getDerived();
+    if (DerivedDecl->isBeingDefined())
+      return Diagnoser(Range.getBegin(),
+                       diag::metafn_access_query_class_being_defined)
+          << DerivedDecl << Range;
     QualType DerivedTy(BaseSpec->getDerived()->getTypeForDecl(), 0);
 
     CXXBasePathElement bpe = { BaseSpec, BaseSpec->getDerived(), 0 };
