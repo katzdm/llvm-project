@@ -971,6 +971,12 @@ static void getDeclName(std::string &Result, ASTContext &C, Decl *D) {
 }
 
 static bool getParameterName(ParmVarDecl *PVD, std::string &Out) {
+  // Parameters instantiated from function parameter packs are not considered
+  // to have identifiers.
+  if (auto STTPT = dyn_cast<SubstTemplateTypeParmType>(PVD->getType());
+      STTPT && STTPT->getPackIndex())
+    return true;
+
   StringRef FirstNameSeen = PVD->getName();
   unsigned ParamIdx = PVD->getFunctionScopeIndex();
 
@@ -2077,6 +2083,7 @@ bool has_identifier(APValue &Result, ASTContext &C, MetaActions &Meta,
   }
   case ReflectionKind::Declaration: {
     auto *D = RV.getReflectedDecl();
+
     if (auto *PVD = dyn_cast<ParmVarDecl>(D)) {
       std::string Name;
       (void) getParameterName(PVD, Name);
@@ -5425,6 +5432,7 @@ bool annotate(APValue &Result, ASTContext &C, MetaActions &Meta,
   case ReflectionKind::Null:
   case ReflectionKind::Object:
   case ReflectionKind::Value:
+  case ReflectionKind::Template:
   case ReflectionKind::BaseSpecifier:
   case ReflectionKind::DataMemberSpec:
   case ReflectionKind::Annotation:
@@ -5502,7 +5510,6 @@ bool is_accessible(APValue &Result, ASTContext &C, MetaActions &Meta,
     if (!D || !D->getDeclContext() || !isa<CXXRecordDecl>(D->getDeclContext()))
       return DiagnoseReflectionKind(Diagnoser, Range, "a class member");
 
-    auto *Ctx = cast<CXXRecordDecl>(D->getDeclContext());
     if (auto *Ctx = cast<CXXRecordDecl>(D->getDeclContext());
         Ctx->isBeingDefined())
       return Diagnoser(Range.getBegin(),

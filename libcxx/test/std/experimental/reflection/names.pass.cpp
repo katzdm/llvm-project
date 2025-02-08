@@ -221,6 +221,10 @@ static_assert(display_string_of(^^Cls::Enum::B) == "B");
 static_assert(display_string_of(^^Cls::EnumCls) == "EnumCls");
 static_assert(display_string_of(^^Cls::EnumCls::B) == "B");
 
+template <typename... Ts> consteval bool param_pack_has_ident(Ts...ts) {
+  return (has_identifier(^^ts) || ...);
+}
+static_assert(!param_pack_has_ident<int, bool, char>(3, false, 'c'));
 
 
 namespace myns {
