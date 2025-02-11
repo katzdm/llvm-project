@@ -1115,6 +1115,8 @@ ExprResult Sema::BuildCXXReflectExpr(SourceLocation OperatorLoc,
 // TODO(P2996): Capture whole SourceRange of declaration naming.
 ExprResult Sema::BuildCXXReflectExpr(SourceLocation OperatorLoc,
                                      SourceLocation OperandLoc, Decl *D) {
+  D = D->getCanonicalDecl();
+
   bool IsNamespace = isa<TranslationUnitDecl, NamespaceDecl,
                          NamespaceAliasDecl>(D);
 

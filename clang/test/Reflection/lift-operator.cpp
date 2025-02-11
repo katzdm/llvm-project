@@ -128,6 +128,8 @@ constexpr info info_tmplparam = foo<int>();
 
 namespace ns {}
 constexpr info info_ns = ^^ns;
+namespace ns {}
+static_assert(info_ns == ^^ns);
 
 // Reflection as a default initializer for a class member
 class WithDefaultInitializer {

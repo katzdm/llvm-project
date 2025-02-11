@@ -1009,6 +1009,12 @@ static bool getParameterName(ParmVarDecl *PVD, std::string &Out) {
   return Consistent;
 }
 
+static ParmVarDecl *getMostRecentParmVarDecl(ParmVarDecl *PVD) {
+  FunctionDecl *FD = cast<FunctionDecl>(PVD->getDeclContext());
+  FD = FD->getMostRecentDecl();
+  return FD->getParamDecl(PVD->getFunctionScopeIndex());
+}
+
 static NamedDecl *findTypeDecl(QualType QT) {
   // If it's an ElaboratedType, get the underlying NamedType.
   if (const ElaboratedType *ET = dyn_cast<ElaboratedType>(QT))
@@ -3198,7 +3204,7 @@ bool is_defaulted(APValue &Result, ASTContext &C, MetaActions &Meta,
   bool IsDefaulted = false;
   if (RV.isReflectedDecl())
     if (auto *FD = dyn_cast<FunctionDecl>(RV.getReflectedDecl()))
-      IsDefaulted = FD->isDefaulted();
+      IsDefaulted = FD->getMostRecentDecl()->isDefaulted();
 
   return SetAndSucceed(Result, makeBool(C, IsDefaulted));
 }
@@ -5195,6 +5201,7 @@ bool has_default_argument(APValue &Result, ASTContext &C, MetaActions &Meta,
   switch (RV.getReflectionKind()) {
   case ReflectionKind::Declaration: {
     if (auto *PVD = dyn_cast<ParmVarDecl>(RV.getReflectedDecl())) {
+      PVD = getMostRecentParmVarDecl(PVD);
       return SetAndSucceed(Result, makeBool(C, PVD->hasDefaultArg()));
     }
     [[fallthrough]];
