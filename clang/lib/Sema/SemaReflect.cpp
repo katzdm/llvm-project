@@ -832,10 +832,13 @@ ExprResult Sema::ActOnCXXReflectExpr(SourceLocation OpLoc,
     return BuildCXXReflectExpr(OpLoc, Result.get());
   }
 
-  if (auto *TD = dyn_cast<TemplateDecl>(ND)) {
+  if (auto *TD = dyn_cast<TemplateDecl>(ND))
     return BuildCXXReflectExpr(OpLoc, NameInfo.getBeginLoc(),
                                TemplateName(TD));
-  }
+
+  if (auto *IFD = dyn_cast<IndirectFieldDecl>(ND))
+    return BuildCXXReflectExpr(OpLoc, NameInfo.getBeginLoc(),
+                               IFD->getAnonField());
 
   llvm_unreachable("unknown reflection operand!");
 }

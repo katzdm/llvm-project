@@ -156,5 +156,25 @@ static_assert(dealias(^^NSAliasAlias) == ^^dealiasing);
 static_assert(dealias(std::meta::info{}) == std::meta::info{});
 }  // namespace dealiasing
 
+                              // ================
+                              // anonymous_unions
+                              // ================
+
+namespace anonymous_unions {
+struct S {
+  union {
+    union {
+      int m;
+    };
+  };
+};
+
+static constexpr auto rm = ^^S::m;
+static_assert(type_of(rm) == ^^int);
+static_assert(is_union_type(parent_of(rm)));
+static_assert(is_union_type(parent_of(parent_of(rm))));
+static_assert(parent_of(rm) != parent_of(parent_of(rm)));
+static_assert(parent_of(parent_of(parent_of(rm))) == ^^S);
+}  // namespace anonymous_unions
 
 int main() { }
