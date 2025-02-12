@@ -1366,6 +1366,11 @@ unsigned parentOf(APValue &Result, Decl *D) {
   if (!D)
     return diag::metafn_parent_of_undeclared;
 
+  if (auto *FD = dyn_cast<FunctionDecl>(D); FD && FD->isExternC())
+    return diag::metafn_parent_of_extern_c;
+  else if (auto *VD = dyn_cast<VarDecl>(D); VD && VD->isExternC())
+    return diag::metafn_parent_of_extern_c;
+
   auto *DC = D->getDeclContext();
   while (DC && !isa<NamespaceDecl>(DC) && !isa<RecordDecl>(DC) &&
                !isa<FunctionDecl>(DC) && !isa<TranslationUnitDecl>(DC) &&

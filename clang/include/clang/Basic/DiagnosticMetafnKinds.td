@@ -45,6 +45,8 @@ def metafn_not_an_operator : Note<"%0 is not an operator or operator template">;
 // Parents.
 def metafn_parent_of_undeclared : Note<
   "cannot query the parent of %0 with no declaration">;
+def metafn_parent_of_extern_c : Note<
+  "cannot query the parent of %0 with C language linkage">;
 
 // Substitution and invocation.
 def metafn_cannot_be_arg : Note<
