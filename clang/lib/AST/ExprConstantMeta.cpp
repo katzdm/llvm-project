@@ -2789,6 +2789,10 @@ bool substitute(APValue &Result, ASTContext &C, MetaActions &Meta,
   if (!Meta.CheckTemplateArgumentList(TDecl, ExpandedTArgs, false,
                                       Args[0]->getExprLoc()))
     return true;
+  for (const auto &TArg : ExpandedTArgs)
+    if (TArg.getKind() == TemplateArgument::Expression &&
+        TArg.getAsExpr()->containsErrors())
+      return true;
 
   if (auto *CTD = dyn_cast<ClassTemplateDecl>(TDecl)) {
     void *InsertPos;
