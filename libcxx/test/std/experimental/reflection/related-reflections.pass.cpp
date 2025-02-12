@@ -70,7 +70,8 @@ static_assert(template_of(^^DependentAlias<bool>) == ^^DependentAlias);
                                // ==============
 
 namespace find_parent_of {
-struct Cls {
+struct Base {};
+struct Cls : Base {
   struct InnerCls {};
   int mem;
   void memfn();
@@ -103,6 +104,7 @@ static_assert(parent_of(^^Cls::mem) == ^^Cls);
 static_assert(parent_of(^^Cls::memfn) == ^^Cls);
 static_assert(parent_of(^^Cls::sfn) == ^^Cls);
 static_assert(parent_of(^^Cls::Alias) == ^^Cls);
+static_assert(parent_of(bases_of(^^Cls)[0]) == ^^Cls);
 
 static_assert(parent_of(^^Cls::TSMem) == ^^Cls);
 static_assert(parent_of(^^Cls::TSMem<int>) == ^^Cls);

@@ -2325,7 +2325,6 @@ bool parent_of(APValue &Result, ASTContext &C, MetaActions &Meta,
   case ReflectionKind::Null:
   case ReflectionKind::Object:
   case ReflectionKind::Value:
-  case ReflectionKind::BaseSpecifier:
   case ReflectionKind::DataMemberSpec:
   case ReflectionKind::Annotation:
     if (Diagnoser)
@@ -2358,6 +2357,13 @@ bool parent_of(APValue &Result, ASTContext &C, MetaActions &Meta,
       return true;
     }
     return DiagWrapper(parentOf(Result, RV.getReflectedNamespace()));
+  case ReflectionKind::BaseSpecifier: {
+    CXXRecordDecl *RD = RV.getReflectedBaseSpecifier()->getDerived();
+    QualType QT = desugarType(QualType(RD->getTypeForDecl(), 0),
+                              /*UnwrapAliases=*/true, /*DropCV=*/false,
+                              /*DropRefs=*/false);
+    return SetAndSucceed(Result, makeReflection(QT));
+  }
   }
   llvm_unreachable("unknown reflection kind");
 }
