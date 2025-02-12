@@ -88,6 +88,8 @@ int var;
 void fn();
 namespace NestedNS { int var; };
 
+enum Enum { A };
+
 template <typename> constexpr int TVar = 0;
 template <typename> void TFn();
 template <typename> struct TCls { int var; };
@@ -119,6 +121,7 @@ static_assert(parent_of(^^var) == ^^find_parent_of);
 static_assert(parent_of(^^fn) == ^^find_parent_of);
 static_assert(parent_of(^^NestedNS) == ^^find_parent_of);
 static_assert(parent_of(^^NestedNS::var) == ^^NestedNS);
+static_assert(parent_of(^^A) == ^^Enum);
 
 static_assert(parent_of(^^TVar) == ^^find_parent_of);
 static_assert(parent_of(^^TVar<int>) == ^^find_parent_of);

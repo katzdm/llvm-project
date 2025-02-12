@@ -1368,11 +1368,12 @@ unsigned parentOf(APValue &Result, Decl *D) {
 
   auto *DC = D->getDeclContext();
   while (DC && !isa<NamespaceDecl>(DC) && !isa<RecordDecl>(DC) &&
-               !isa<FunctionDecl>(DC) && !isa<TranslationUnitDecl>(DC))
+               !isa<FunctionDecl>(DC) && !isa<TranslationUnitDecl>(DC) &&
+               !isa<EnumDecl>(DC))
     DC = DC->getParent();
 
   assert(DC);
-  if (auto *RD = dyn_cast<RecordDecl>(DC))
+  if (auto *RD = dyn_cast<TagDecl>(DC))
     return SetAndSucceed(Result,
                          makeReflection(QualType(RD->getTypeForDecl(), 0)));
 
