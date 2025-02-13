@@ -352,6 +352,9 @@ class ASTContext : public RefCountedBase<ASTContext> {
   /// hashes of their member-specifications.
   mutable llvm::DenseMap<QualType, unsigned> ClsMemberSpecHashes;
 
+  /// A mapping from 'substitute' inputs to specializations.
+  mutable llvm::DenseMap<unsigned, APValue> SubstitutionHashes;
+
   /// MD5 hash of CUID. It is calculated when first used and cached by this
   /// data member.
   mutable std::string CUIDHash;
@@ -3361,6 +3364,9 @@ public:
 
   bool checkClassMemberSpecHash(QualType QT, unsigned &Out);
   void recordClassMemberSpecHash(QualType QT, unsigned Hash);
+
+  bool checkCachedSubstitution(unsigned Hash, APValue *Out);
+  void recordCachedSubstitution(unsigned Hash, const APValue &Value);
 
   /// Return a declaration for the global GUID object representing the given
   /// GUID value.

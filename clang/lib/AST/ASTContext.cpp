@@ -13223,6 +13223,21 @@ void ASTContext::recordClassMemberSpecHash(QualType QT, unsigned Hash) {
   ClsMemberSpecHashes[QT] = Hash;
 }
 
+bool ASTContext::checkCachedSubstitution(unsigned Hash, APValue *Out) {
+  if (SubstitutionHashes.contains(Hash)) {
+    *Out = SubstitutionHashes[Hash];
+    return true;
+  }
+  return false;
+}
+
+void ASTContext::recordCachedSubstitution(unsigned Hash,
+                                          const APValue &Result) {
+  assert(Result.isReflection());
+
+  SubstitutionHashes[Hash] = Result;
+}
+
 MSGuidDecl *
 ASTContext::getMSGuidDecl(MSGuidDecl::Parts Parts) const {
   assert(MSGuidTagDecl && "building MS GUID without MS extensions?");

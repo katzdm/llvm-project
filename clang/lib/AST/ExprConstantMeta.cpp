@@ -2786,6 +2786,17 @@ bool substitute(APValue &Result, ASTContext &C, MetaActions &Meta,
   SmallVector<TemplateArgument, 4> ExpandedTArgs;
   expandTemplateArgPacks(TArgs, ExpandedTArgs);
 
+  // Lookup cached specialization; if found, return it.
+  llvm::FoldingSetNodeID ID;
+  {
+    ID.AddPointer(TDecl);
+    for (const TemplateArgument &TArg : ExpandedTArgs)
+      TArg.Profile(ID, C);
+  }
+  unsigned SubstitutionHash = ID.ComputeHash();
+  if (C.checkCachedSubstitution(SubstitutionHash, &Result))
+    return false;
+
   if (!Meta.CheckTemplateArgumentList(TDecl, ExpandedTArgs, false,
                                       Args[0]->getExprLoc()))
     return true;
@@ -2810,6 +2821,7 @@ bool substitute(APValue &Result, ASTContext &C, MetaActions &Meta,
 
     APValue RV(ReflectionKind::Type,
                const_cast<Type *>(TSpecDecl->getTypeForDecl()));
+    C.recordCachedSubstitution(SubstitutionHash, RV);
     return SetAndSucceed(Result, RV);
   } else if (auto *TATD = dyn_cast<TypeAliasTemplateDecl>(TDecl)) {
     TArgs.clear();
@@ -2818,12 +2830,16 @@ bool substitute(APValue &Result, ASTContext &C, MetaActions &Meta,
     QualType QT = Meta.Substitute(TATD, TArgs, Range.getBegin());
     assert(!QT.isNull() && "substitution failed after validating arguments?");
 
+    APValue RV = makeReflection(QT);
+    C.recordCachedSubstitution(SubstitutionHash, RV);
     return SetAndSucceed(Result, makeReflection(QT));
   } else if (auto *FTD = dyn_cast<FunctionTemplateDecl>(TDecl)) {
     FunctionDecl *Spec = Meta.Substitute(FTD, ExpandedTArgs, Range.getBegin());
     assert(Spec && "substitution failed after validating arguments?");
 
-    return SetAndSucceed(Result, makeReflection(Spec));
+    APValue RV = makeReflection(Spec);
+    C.recordCachedSubstitution(SubstitutionHash, RV);
+    return SetAndSucceed(Result, RV);
   } else if (auto *VTD = dyn_cast<VarTemplateDecl>(TDecl)) {
     TArgs.clear();
     expandTemplateArgPacks(ExpandedTArgs, TArgs);
@@ -2831,6 +2847,8 @@ bool substitute(APValue &Result, ASTContext &C, MetaActions &Meta,
     VarDecl *Spec = Meta.Substitute(VTD, TArgs, Range.getBegin());
     assert(Spec && "substitution failed after validating arguments?");
 
+    APValue RV = makeReflection(Spec);
+    C.recordCachedSubstitution(SubstitutionHash, RV);
     return SetAndSucceed(Result, makeReflection(Spec));
   } else if (auto *CD = dyn_cast<ConceptDecl>(TDecl)) {
     TArgs.clear();
@@ -2843,6 +2861,8 @@ bool substitute(APValue &Result, ASTContext &C, MetaActions &Meta,
     if (!Evaluator(SatisfiesConcept, Spec, true))
       llvm_unreachable("failed to evaluate substituted concept");
 
+    APValue RV = SatisfiesConcept.Lift(C.BoolTy);
+    C.recordCachedSubstitution(SubstitutionHash, RV);
     return SetAndSucceed(Result, SatisfiesConcept.Lift(C.BoolTy));
   }
   llvm_unreachable("unimplemented for template kind");
