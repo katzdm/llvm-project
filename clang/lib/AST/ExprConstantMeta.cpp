@@ -4622,7 +4622,8 @@ bool reflect_result(APValue &Result, ASTContext &C, MetaActions &Meta,
   Expr *CE = ConstantExpr::Create(C, OVE, Arg);
   {
     Expr::EvalResult Discarded;
-    ConstantExprKind CEKind = CE->getType()->isClassType() ?
+
+    ConstantExprKind CEKind = (CE->getType()->isClassType() && !IsLValue) ?
                               ConstantExprKind::ClassTemplateArgument :
                               ConstantExprKind::NonClassTemplateArgument;
     if (!CE->EvaluateAsConstantExpr(Discarded, C, CEKind))
