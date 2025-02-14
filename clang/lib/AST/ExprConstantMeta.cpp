@@ -1299,7 +1299,8 @@ static bool isReflectableDecl(MetaActions &Meta, Decl *D) {
       return false;
 
   if (auto *FD = dyn_cast<FunctionDecl>(D);
-      FD && !Meta.HasSatisfiedConstraints(FD))
+      FD && (FD->getReturnType()->isUndeducedType() ||
+             !Meta.HasSatisfiedConstraints(FD)))
     return false;
 
   if (isa<ClassTemplateSpecializationDecl, VarTemplateSpecializationDecl>(D))

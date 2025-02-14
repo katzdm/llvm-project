@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03 || c++11 || c++14 || c++17 || c++20
-// ADDITIONAL_COMPILE_FLAGS: -freflection
+// ADDITIONAL_COMPILE_FLAGS: -freflection -faccess-contexts
 
 // <experimental/reflection>
 //
@@ -23,15 +23,17 @@
 #include <tuple>
 
 
+using access_context = std::meta::access_context;
+
                                 // =============
                                 // class_members
                                 // =============
 
 namespace class_members {
 struct Empty {};
-static_assert(members_of(^^Empty).size() == 6);
+static_assert(members_of(^^Empty, access_context::unchecked()).size() == 6);
 static_assert(
-    (members_of(^^Empty) |
+    (members_of(^^Empty, access_context::unchecked()) |
         std::views::filter(std::meta::is_defaulted) |
         std::views::filter(std::meta::is_special_member_function) |
         std::ranges::to<std::vector>()).size() == 6);
@@ -59,55 +61,66 @@ struct Cls : NotAMember {
   using Alias = int;
 };
 
-static_assert(members_of(^^Cls).size() == 13);
-static_assert(nonstatic_data_members_of(^^Cls) ==
+static_assert(members_of(^^Cls, access_context::unchecked()).size() == 13);
+static_assert(nonstatic_data_members_of(^^Cls, access_context::unchecked()) ==
               std::vector{^^Cls::mem1, ^^Cls::mem2});
-static_assert(static_data_members_of(^^Cls) == std::vector{^^Cls::smem});
+static_assert(static_data_members_of(^^Cls, access_context::unchecked()) ==
+              std::vector{^^Cls::smem});
 static_assert(
-    (members_of(^^Cls) |
+    (members_of(^^Cls, access_context::unchecked()) |
          std::views::filter(std::meta::is_constructor) |
          std::ranges::to<std::vector>()).size() == 2);
 static_assert(
-    (members_of(^^Cls) |
+    (members_of(^^Cls, access_context::unchecked()) |
          std::views::filter(std::meta::is_destructor) |
          std::ranges::to<std::vector>()).size() == 1);
 static_assert(
-    (members_of(^^Cls) | std::views::filter(std::meta::is_type) |
-                        std::ranges::to<std::vector>()) ==
+    (members_of(^^Cls, access_context::unchecked()) |
+     std::views::filter(std::meta::is_type) |
+     std::ranges::to<std::vector>()) ==
     std::vector{^^Cls::Inner, ^^Cls::Alias});
 static_assert(
-    (members_of(^^Cls) | std::views::filter(std::meta::is_template) |
-                        std::ranges::to<std::vector>()) ==
+    (members_of(^^Cls, access_context::unchecked()) |
+     std::views::filter(std::meta::is_template) |
+     std::ranges::to<std::vector>()) ==
     std::vector{^^Cls::TMemFn});
 static_assert(
-    (members_of(^^Cls) | std::views::filter(std::meta::is_function) |
-                        std::views::filter(std::meta::is_static_member) |
-                        std::ranges::to<std::vector>()) ==
+    (members_of(^^Cls, access_context::unchecked()) |
+     std::views::filter(std::meta::is_function) |
+     std::views::filter(std::meta::is_static_member) |
+     std::ranges::to<std::vector>()) ==
     std::vector{^^Cls::sfn});
 static_assert(
-    (members_of(^^Cls) | std::views::filter(std::meta::is_function) |
-                        std::views::filter([](auto R) {
-                          return !is_static_member(R) &&
-                                 !is_special_member_function(R);
-                        }) |
-                        std::ranges::to<std::vector>()) ==
+    (members_of(^^Cls, access_context::unchecked()) |
+     std::views::filter(std::meta::is_function) |
+     std::views::filter([](auto R) {
+       return !is_static_member(R) &&
+              !is_special_member_function(R);
+     }) |
+     std::ranges::to<std::vector>()) ==
     std::vector{^^Cls::memfn1, ^^Cls::memfn2});
 static_assert(
-    (members_of(^^Cls) | std::views::filter(std::meta::is_type_alias) |
-                        std::ranges::to<std::vector>()) ==
+    (members_of(^^Cls, access_context::unchecked()) |
+     std::views::filter(std::meta::is_type_alias) |
+     std::ranges::to<std::vector>()) ==
     std::vector{^^Cls::Alias});
 
 template <typename T>
 struct TCls {
   T mem;
 };
-static_assert(type_of(nonstatic_data_members_of(^^TCls<int>)[0]) == ^^int);
+static_assert(
+    type_of(nonstatic_data_members_of(^^TCls<int>,
+                                      access_context::unchecked())[0]) ==
+    ^^int);
 
 void usage_example() {
   constexpr auto getObj = []() consteval {
     Cls a {};
-    constexpr auto first = nonstatic_data_members_of(^^Cls)[0];
-    constexpr auto second = nonstatic_data_members_of(^^Cls)[1];
+    constexpr auto first =
+        nonstatic_data_members_of(^^Cls, access_context::unchecked())[0];
+    constexpr auto second =
+        nonstatic_data_members_of(^^Cls, access_context::unchecked())[1];
     a.[:first:] = 20;
     a.[:second:] = 1.4f;
     return a;
@@ -118,18 +131,20 @@ void usage_example() {
   // RUN: grep "obj=<20, 1.4>" %t.stdout
   std::println(R"(obj=<{}, {}>)", obj.memfn1(), obj.memfn2());
 
-  static_assert((members_of(^^Cls) |
+  static_assert((members_of(^^Cls, access_context::unchecked()) |
                      std::views::filter(std::meta::is_type) |
                      std::ranges::to<std::vector>()).size() == 2);
 
-  static_assert((members_of(^^Cls) |
+  static_assert((members_of(^^Cls, access_context::unchecked()) |
                      std::views::filter(std::meta::is_type)).front() ==
                 ^^Cls::Inner);
 
   constexpr auto getInnerObj = []() consteval {
     constexpr auto inner =
-        (members_of(^^Cls) | std::views::filter(std::meta::is_type)).front();
-    constexpr auto innerFirst = nonstatic_data_members_of(inner)[0];
+        (members_of(^^Cls, access_context::unchecked()) |
+         std::views::filter(std::meta::is_type)).front();
+    constexpr auto innerFirst =
+        nonstatic_data_members_of(inner, access_context::unchecked())[0];
 
     Cls::Inner ic {};
     ic.[:innerFirst:] = 5;
@@ -147,7 +162,7 @@ void usage_example() {
 
 namespace namespace_members {
 namespace empty_ns {}
-static_assert(members_of(^^empty_ns).size() == 0);
+static_assert(members_of(^^empty_ns, access_context::unchecked()).size() == 0);
 
 namespace myns {
 int var;
@@ -178,16 +193,17 @@ template <typename T2> int TVar<int, T2> = 1;
 
 }  // namespace myns
 
-static_assert(members_of(^^myns).size() == 10);
-static_assert(members_of(^^myns) ==
+static_assert(members_of(^^myns, access_context::unchecked()).size() == 10);
+static_assert(members_of(^^myns, access_context::unchecked()) ==
               std::vector{^^myns::var, ^^myns::fn, ^^myns::Cls, ^^myns::Alias,
                           ^^myns::TCls, ^^myns::TFn, ^^myns::TVar,
                           ^^myns::TAlias, ^^myns::Concept, ^^myns::l});
-static_assert((members_of(^^myns) | std::views::filter(std::meta::is_template) |
-                                   std::ranges::to<std::vector>()) ==
+static_assert((members_of(^^myns, access_context::unchecked()) |
+                   std::views::filter(std::meta::is_template) |
+                   std::ranges::to<std::vector>()) ==
               std::vector{^^myns::TCls, ^^myns::TFn, ^^myns::TVar,
                           ^^myns::TAlias, ^^myns::Concept});
-static_assert((members_of(^^myns) |
+static_assert((members_of(^^myns, access_context::unchecked()) |
                    std::views::filter(std::meta::is_template) |
                    std::views::filter(std::meta::is_alias_template) |
                    std::ranges::to<std::vector>()) ==
@@ -231,9 +247,12 @@ void fn7();
 }
 }  // namespace multiple_blocks
 
-static_assert(members_of(^^with_empty).size() == 0);
-static_assert(members_of(^^leading_node).size() == 2);
-static_assert(members_of(^^multiple_blocks).size() == 5);
+static_assert(members_of(^^with_empty,
+                         access_context::unchecked()).size() == 0);
+static_assert(members_of(^^leading_node,
+                         access_context::unchecked()).size() == 2);
+static_assert(members_of(^^multiple_blocks,
+                         access_context::unchecked()).size() == 5);
 }  // namespace language_linkage_specifiers
 
                          // ==========================
@@ -250,13 +269,19 @@ public:
   int mem2 = 0;
 };
 
-static_assert(identifier_of(members_of(^^Cls)[0]) == "mem1");
-static_assert(identifier_of(members_of(^^Cls)[1]) == "memfn");
-static_assert(identifier_of(members_of(^^Cls)[2]) == "mem2");
+static_assert(
+        identifier_of(members_of(^^Cls,
+                                 access_context::unchecked())[0]) == "mem1");
+static_assert(
+        identifier_of(members_of(^^Cls,
+                                 access_context::unchecked())[1]) == "memfn");
+static_assert(
+        identifier_of(members_of(^^Cls,
+                                 access_context::unchecked())[2]) == "mem2");
 
 // Ensure these can be spliced.
 constexpr Cls obj;
-static_assert(obj.[:members_of(^^Cls)[1]:]() == 5);
+static_assert(obj.[:members_of(^^Cls, access_context::unchecked())[1]:]() == 5);
 }  // namespace inaccessible_class_members
 
                            // =======================
@@ -274,21 +299,21 @@ struct Cls {
 };
 
 static_assert(
-    (members_of(^^Cls<int>) |
+    (members_of(^^Cls<int>, access_context::unchecked()) |
      std::views::filter(std::meta::is_destructor) |
      std::ranges::to<std::vector>()).size() == 1);
 static_assert(
-    (members_of(^^Cls<int>) |
+    (members_of(^^Cls<int>, access_context::unchecked()) |
      std::views::filter([](auto R) { return !is_destructor(R); }) |
      std::views::filter(std::meta::is_user_provided) |
      std::ranges::to<std::vector>()).size() == 2);
 static_assert(
-    (members_of(^^Cls<short>) |
+    (members_of(^^Cls<short>, access_context::unchecked()) |
      std::views::filter([](auto R) { return !is_destructor(R); }) |
      std::views::filter(std::meta::is_user_provided) |
      std::ranges::to<std::vector>()).size() == 1);
 static_assert(
-    (members_of(^^Cls<bool>) |
+    (members_of(^^Cls<bool>, access_context::unchecked()) |
      std::views::filter([](auto R) { return !is_destructor(R); }) |
      std::views::filter(std::meta::is_user_provided) |
      std::ranges::to<std::vector>()).size() == 0);
@@ -304,28 +329,32 @@ struct B1 {};
 struct B2 {};
 struct B3 {};
 struct D1 : public B1, virtual protected B2, private B3 {};
-static_assert(bases_of(^^B1).size() == 0);
-static_assert(type_of(bases_of(^^D1)[0]) == ^^B1);
-static_assert(type_of(bases_of(^^D1)[1]) == ^^B2);
-static_assert(type_of(bases_of(^^D1)[2]) == ^^B3);
-static_assert(is_public(bases_of(^^D1)[0]));
-static_assert(!is_protected(bases_of(^^D1)[0]));
-static_assert(!is_private(bases_of(^^D1)[0]));
-static_assert(!is_virtual(bases_of(^^D1)[0]));
-static_assert(!is_public(bases_of(^^D1)[1]));
-static_assert(is_protected(bases_of(^^D1)[1]));
-static_assert(!is_private(bases_of(^^D1)[1]));
-static_assert(is_virtual(bases_of(^^D1)[1]));
-static_assert(!is_public(bases_of(^^D1)[2]));
-static_assert(!is_protected(bases_of(^^D1)[2]));
-static_assert(is_private(bases_of(^^D1)[2]));
-static_assert(!is_virtual(bases_of(^^D1)[2]));
+static_assert(bases_of(^^B1, access_context::unchecked()).size() == 0);
+static_assert(type_of(bases_of(^^D1, access_context::unchecked())[0]) == ^^B1);
+static_assert(type_of(bases_of(^^D1, access_context::unchecked())[1]) == ^^B2);
+static_assert(type_of(bases_of(^^D1, access_context::unchecked())[2]) == ^^B3);
+static_assert(is_public(bases_of(^^D1, access_context::unchecked())[0]));
+static_assert(!is_protected(bases_of(^^D1, access_context::unchecked())[0]));
+static_assert(!is_private(bases_of(^^D1, access_context::unchecked())[0]));
+static_assert(!is_virtual(bases_of(^^D1, access_context::unchecked())[0]));
+static_assert(!is_public(bases_of(^^D1, access_context::unchecked())[1]));
+static_assert(is_protected(bases_of(^^D1, access_context::unchecked())[1]));
+static_assert(!is_private(bases_of(^^D1, access_context::unchecked())[1]));
+static_assert(is_virtual(bases_of(^^D1, access_context::unchecked())[1]));
+static_assert(!is_public(bases_of(^^D1, access_context::unchecked())[2]));
+static_assert(!is_protected(bases_of(^^D1, access_context::unchecked())[2]));
+static_assert(is_private(bases_of(^^D1, access_context::unchecked())[2]));
+static_assert(!is_virtual(bases_of(^^D1, access_context::unchecked())[2]));
 
 template <typename... Bases> struct D2 : Bases... {};
-static_assert(type_of(bases_of(^^D2<B1, B3>)[0]) == ^^B1);
-static_assert(type_of(bases_of(^^D2<B1, B3>)[1]) == ^^B3);
-static_assert(is_public(bases_of(^^D2<B1, B3>)[0]));
-static_assert(is_public(bases_of(^^D2<B1, B3>)[1]));
+static_assert(type_of(bases_of(^^D2<B1, B3>, access_context::unchecked())[0]) ==
+              ^^B1);
+static_assert(type_of(bases_of(^^D2<B1, B3>, access_context::unchecked())[1]) ==
+              ^^B3);
+static_assert(is_public(bases_of(^^D2<B1, B3>,
+                                 access_context::unchecked())[0]));
+static_assert(is_public(bases_of(^^D2<B1, B3>,
+                                 access_context::unchecked())[1]));
 }  // namespace bases
 
                                  // ===========
@@ -390,6 +419,17 @@ static_assert(!has_complete_definition(^^int));
 static_assert(!has_complete_definition(^^std::vector));
 
 }  // namespace complete_definitions
+
+                            // ====================
+                            // deduced_return_types
+                            // ====================
+
+namespace deduced_return_type {
+namespace NS { auto fn(); }
+static_assert(members_of(^^NS,
+                         std::meta::access_context::unchecked()).size() == 0);
+
+}  // namespace deduced_return_type
 
 int main() {
   class_members::usage_example();
