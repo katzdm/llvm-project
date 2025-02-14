@@ -5515,10 +5515,13 @@ bool is_accessible(APValue &Result, ASTContext &C, MetaActions &Meta,
   if (!Evaluator(Scratch, Args[1], true) || !Scratch.isReflection())
     return true;
 
+  bool UnconditionalAccess = false;
+
   DeclContext *AccessDC = nullptr;
   switch (Scratch.getReflectionKind()) {
   case ReflectionKind::Null:
-    return SetAndSucceed(Result, makeBool(C, false));
+    UnconditionalAccess = true;
+    break;
   case ReflectionKind::Type:
     AccessDC = dyn_cast<DeclContext>(findTypeDecl(Scratch.getReflectedType()));
     if (!AccessDC)
@@ -5572,7 +5575,8 @@ bool is_accessible(APValue &Result, ASTContext &C, MetaActions &Meta,
     if (!NamingCls)
       NamingCls = cast<CXXRecordDecl>(D->getDeclContext());
 
-    bool Accessible = Meta.IsAccessible(D, AccessDC, NamingCls);
+    bool Accessible = UnconditionalAccess ||
+                      Meta.IsAccessible(D, AccessDC, NamingCls);
     return SetAndSucceed(Result, makeBool(C, Accessible));
   }
   case ReflectionKind::Declaration: {
@@ -5583,7 +5587,8 @@ bool is_accessible(APValue &Result, ASTContext &C, MetaActions &Meta,
     if (!NamingCls)
       NamingCls = cast<CXXRecordDecl>(D->getDeclContext());
 
-    bool Accessible = Meta.IsAccessible(RV.getReflectedDecl(), AccessDC,
+    bool Accessible = UnconditionalAccess ||
+                      Meta.IsAccessible(RV.getReflectedDecl(), AccessDC,
                                         NamingCls);
     return SetAndSucceed(Result, makeBool(C, Accessible));
   }
@@ -5595,7 +5600,8 @@ bool is_accessible(APValue &Result, ASTContext &C, MetaActions &Meta,
     if (!NamingCls)
       NamingCls = cast<CXXRecordDecl>(D->getDeclContext());
 
-    bool Accessible = Meta.IsAccessible(D, AccessDC, NamingCls);
+    bool Accessible = UnconditionalAccess ||
+                      Meta.IsAccessible(D, AccessDC, NamingCls);
     return SetAndSucceed(Result, makeBool(C, Accessible));
   }
   case ReflectionKind::BaseSpecifier: {
@@ -5618,7 +5624,8 @@ bool is_accessible(APValue &Result, ASTContext &C, MetaActions &Meta,
     path.push_back(bpe);
     path.Access = BaseSpec->getAccessSpecifier();
 
-    bool Accessible = Meta.IsAccessibleBase(BaseTy, DerivedTy, path, AccessDC,
+    bool Accessible = UnconditionalAccess ||
+                      Meta.IsAccessibleBase(BaseTy, DerivedTy, path, AccessDC,
                                             Range.getBegin());
     return SetAndSucceed(Result, makeBool(C, Accessible));
   }

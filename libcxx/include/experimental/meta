@@ -972,8 +972,7 @@ public:
 };
 
 consteval auto is_accessible(info r, access_context ctx) -> bool {
-  if (ctx.scope == info {} ||
-      (!is_class_member(r) && !is_base(r)))
+  if (!is_class_member(r) && !is_base(r))
     return true;
 
   return __metafunction(detail::__metafn_is_accessible,
