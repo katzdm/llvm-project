@@ -1298,10 +1298,15 @@ static bool isReflectableDecl(MetaActions &Meta, Decl *D) {
     if (Class->isInjectedClassName() || Class->isLambda())
       return false;
 
-  if (auto *FD = dyn_cast<FunctionDecl>(D);
-      FD && (FD->getReturnType()->isUndeducedType() ||
-             !Meta.HasSatisfiedConstraints(FD)))
+  if (auto *FD = dyn_cast<FunctionDecl>(D)) {
+    for (auto *R = FD->getMostRecentDecl(); R; R = R->getPreviousDecl()) {
+      if (!R->getDeclaredReturnType()->isUndeducedType() &&
+          R->getDeclContext() == R->getLexicalDeclContext() &&
+          Meta.HasSatisfiedConstraints(R))
+        return true;
+    }
     return false;
+  }
 
   if (isa<ClassTemplateSpecializationDecl, VarTemplateSpecializationDecl>(D))
     return false;
