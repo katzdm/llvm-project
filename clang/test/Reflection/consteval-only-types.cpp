@@ -83,6 +83,16 @@ void fn7() {
   (void) new info{}; // expected-error {{expressions of consteval-only type}}
 }
 
+consteval bool is_null(info R) {
+  return R == info{} ? 1 : 0;
+}
+
+template <info R>
+void fn() {
+  constexpr auto S = R;
+  (void) is_null(S);
+}
+
 }  // namespace non_consteval_contexts
 
 

@@ -108,6 +108,11 @@ class MetaActionsImpl : public MetaActions {
   void populateTemplateArgumentListInfo(TemplateArgumentListInfo &TAListInfo,
                                         ArrayRef<TemplateArgument> TArgs,
                                         SourceLocation InstantiateLoc) {
+    // Non-type template arguments are constant-expressions, so make sure any
+    // expressions are formed are considered in an immediate function context.
+    EnterExpressionEvaluationContext Ctx(
+        S, Sema::ExpressionEvaluationContext::ImmediateFunctionContext);
+
     for (const TemplateArgument &Arg : TArgs)
       TAListInfo.addArgument(
            S.getTrivialTemplateArgumentLoc(Arg,
@@ -500,7 +505,7 @@ public:
     if (NewDeclResult.isInvalid())
       return nullptr;
     CXXRecordDecl *NewDecl = cast<CXXRecordDecl>(NewDeclResult.get());
-    
+
     // Start the new definition.
     S.ActOnTagStartDefinition(&ClsScope, NewDecl);
     S.ActOnStartCXXMemberDeclarations(&ClsScope, NewDecl, SourceLocation{},
@@ -508,7 +513,7 @@ public:
 
     // Derive member visibility.
     AccessSpecifier MemberAS = AS_public;
-    
+
     AttributeFactory AttrFactory;
     AttributePool AttrPool(AttrFactory);
 
@@ -518,7 +523,7 @@ public:
       // Build the member declaration.
       unsigned DiagID;
       const char *PrevSpec;
-      
+
       DeclSpec DS(AttrFactory);
       DS.SetStorageClassSpec(S, DeclSpec::SCS_unspecified, DefinitionLoc,
                              PrevSpec, DiagID, S.Context.getPrintingPolicy());
@@ -555,7 +560,7 @@ public:
 
       // Create declarator for the member.
       Declarator MemberDeclarator(DS, MemberAttrs, DeclaratorContext::Member);
-      
+
       // Set the identifier, unless this is a zero-width bit-field.
       if (!MemberSpec->BitWidth || *MemberSpec->BitWidth > 0) {
         std::string MemberName = MemberSpec->Name.value_or(

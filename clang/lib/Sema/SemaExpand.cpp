@@ -14,6 +14,10 @@
 
 #include "clang/AST/Decl.h"
 #include "clang/Basic/DiagnosticSema.h"
+#include "clang/Lex/Preprocessor.h"
+#include "clang/Sema/EnterExpressionEvaluationContext.h"
+#include "clang/Sema/Lookup.h"
+#include "clang/Sema/Overload.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/Template.h"
 
@@ -47,6 +51,92 @@ unsigned ComputeTemplateEmbeddingDepth(Scope *CurScope) {
   return Depth;
 }
 
+// Returns whether 'Range' is an iterable expression ([stmt.ranged]).
+//
+// If the function returns 'true', 'BeginExpr' and 'EndExpr' point to the
+// (possibly value-dependent) begin and end expressions.
+bool CheckIterableExpression(Sema &S, Expr *Range, Expr *&Begin, Expr *&End) {
+  if (Range->getType()->isArrayType())
+    return false;
+  SourceLocation RangeLoc = Range->getExprLoc();
+
+  ExprResult BeginResult;
+  {
+    DeclarationNameInfo DNI(&S.PP.getIdentifierTable().get("begin"), RangeLoc);
+
+    LookupResult LR(S, DNI, Sema::LookupMemberName);
+    if (auto *RD =
+            dyn_cast<CXXRecordDecl>(Range->getType()->getAsCXXRecordDecl())) {
+      //S.LookupQualifiedName(LR, RD);
+      if (LR.isAmbiguous())
+        return false;
+    }
+
+    OverloadCandidateSet CandidateSet(RangeLoc,
+                                      OverloadCandidateSet::CSK_Normal);
+    Sema::ForRangeStatus Status =
+        S.BuildForRangeBeginEndCall(RangeLoc, RangeLoc, DNI, LR, &CandidateSet,
+                                    Range, &BeginResult);
+    if (Status != Sema::FRS_Success)
+      return false;
+    assert(!BeginResult.isInvalid());
+  }
+
+  ExprResult EndResult;
+  {
+    DeclarationNameInfo DNI(&S.PP.getIdentifierTable().get("end"), RangeLoc);
+
+    LookupResult LR(S, DNI, Sema::LookupMemberName);
+    if (auto *RD =
+            dyn_cast<CXXRecordDecl>(Range->getType()->getAsCXXRecordDecl())) {
+      S.LookupQualifiedName(LR, RD);
+      if (LR.isAmbiguous())
+        return false;
+    }
+
+    OverloadCandidateSet CandidateSet(RangeLoc,
+                                      OverloadCandidateSet::CSK_Normal);
+    Sema::ForRangeStatus Status =
+        S.BuildForRangeBeginEndCall(RangeLoc, RangeLoc, DNI, LR, &CandidateSet,
+                                    Range, &EndResult);
+    if (Status != Sema::FRS_Success)
+      return false;
+    assert(!EndResult.isInvalid());
+  }
+
+  Begin = BeginResult.get();
+  End = EndResult.get();
+  return true;
+}
+
+bool FindIterableExpressionSize(Sema &S, Expr *BeginExpr, Expr *EndExpr,
+                                Expr::EvalResult &Result) {
+  if (BeginExpr->isValueDependent() || EndExpr->isValueDependent())
+    return false;
+
+  SourceLocation BeginLoc = BeginExpr->getExprLoc();
+
+  OverloadedOperatorKind Op = OO_Minus;
+  DeclarationName DNI(S.Context.DeclarationNames.getCXXOperatorName(Op));
+
+  Expr *Args[2] = {EndExpr, BeginExpr};
+  OverloadCandidateSet CandidateSet(BeginLoc,
+                                    OverloadCandidateSet::CSK_Operator);
+  S.AddArgumentDependentLookupCandidates(DNI, BeginLoc, Args, nullptr,
+                                         CandidateSet);
+
+  UnresolvedSet<4> Fns;
+  S.AddFunctionCandidates(Fns, Args, CandidateSet);
+
+  ExprResult ER = S.CreateOverloadedBinOp(BeginLoc, BO_Sub, Fns, EndExpr,
+                                          BeginExpr);
+  if (ER.isInvalid())
+    return false;
+
+  return ER.get()->EvaluateAsInt(Result, S.Context, Expr::SE_NoSideEffects,
+                                 /*InConstantContext=*/true);
+}
+
 }  // close anonymous namespace
 
 StmtResult Sema::ActOnCXXExpansionStmt(Scope *S, SourceLocation TemplateKWLoc,
@@ -56,7 +146,7 @@ StmtResult Sema::ActOnCXXExpansionStmt(Scope *S, SourceLocation TemplateKWLoc,
                                        SourceLocation ColonLoc, Expr *Range,
                                        SourceLocation RParenLoc,
                                        BuildForRangeKind Kind) {
-  if (!Range)
+  if (!Range || Kind == BFRK_Check)
     return StmtError();
 
   // Compute how many layers of template parameters wrap this statement.
@@ -67,7 +157,7 @@ StmtResult Sema::ActOnCXXExpansionStmt(Scope *S, SourceLocation TemplateKWLoc,
   QualType ParmTy = Context.getSizeType();
   TypeSourceInfo *ParmTI = Context.getTrivialTypeSourceInfo(ParmTy, ColonLoc);
 
-  NonTypeTemplateParmDecl *TParm =
+  NonTypeTemplateParmDecl *TParam =
         NonTypeTemplateParmDecl::Create(Context,
                                         Context.getTranslationUnitDecl(),
                                         ColonLoc, ColonLoc, TemplateDepth,
@@ -75,102 +165,151 @@ StmtResult Sema::ActOnCXXExpansionStmt(Scope *S, SourceLocation TemplateKWLoc,
                                         ParmTI);
 
   // Build a 'DeclRefExpr' designating the template parameter '__N'.
-  ExprResult ER = BuildDeclRefExpr(TParm, Context.getSizeType(), VK_PRValue,
+  ExprResult ER = BuildDeclRefExpr(TParam, Context.getSizeType(), VK_PRValue,
                                    ColonLoc);
   if (ER.isInvalid())
     return StmtError();
-  Expr *TParmRef = ER.get();
+  Expr *TParamRef = ER.get();
 
   // Build an expansion statement depending on what kind of 'Range' we have.
   if (auto *EILE = dyn_cast<CXXExpansionInitListExpr>(Range))
-    return ActOnCXXInitListExpansionStmt(TemplateKWLoc, ForLoc, LParenLoc, Init,
+    return BuildCXXInitListExpansionStmt(TemplateKWLoc, ForLoc, LParenLoc, Init,
                                          ExpansionVarStmt, ColonLoc, EILE,
-                                         RParenLoc, TParmRef, Kind);
+                                         RParenLoc, TParamRef);
   else
-    return ActOnCXXDestructurableExpansionStmt(TemplateKWLoc, ForLoc, LParenLoc,
+    return BuildCXXExprExpansionStmt(TemplateKWLoc, ForLoc, LParenLoc, Init,
+                                     ExpansionVarStmt, ColonLoc, Range,
+                                     RParenLoc, TParamRef);
+}
+
+StmtResult Sema::BuildCXXExprExpansionStmt(SourceLocation TemplateKWLoc,
+                                           SourceLocation ForLoc,
+                                           SourceLocation LParenLoc, Stmt *Init,
+                                           Stmt *ExpansionVarStmt,
+                                           SourceLocation ColonLoc, Expr *Range,
+                                           SourceLocation RParenLoc,
+                                           Expr *TParamRef) {
+  if (Range->isTypeDependent())
+    return BuildCXXIndeterminateExpansionStmt(TemplateKWLoc, ForLoc, LParenLoc,
+                                              Init, ExpansionVarStmt, ColonLoc,
+                                              Range, RParenLoc, TParamRef);
+
+  Expr *Begin = nullptr, *End = nullptr;
+  if (CheckIterableExpression(*this, Range, Begin, End))
+    return BuildCXXIterableExpansionStmt(TemplateKWLoc, ForLoc, LParenLoc,
+                                         Init, ExpansionVarStmt, ColonLoc,
+                                         Range, RParenLoc, TParamRef, Begin,
+                                         End);
+  else
+    return BuildCXXDestructurableExpansionStmt(TemplateKWLoc, ForLoc, LParenLoc,
                                                Init, ExpansionVarStmt, ColonLoc,
-                                               Range, RParenLoc, TParmRef,
-                                               Kind);
+                                               Range, RParenLoc, TParamRef);
 }
 
-StmtResult Sema::ActOnCXXInitListExpansionStmt(SourceLocation TemplateKWLoc,
-                                               SourceLocation ForLoc,
-                                               SourceLocation LParenLoc,
-                                               Stmt *Init,
-                                               Stmt *ExpansionVarStmt,
-                                               SourceLocation ColonLoc,
-                                               CXXExpansionInitListExpr *Range,
-                                               SourceLocation RParenLoc,
-                                               Expr *TParmRef,
-                                               BuildForRangeKind Kind) {
-  // Extract the declaration of the expansion variable.
+StmtResult
+Sema::BuildCXXIndeterminateExpansionStmt(SourceLocation TemplateKWLoc,
+                                         SourceLocation ForLoc,
+                                         SourceLocation LParenLoc,
+                                         Stmt *Init, Stmt *ExpansionVarStmt,
+                                         SourceLocation ColonLoc, Expr *Range,
+                                         SourceLocation RParenLoc,
+                                         Expr *TParamRef) {
+  return CXXIndeterminateExpansionStmt::Create(
+          Context, Init, cast<DeclStmt>(ExpansionVarStmt), Range, TemplateKWLoc,
+          ForLoc, LParenLoc, ColonLoc, RParenLoc, TParamRef);
+}
+
+StmtResult
+Sema::BuildCXXIterableExpansionStmt(SourceLocation TemplateKWLoc,
+                                    SourceLocation ForLoc,
+                                    SourceLocation LParenLoc,
+                                    Stmt *Init, Stmt *ExpansionVarStmt,
+                                    SourceLocation ColonLoc, Expr *Range,
+                                    SourceLocation RParenLoc,
+                                    Expr *TParamRef, Expr *BeginExpr,
+                                    Expr *EndExpr) {
+  assert(!Range->isTypeDependent() &&
+         "use CXXIndeterminateExpansionStmt for type-dependent expansions");
   VarDecl *ExpansionVar = ExtractVarDecl(ExpansionVarStmt);
-  if (!ExpansionVar || Kind == BFRK_Check)
+  if (!ExpansionVar)
     return StmtError();
 
-  // Build accessor for getting the __N'th Expr from the expression-init-list.
-  ExprResult Accessor = ActOnCXXExpansionInitListSelectExpr(Range, TParmRef);
-  if (Accessor.isInvalid())
-    return StmtError();
+  if (!ExpansionVar->getInit()) {
+    auto Ctx = ExpressionEvaluationContext::PotentiallyEvaluated;
+    if (ExpansionVar->isConstexpr())
+      Ctx = ExpressionEvaluationContext::ImmediateFunctionContext;
+    EnterExpressionEvaluationContext ExprEvalCtx(*this, Ctx);
 
-  // Attach the accessor as the initializer for the expansion variable.
-  AddInitializerToDecl(ExpansionVar, Accessor.get(), /*DirectInit=*/false);
-  if (ExpansionVar->isInvalidDecl())
-    return StmtError();
+    // Build accessor for getting the expression naming the __N'th subobject.
+    ExprResult Accessor = BuildCXXIterableExpansionSelectExpr(BeginExpr,
+                                                              EndExpr,
+                                                              TParamRef);
+    if (Accessor.isInvalid())
+      return StmtError();
 
-  unsigned TemplateDepth = ExtractParmVarDeclDepth(TParmRef);
-  return BuildCXXInitListExpansionStmt(TemplateKWLoc, ForLoc, LParenLoc, Init,
-                                       ExpansionVarStmt, ColonLoc, Range,
-                                       RParenLoc, TemplateDepth, Kind);
+    // Attach the accessor as the initializer for the expansion variable.
+    AddInitializerToDecl(ExpansionVar, Accessor.get(), /*DirectInit=*/false);
+    if (ExpansionVar->isInvalidDecl())
+      return StmtError();
+  }
+
+  unsigned NumExpansions = 0;
+  if (!BeginExpr->isValueDependent()) {
+    assert(!EndExpr->isValueDependent());
+
+    Expr::EvalResult ER;
+    if (FindIterableExpressionSize(*this, BeginExpr, EndExpr, ER))
+      NumExpansions = ER.Val.getInt().getZExtValue();
+    else {
+      llvm_unreachable("TODO(P2996): diagnostic");
+    }
+  }
+
+  return CXXIterableExpansionStmt::Create(
+          Context, Init, cast<DeclStmt>(ExpansionVarStmt), Range, NumExpansions,
+          TemplateKWLoc, ForLoc, LParenLoc, ColonLoc, RParenLoc, TParamRef);
 }
 
-StmtResult Sema::ActOnCXXDestructurableExpansionStmt(
-    SourceLocation TemplateKWLoc, SourceLocation ForLoc,
-    SourceLocation LParenLoc, Stmt *Init, Stmt *ExpansionVarStmt,
-    SourceLocation ColonLoc, Expr *Range, SourceLocation RParenLoc,
-    Expr *TParmRef, BuildForRangeKind Kind) {
-  // Extract the declaration of the expansion variable.
+StmtResult
+Sema::BuildCXXDestructurableExpansionStmt(SourceLocation TemplateKWLoc,
+                                          SourceLocation ForLoc,
+                                          SourceLocation LParenLoc,
+                                          Stmt *Init, Stmt *ExpansionVarStmt,
+                                          SourceLocation ColonLoc, Expr *Range,
+                                          SourceLocation RParenLoc,
+                                          Expr *TParamRef) {
+  assert(!Range->isTypeDependent() &&
+         "use CXXIndeterminateExpansionStmt for type-dependent expansions");
+
   VarDecl *ExpansionVar = ExtractVarDecl(ExpansionVarStmt);
-  if (!ExpansionVar || Kind == BFRK_Check)
+  if (!ExpansionVar)
     return StmtError();
 
-  // Build accessor for getting the expression naming the __N'th subobject.
-  bool Constexpr = ExpansionVar->isConstexpr();
-  ExprResult Accessor = ActOnCXXDestructurableExpansionSelectExpr(Range,
-                                                                  TParmRef,
-                                                                  Constexpr);
-  if (Accessor.isInvalid())
-    return StmtError();
+  if (!ExpansionVar->getInit()) {
+    // Build accessor for getting the expression naming the __N'th subobject.
+    bool Constexpr = ExpansionVar->isConstexpr();
+    ExprResult Accessor = BuildCXXDestructurableExpansionSelectExpr(Range,
+                                                                    nullptr,
+                                                                    TParamRef,
+                                                                    Constexpr);
+    if (Accessor.isInvalid())
+      return StmtError();
 
-  // Attach the accessor as the initializerfor the expansion variable.
-  AddInitializerToDecl(ExpansionVar, Accessor.get(), /*DirectInit=*/false);
-  if (ExpansionVar->isInvalidDecl())
-    return StmtError();
+    // Attach the accessor as the initializer for the expansion variable.
+    AddInitializerToDecl(ExpansionVar, Accessor.get(), /*DirectInit=*/false);
+    if (ExpansionVar->isInvalidDecl())
+      return StmtError();
+  }
+  auto *Selector =
+      cast<CXXDestructurableExpansionSelectExpr>(ExpansionVar->getInit());
 
-  unsigned TemplateDepth = ExtractParmVarDeclDepth(TParmRef);
-  return BuildCXXDestructurableExpansionStmt(TemplateKWLoc, ForLoc, LParenLoc,
-                                             Init, ExpansionVarStmt, ColonLoc,
-                                             Range, RParenLoc, TemplateDepth,
-                                             Kind);
-}
+  unsigned NumExpansions = 0;
+  if (auto *DD = Selector->getDecompositionDecl())
+    NumExpansions = DD->bindings().size();
 
-ExprResult Sema::ActOnCXXExpansionInitList(SourceLocation LBraceLoc,
-                                           MultiExprArg SubExprs,
-                                           SourceLocation RBraceLoc) {
-  return BuildCXXExpansionInitList(LBraceLoc, SubExprs, RBraceLoc);
-}
-
-ExprResult
-Sema::ActOnCXXExpansionInitListSelectExpr(CXXExpansionInitListExpr *Range,
-                                          Expr *Idx) {
-  return BuildCXXExpansionInitListSelectExpr(Range, Idx);
-}
-
-ExprResult Sema::ActOnCXXDestructurableExpansionSelectExpr(Expr *Range,
-                                                           Expr *Idx,
-                                                           bool Constexpr) {
-  return BuildCXXDestructurableExpansionSelectExpr(Range, nullptr, Idx,
-                                                   Constexpr);
+  return CXXDestructurableExpansionStmt::Create(
+          Context, Init, cast<DeclStmt>(ExpansionVarStmt), Range, NumExpansions,
+          TemplateKWLoc, ForLoc, LParenLoc, ColonLoc, RParenLoc, TParamRef);
 }
 
 StmtResult Sema::BuildCXXInitListExpansionStmt(SourceLocation TemplateKWLoc,
@@ -181,65 +320,68 @@ StmtResult Sema::BuildCXXInitListExpansionStmt(SourceLocation TemplateKWLoc,
                                                SourceLocation ColonLoc,
                                                CXXExpansionInitListExpr *Range,
                                                SourceLocation RParenLoc,
-                                               unsigned TemplateDepth,
-                                               BuildForRangeKind Kind) {
+                                               Expr *TParamRef) {
+  // Extract the declaration of the expansion variable.
+  VarDecl *ExpansionVar = ExtractVarDecl(ExpansionVarStmt);
+  if (!ExpansionVar)
+    return StmtError();
+
+  if (!ExpansionVar->hasInit()) {
+    // Build accessor for getting the __N'th Expr from the expression-init-list.
+    ExprResult Accessor = BuildCXXExpansionInitListSelectExpr(Range, TParamRef);
+    if (Accessor.isInvalid())
+      return StmtError();
+
+    // Attach the accessor as the initializer for the expansion variable.
+    AddInitializerToDecl(ExpansionVar, Accessor.get(), /*DirectInit=*/false);
+    if (ExpansionVar->isInvalidDecl())
+      return StmtError();
+  }
+
   return CXXInitListExpansionStmt::Create(Context, Init,
                                           cast<DeclStmt>(ExpansionVarStmt),
                                           Range, Range->getSubExprs().size(),
                                           TemplateKWLoc, ForLoc, LParenLoc,
-                                          ColonLoc, RParenLoc, TemplateDepth);
-}
-
-StmtResult
-Sema::BuildCXXDestructurableExpansionStmt(SourceLocation TemplateKWLoc,
-                                          SourceLocation ForLoc,
-                                          SourceLocation LParenLoc,
-                                          Stmt *Init, Stmt *ExpansionVarStmt,
-                                          SourceLocation ColonLoc, Expr *Range,
-                                          SourceLocation RParenLoc,
-                                          unsigned TemplateDepth,
-                                          BuildForRangeKind Kind) {
-  VarDecl *VD = ExtractVarDecl(ExpansionVarStmt);
-  if (!VD || Kind == BFRK_Check)
-    return StmtError();
-
-  unsigned NumExpansions = 0;
-  if (auto *SE = dyn_cast<CXXDestructurableExpansionSelectExpr>(VD->getInit());
-      SE && SE->getDecompositionDecl())
-    NumExpansions = SE->getDecompositionDecl()->bindings().size();
-
-  return CXXDestructurableExpansionStmt::Create(
-          Context, Init, cast<DeclStmt>(ExpansionVarStmt), Range, NumExpansions,
-          TemplateKWLoc, ForLoc, LParenLoc, ColonLoc, RParenLoc, TemplateDepth);
-}
-
-ExprResult Sema::BuildCXXExpansionInitList(SourceLocation LBraceLoc,
-                                           MultiExprArg SubExprs,
-                                           SourceLocation RBraceLoc) {
-  Expr **SubExprList = new (Context) Expr *[SubExprs.size()];
-  std::memcpy(SubExprList, SubExprs.data(), SubExprs.size() * sizeof(Expr *));
-
-  return CXXExpansionInitListExpr::Create(Context, SubExprList,
-                                          SubExprs.size(), LBraceLoc,
-                                          RBraceLoc);
+                                          ColonLoc, RParenLoc, TParamRef);
 }
 
 ExprResult
-Sema::BuildCXXExpansionInitListSelectExpr(CXXExpansionInitListExpr *Range,
+Sema::BuildCXXIterableExpansionSelectExpr(Expr *BeginExpr, Expr *EndExpr,
                                           Expr *Idx) {
-  // Use 'CXXExpansionInitListSelectExpr' as a placeholder until tree transform.
-  if (Range->containsPack() || Idx->isValueDependent())
-    return CXXExpansionInitListSelectExpr::Create(Context, Range, Idx);
-  ArrayRef<Expr *> SubExprs = Range->getSubExprs();
+  if (BeginExpr->isValueDependent())
+    return CXXIterableExpansionSelectExpr::Create(Context, BeginExpr, EndExpr,
+                                                  Idx);
 
-  // Evaluate the index.
-  Expr::EvalResult ER;
-  if (!Idx->EvaluateAsInt(ER, Context))
-    return ExprError();  // TODO: Diagnostic.
-  size_t I = ER.Val.getInt().getZExtValue();
-  assert(I < SubExprs.size());
+  SourceLocation BeginLoc = BeginExpr->getExprLoc();
 
-  return SubExprs[I];
+  OverloadedOperatorKind Op = OO_Plus;
+  DeclarationName DNI(Context.DeclarationNames.getCXXOperatorName(Op));
+
+  Expr *Args[2] = {BeginExpr, Idx};
+  OverloadCandidateSet CandidateSet(BeginLoc,
+                                    OverloadCandidateSet::CSK_Operator);
+  AddArgumentDependentLookupCandidates(DNI, BeginLoc, Args, nullptr,
+                                       CandidateSet);
+
+  UnresolvedSet<4> Fns;
+  AddFunctionCandidates(Fns, Args, CandidateSet);
+
+  ExprResult ER = CreateOverloadedBinOp(BeginLoc, BO_Add, Fns, BeginExpr, Idx);
+  if (ER.isInvalid())
+    return ER;
+  Expr *UnaryArg[1] = {ER.get()};
+
+  Op = OO_Star;
+  DNI = Context.DeclarationNames.getCXXOperatorName(Op);
+
+  CandidateSet.clear(OverloadCandidateSet::CSK_Operator);
+  AddArgumentDependentLookupCandidates(DNI, BeginLoc, UnaryArg, nullptr,
+                                       CandidateSet);
+
+  Fns.clear();
+  AddFunctionCandidates(Fns, UnaryArg, CandidateSet);
+
+  return CreateOverloadedUnaryOp(BeginLoc, UO_Deref, Fns, ER.get());
 }
 
 ExprResult
@@ -249,7 +391,7 @@ Sema::BuildCXXDestructurableExpansionSelectExpr(Expr *Range,
   assert (!isa<CXXExpansionInitListExpr>(Range) &&
           "expansion-init-list should never have structured bindings");
 
-  if (!DD && !Range->isTypeDependent() && !Range->isValueDependent()) {
+  if (!DD && !Range->isValueDependent()) {
     unsigned Arity;
     if (!ComputeDecompositionExpansionArity(Range, Arity))
       return ExprError();
@@ -276,11 +418,29 @@ Sema::BuildCXXDestructurableExpansionSelectExpr(Expr *Range,
 
   Expr::EvalResult ER;
   if (!Idx->EvaluateAsInt(ER, Context))
-    return ExprError();  // TODO: Diagnostic.
+    return ExprError();  // TODO(P2996): Diagnostic.
   size_t I = ER.Val.getInt().getZExtValue();
   assert(I < DD->bindings().size());
 
   return DD->bindings()[I]->getBinding();
+}
+
+ExprResult
+Sema::BuildCXXExpansionInitListSelectExpr(CXXExpansionInitListExpr *Range,
+                                          Expr *Idx) {
+  // Use 'CXXExpansionInitListSelectExpr' as a placeholder until tree transform.
+  if (Range->containsPack() || Idx->isValueDependent())
+    return CXXExpansionInitListSelectExpr::Create(Context, Range, Idx);
+  ArrayRef<Expr *> SubExprs = Range->getSubExprs();
+
+  // Evaluate the index.
+  Expr::EvalResult ER;
+  if (!Idx->EvaluateAsInt(ER, Context))
+    return ExprError();  // TODO(P2996): Diagnostic.
+  size_t I = ER.Val.getInt().getZExtValue();
+  assert(I < SubExprs.size());
+
+  return SubExprs[I];
 }
 
 StmtResult Sema::FinishCXXExpansionStmt(Stmt *Heading, Stmt *Body) {
@@ -308,17 +468,18 @@ StmtResult Sema::FinishCXXExpansionStmt(Stmt *Heading, Stmt *Body) {
                                             Expansion->getEndLoc());
 
   // Expand the body for each instantiation.
-  Stmt **Instantiations =
-        new (Context) Stmt *[Expansion->getNumInstantiations()];
-  for (size_t I = 0; I < Expansion->getNumInstantiations(); ++I) {
-    IntegerLiteral *Idx = IntegerLiteral::Create(Context,
-                                                 llvm::APSInt::getUnsigned(I),
-                                                 Context.getSizeType(), Loc);
+  SmallVector<Stmt *, 4> Instantiations;
+  while (Instantiations.size() < Expansion->getNumInstantiations()) {
+    IntegerLiteral *Idx =
+        IntegerLiteral::Create(Context,
+                               llvm::APSInt::getUnsigned(Instantiations.size()),
+                               Context.getSizeType(), Loc);
     TemplateArgument TArgs[] = {
         { Context, llvm::APSInt(Idx->getValue(), true), Idx->getType() }
     };
     MultiLevelTemplateArgumentList MTArgList(nullptr, TArgs, true);
-    MTArgList.addOuterRetainedLevels(Expansion->getTemplateDepth());
+    MTArgList.addOuterRetainedLevels(
+            ExtractParmVarDeclDepth(Expansion->getTParamRef()));
     LocalInstantiationScope LIScope(*this, /*CombineWithOuterScope=*/true);
     InstantiatingTemplate Inst(*this, Body->getBeginLoc(), Expansion, TArgs,
                                Body->getSourceRange());
@@ -326,9 +487,32 @@ StmtResult Sema::FinishCXXExpansionStmt(Stmt *Heading, Stmt *Body) {
     StmtResult Instantiation = SubstStmt(CombinedBody, MTArgList);
     if (Instantiation.isInvalid())
       return StmtError();
-    Instantiations[I] = Instantiation.get();
+    Instantiations.push_back(Instantiation.get());
   }
 
-  Expansion->setInstantiations(Instantiations);
+  // Allocate a more permanent buffer to hold pointers to Stmts.
+  Stmt **StmtStorage = new (Context) Stmt *[Instantiations.size()];
+  std::memcpy(StmtStorage, Instantiations.data(),
+              Instantiations.size() * sizeof(Stmt *));
+
+  // Attach Stmt buffer to the CXXExpansionStmt, and return.
+  Expansion->setInstantiations(StmtStorage);
   return Expansion;
+}
+
+ExprResult Sema::ActOnCXXExpansionInitList(SourceLocation LBraceLoc,
+                                           MultiExprArg SubExprs,
+                                           SourceLocation RBraceLoc) {
+  return BuildCXXExpansionInitList(LBraceLoc, SubExprs, RBraceLoc);
+}
+
+ExprResult Sema::BuildCXXExpansionInitList(SourceLocation LBraceLoc,
+                                           MultiExprArg SubExprs,
+                                           SourceLocation RBraceLoc) {
+  Expr **SubExprList = new (Context) Expr *[SubExprs.size()];
+  std::memcpy(SubExprList, SubExprs.data(), SubExprs.size() * sizeof(Expr *));
+
+  return CXXExpansionInitListExpr::Create(Context, SubExprList,
+                                          SubExprs.size(), LBraceLoc,
+                                          RBraceLoc);
 }

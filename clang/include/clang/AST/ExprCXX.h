@@ -5906,37 +5906,6 @@ public:
   }
 };
 
-class CXXExpansionInitListSelectExpr : public Expr {
-  Expr *SubExprs[2];
-
-  CXXExpansionInitListSelectExpr(QualType ResultTy, Expr *Range, Expr *Idx);
-
-public:
-  static CXXExpansionInitListSelectExpr *Create(const ASTContext &C,
-                                                Expr *Range, Expr *Idx);
-
-  Expr *getRange() const { return SubExprs[0]; }
-  Expr *getIdx() const { return SubExprs[1]; }
-
-  SourceLocation getBeginLoc() const { return getRange()->getExprLoc(); }
-  SourceLocation getEndLoc() const { return getRange()->getEndLoc(); }
-
-  child_range children() {
-    return child_range(reinterpret_cast<Stmt **>(SubExprs),
-                       reinterpret_cast<Stmt **>(SubExprs + 2));
-  }
-
-  const_child_range children() const {
-    return const_child_range(
-            reinterpret_cast<Stmt **>(const_cast<Expr **>(SubExprs)),
-            reinterpret_cast<Stmt **>(const_cast<Expr **>(SubExprs + 2)));
-  }
-
-  static bool classof(const Stmt *T) {
-    return T->getStmtClass() == CXXExpansionInitListSelectExprClass;
-  }
-};
-
 class CXXDestructurableExpansionSelectExpr : public Expr {
   Expr *SubExprs[2];
   DecompositionDecl *DD;
@@ -5974,6 +5943,71 @@ public:
 
   static bool classof(const Stmt *T) {
     return T->getStmtClass() == CXXDestructurableExpansionSelectExprClass;
+  }
+};
+
+class CXXIterableExpansionSelectExpr : public Expr {
+  Expr *SubExprs[3];
+
+  CXXIterableExpansionSelectExpr(QualType ResultTy, Expr *BeginExpr,
+                                 Expr *EndExpr, Expr *IdxExpr);
+
+public:
+  static CXXIterableExpansionSelectExpr *Create(const ASTContext &C,
+                                                Expr *BeginExpr, Expr *EndExpr,
+                                                Expr *IdxExpr);
+
+  Expr *getBeginExpr() const { return SubExprs[0]; }
+  Expr *getEndExpr() const { return SubExprs[1]; }
+  Expr *getIdxExpr() const { return SubExprs[2]; }
+
+  SourceLocation getBeginLoc() const { return getBeginExpr()->getExprLoc(); }
+  SourceLocation getEndLoc() const { return getBeginExpr()->getExprLoc(); }
+
+  child_range children() {
+    return child_range(reinterpret_cast<Stmt **>(SubExprs),
+                       reinterpret_cast<Stmt **>(SubExprs + 3));
+  }
+
+  const_child_range children() const {
+    return const_child_range(
+            reinterpret_cast<Stmt **>(const_cast<Expr **>(SubExprs)),
+            reinterpret_cast<Stmt **>(const_cast<Expr **>(SubExprs + 3)));
+  }
+
+  static bool classof(const Stmt *T) {
+    return T->getStmtClass() == CXXIterableExpansionSelectExprClass;
+  }
+};
+
+class CXXExpansionInitListSelectExpr : public Expr {
+  Expr *SubExprs[2];
+
+  CXXExpansionInitListSelectExpr(QualType ResultTy, Expr *Range, Expr *Idx);
+
+public:
+  static CXXExpansionInitListSelectExpr *Create(const ASTContext &C,
+                                                Expr *Range, Expr *Idx);
+
+  Expr *getRange() const { return SubExprs[0]; }
+  Expr *getIdx() const { return SubExprs[1]; }
+
+  SourceLocation getBeginLoc() const { return getRange()->getExprLoc(); }
+  SourceLocation getEndLoc() const { return getRange()->getEndLoc(); }
+
+  child_range children() {
+    return child_range(reinterpret_cast<Stmt **>(SubExprs),
+                       reinterpret_cast<Stmt **>(SubExprs + 2));
+  }
+
+  const_child_range children() const {
+    return const_child_range(
+            reinterpret_cast<Stmt **>(const_cast<Expr **>(SubExprs)),
+            reinterpret_cast<Stmt **>(const_cast<Expr **>(SubExprs + 2)));
+  }
+
+  static bool classof(const Stmt *T) {
+    return T->getStmtClass() == CXXExpansionInitListSelectExprClass;
   }
 };
 

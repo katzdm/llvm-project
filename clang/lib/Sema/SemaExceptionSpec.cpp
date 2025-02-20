@@ -1433,11 +1433,14 @@ CanThrowResult Sema::canThrow(const Stmt *S) {
   case Stmt::CoroutineBodyStmtClass:
   case Stmt::CXXCatchStmtClass:
   case Stmt::CXXForRangeStmtClass:
+  case Stmt::CXXIndeterminateExpansionStmtClass:
+  case Stmt::CXXIterableExpansionStmtClass:
   case Stmt::CXXDestructurableExpansionStmtClass:
-  case Stmt::CXXExpansionInitListExprClass:
-  case Stmt::CXXExpansionInitListSelectExprClass:
-  case Stmt::CXXDestructurableExpansionSelectExprClass:
   case Stmt::CXXInitListExpansionStmtClass:
+  case Stmt::CXXIterableExpansionSelectExprClass:
+  case Stmt::CXXDestructurableExpansionSelectExprClass:
+  case Stmt::CXXExpansionInitListSelectExprClass:
+  case Stmt::CXXExpansionInitListExprClass:
   case Stmt::DefaultStmtClass:
   case Stmt::DoStmtClass:
   case Stmt::ForStmtClass:

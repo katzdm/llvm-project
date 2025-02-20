@@ -2739,8 +2739,36 @@ void StmtPrinter::VisitExtractLValueExpr(ExtractLValueExpr *S) {
   OS << "ExtractLValue(<Decl>)";
 }
 
+void StmtPrinter::VisitCXXIndeterminateExpansionStmt(
+                                          CXXIndeterminateExpansionStmt *Node) {
+  Indent() << "template for (";
+  if (Node->getInit())
+    PrintInitStmt(Node->getInit(), 14);
+  PrintingPolicy SubPolicy(Policy);
+  SubPolicy.SuppressInitializers = true;
+  Node->getExpansionVariable()->print(OS, SubPolicy, IndentLevel);
+  OS << " : ";
+  PrintExpr(Node->getRange());
+  OS << ")";
+  PrintControlledStmt(Node->getBody());
+}
+
 void StmtPrinter::VisitCXXDestructurableExpansionStmt(
                                          CXXDestructurableExpansionStmt *Node) {
+  Indent() << "template for (";
+  if (Node->getInit())
+    PrintInitStmt(Node->getInit(), 14);
+  PrintingPolicy SubPolicy(Policy);
+  SubPolicy.SuppressInitializers = true;
+  Node->getExpansionVariable()->print(OS, SubPolicy, IndentLevel);
+  OS << " : ";
+  PrintExpr(Node->getRange());
+  OS << ")";
+  PrintControlledStmt(Node->getBody());
+}
+
+void StmtPrinter::VisitCXXIterableExpansionStmt(
+                                               CXXIterableExpansionStmt *Node) {
   Indent() << "template for (";
   if (Node->getInit())
     PrintInitStmt(Node->getInit(), 14);
@@ -2789,6 +2817,11 @@ void StmtPrinter::VisitCXXExpansionInitListSelectExpr(
 void StmtPrinter::VisitCXXDestructurableExpansionSelectExpr(
         CXXDestructurableExpansionSelectExpr *Node) {
   OS << Node->getRange() << "[" << Node->getIdx() << "]";
+}
+
+void StmtPrinter::VisitCXXIterableExpansionSelectExpr(
+        CXXIterableExpansionSelectExpr *Node) {
+  // TODO(P2996): Implement this.
 }
 
 // Obj-C

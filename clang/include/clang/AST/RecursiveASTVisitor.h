@@ -3028,6 +3028,9 @@ DEF_TRAVERSE_STMT(CXXDestructurableExpansionSelectExpr, {
     TRY_TO(TraverseDecl(DD));
   TRY_TO(TraverseStmt(S->getIdx()));
 })
+DEF_TRAVERSE_STMT(CXXIterableExpansionSelectExpr, {
+  // TODO(P2996): Implement this.
+})
 DEF_TRAVERSE_STMT(StackLocationExpr, {})
 DEF_TRAVERSE_STMT(ExtractLValueExpr, {
   TRY_TO(TraverseDecl(S->getValueDecl()));
@@ -3076,7 +3079,27 @@ DEF_TRAVERSE_STMT(CoyieldExpr, {
 })
 
 // C++ expansion statements (P1306).
+DEF_TRAVERSE_STMT(CXXIndeterminateExpansionStmt, {
+  if (!getDerived().shouldVisitImplicitCode()) {
+    if (S->getInit())
+      TRY_TO_TRAVERSE_OR_ENQUEUE_STMT(S->getInit());
+    TRY_TO_TRAVERSE_OR_ENQUEUE_STMT(S->getExpansionVarStmt());
+    TRY_TO_TRAVERSE_OR_ENQUEUE_STMT(S->getRange());
+    TRY_TO_TRAVERSE_OR_ENQUEUE_STMT(S->getBody());
+    ShouldVisitChildren = false;
+  }
+})
 DEF_TRAVERSE_STMT(CXXDestructurableExpansionStmt, {
+  if (!getDerived().shouldVisitImplicitCode()) {
+    if (S->getInit())
+      TRY_TO_TRAVERSE_OR_ENQUEUE_STMT(S->getInit());
+    TRY_TO_TRAVERSE_OR_ENQUEUE_STMT(S->getExpansionVarStmt());
+    TRY_TO_TRAVERSE_OR_ENQUEUE_STMT(S->getRange());
+    TRY_TO_TRAVERSE_OR_ENQUEUE_STMT(S->getBody());
+    ShouldVisitChildren = false;
+  }
+})
+DEF_TRAVERSE_STMT(CXXIterableExpansionStmt, {
   if (!getDerived().shouldVisitImplicitCode()) {
     if (S->getInit())
       TRY_TO_TRAVERSE_OR_ENQUEUE_STMT(S->getInit());

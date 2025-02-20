@@ -559,6 +559,15 @@ void ASTStmtReader::VisitExtractLValueExpr(ExtractLValueExpr *E) {
   llvm_unreachable("unimplemented");
 }
 
+void ASTStmtReader::VisitCXXIndeterminateExpansionStmt(
+                                             CXXIndeterminateExpansionStmt *S) {
+  llvm_unreachable("unimplemented");
+}
+
+void ASTStmtReader::VisitCXXIterableExpansionStmt(CXXIterableExpansionStmt *S) {
+  llvm_unreachable("unimplemented");
+}
+
 void ASTStmtReader::VisitCXXDestructurableExpansionStmt(
                                             CXXDestructurableExpansionStmt *S) {
   llvm_unreachable("unimplemented");
@@ -568,7 +577,13 @@ void ASTStmtReader::VisitCXXInitListExpansionStmt(CXXInitListExpansionStmt *S) {
   llvm_unreachable("unimplemented");
 }
 
-void ASTStmtReader::VisitCXXExpansionInitListExpr(CXXExpansionInitListExpr *E) {
+void ASTStmtReader::VisitCXXIterableExpansionSelectExpr(
+        CXXIterableExpansionSelectExpr *E) {
+  llvm_unreachable("unimplemented");
+}
+
+void ASTStmtReader::VisitCXXDestructurableExpansionSelectExpr(
+        CXXDestructurableExpansionSelectExpr *E) {
   llvm_unreachable("unimplemented");
 }
 
@@ -577,8 +592,7 @@ void ASTStmtReader::VisitCXXExpansionInitListSelectExpr(
   llvm_unreachable("unimplemented");
 }
 
-void ASTStmtReader::VisitCXXDestructurableExpansionSelectExpr(
-        CXXDestructurableExpansionSelectExpr *E) {
+void ASTStmtReader::VisitCXXExpansionInitListExpr(CXXExpansionInitListExpr *E) {
   llvm_unreachable("unimplemented");
 }
 

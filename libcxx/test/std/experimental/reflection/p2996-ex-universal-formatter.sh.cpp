@@ -9,7 +9,8 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03 || c++11 || c++14 || c++17 || c++20
-// ADDITIONAL_COMPILE_FLAGS: -freflection
+// ADDITIONAL_COMPILE_FLAGS: -freflection -fexpansion-statements
+// ADDITIONAL_COMPILE_FLAGS: -faccess-contexts
 // ADDITIONAL_COMPILE_FLAGS: -Wno-inconsistent-missing-override
 
 // <experimental/reflection>
@@ -23,33 +24,14 @@
 #include <format>
 #include <print>
 
-namespace __impl {
-  template<auto... vals>
-  struct replicator_type {
-    template<typename F>
-      constexpr void operator>>(F body) const {
-        (body.template operator()<vals>(), ...);
-      }
-  };
-
-  template<auto... vals>
-  replicator_type<vals...> replicator = {};
-}
-
-template<typename R>
-consteval auto expand(R range) {
-  std::vector<std::meta::info> args;
-  for (auto r : range) {
-    args.push_back(reflect_value(r));
-  }
-  return substitute(^^__impl::replicator, args);
-}
 
 struct universal_formatter {
   constexpr auto parse(auto& ctx) { return ctx.begin(); }
 
   template <typename T>
   auto format(T const& t, auto& ctx) const {
+    using std::meta::access_context;
+
     auto out = std::format_to(ctx.out(), "{}{{", identifier_of(^^T));
 
     auto delim = [first=true, &out]() mutable {
@@ -60,13 +42,18 @@ struct universal_formatter {
       first = false;
     };
 
-    [: expand(bases_of(^^T)) :] >> [&]<auto base>{
+    template for (constexpr auto base :
+                  define_static_array(bases_of(^^T,
+                                               access_context::current()))) {
         delim();
         out = std::format_to(out, "{}",
                              (typename [: type_of(base) :] const&)(t));
     };
 
-    [: expand(nonstatic_data_members_of(^^T)) :] >> [&]<auto mem>{
+    template for (constexpr auto mem :
+                  define_static_array(
+                      nonstatic_data_members_of(^^T,
+                                                access_context::current()))) {
       delim();
       out = std::format_to(out, ".{}={}", identifier_of(mem), t.[:mem:]);
     };
@@ -79,7 +66,12 @@ struct universal_formatter {
 struct B { int m0 = 0; };
 struct X : B { int m1 = 1; };
 struct Y : B { int m2 = 2; };
-class Z : public X, private Y { int m3 = 3; int m4 = 4; };
+class Z : public X, private Y {
+  [[maybe_unused]] int m3 = 3;
+  [[maybe_unused]] int m4 = 4;
+
+  friend struct universal_formatter;
+};
 
 template <> struct std::formatter<B> : universal_formatter { };
 template <> struct std::formatter<X> : universal_formatter { };

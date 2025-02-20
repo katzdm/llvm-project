@@ -17602,9 +17602,10 @@ ExprResult Sema::CheckForImmediateInvocation(ExprResult E, FunctionDecl *Decl) {
   if (Cached.hasValue())
     Res->MoveIntoResult(Cached, getASTContext());
   /// Value-dependent constant expressions should not be immediately
-  /// evaluated until they are instantiated.
-  if (!Res->isValueDependent())
-    ExprEvalContexts.back().ImmediateInvocationCandidates.emplace_back(Res, 0);
+  /// evaluated until they are instantiated. We add them the candidate anyway
+  /// in order to remove any arguments of consteval-only type nested in the
+  /// argument expressions.
+  ExprEvalContexts.back().ImmediateInvocationCandidates.emplace_back(Res, 0);
   if (Res->getType()->isConstevalOnly())
     ExprEvalContexts.back().ConstevalOnly.insert(Res);
 
@@ -17843,7 +17844,7 @@ HandleImmediateInvocations(Sema &SemaRef,
   // TODO(P2996): Can we avoid this?
   for (size_t Idx = 0; Idx < Rec.ImmediateInvocationCandidates.size(); ++Idx) {
     auto CE = Rec.ImmediateInvocationCandidates[Idx];
-    if (!CE.getInt())
+    if (!CE.getInt() && !CE.getPointer()->isValueDependent())
       EvaluateAndDiagnoseImmediateInvocation(SemaRef, CE);
   }
   for (auto *DR : Rec.ReferenceToConsteval) {

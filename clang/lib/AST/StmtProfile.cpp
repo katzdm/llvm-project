@@ -2378,13 +2378,28 @@ void StmtProfiler::VisitExtractLValueExpr(const ExtractLValueExpr *E) {
   VisitDecl(E->getValueDecl());
 }
 
-void StmtProfiler::VisitCXXExpansionInitListExpr(
-                                            const CXXExpansionInitListExpr *E) {
-  VisitExpr(E);
+void StmtProfiler::VisitCXXIndeterminateExpansionStmt(
+                                       const CXXIndeterminateExpansionStmt *S) {
+  VisitStmt(S);
 }
 
-void StmtProfiler::VisitCXXExpansionInitListSelectExpr(
-                                      const CXXExpansionInitListSelectExpr *E) {
+void StmtProfiler::VisitCXXIterableExpansionStmt(
+                                            const CXXIterableExpansionStmt *S) {
+  VisitStmt(S);
+}
+
+void StmtProfiler::VisitCXXDestructurableExpansionStmt(
+                                      const CXXDestructurableExpansionStmt *S) {
+  VisitStmt(S);
+}
+
+void StmtProfiler::VisitCXXInitListExpansionStmt(
+                                            const CXXInitListExpansionStmt *S) {
+  VisitStmt(S);
+}
+
+void StmtProfiler::VisitCXXIterableExpansionSelectExpr(
+                                      const CXXIterableExpansionSelectExpr *E) {
   VisitExpr(E);
 }
 
@@ -2393,14 +2408,14 @@ void StmtProfiler::VisitCXXDestructurableExpansionSelectExpr(
   VisitExpr(E);
 }
 
-void StmtProfiler::VisitCXXInitListExpansionStmt(
-                                            const CXXInitListExpansionStmt *S) {
-  VisitStmt(S);
+void StmtProfiler::VisitCXXExpansionInitListSelectExpr(
+                                      const CXXExpansionInitListSelectExpr *E) {
+  VisitExpr(E);
 }
 
-void StmtProfiler::VisitCXXDestructurableExpansionStmt(
-                                      const CXXDestructurableExpansionStmt *S) {
-  VisitStmt(S);
+void StmtProfiler::VisitCXXExpansionInitListExpr(
+                                            const CXXExpansionInitListExpr *E) {
+  VisitExpr(E);
 }
 
 void StmtProfiler::VisitTypoExpr(const TypoExpr *E) {

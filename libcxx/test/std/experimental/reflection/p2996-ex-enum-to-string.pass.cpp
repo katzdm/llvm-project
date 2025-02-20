@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03 || c++11 || c++14 || c++17 || c++20
-// ADDITIONAL_COMPILE_FLAGS: -freflection
+// ADDITIONAL_COMPILE_FLAGS: -freflection -fexpansion-statements
 // ADDITIONAL_COMPILE_FLAGS: -Wno-inconsistent-missing-override
 
 // <experimental/reflection>
@@ -22,40 +22,16 @@
 #include <type_traits>
 
 
-// start 'expand' definition
-namespace __impl {
-  template<auto... vals>
-  struct replicator_type {
-    template<typename F>
-      constexpr void operator>>(F body) const {
-        (body.template operator()<vals>(), ...);
-      }
-  };
-
-  template<auto... vals>
-  replicator_type<vals...> replicator = {};
-}
-
-template<typename R>
-consteval auto expand(R range) {
-  std::vector<std::meta::info> args;
-  for (auto r : range) {
-    args.push_back(std::meta::reflect_value(r));
-  }
-  return substitute(^^__impl::replicator, args);
-}
-// end 'expand' definition
-
-
 template <typename E>
   requires std::is_enum_v<E>
 constexpr std::string enum_to_string(E value) {
     std::string result = "<unnamed>";
-    [:expand(enumerators_of(^^E)):] >> [&] <auto e> {
+    template for (constexpr auto e :
+                  define_static_array(enumerators_of(^^E))) {
         if (value == [:e:]) {
             result = std::string(identifier_of(e));
         }
-    };
+    }
     return result;
 }
 
@@ -63,11 +39,12 @@ template <typename E>
   requires std::is_enum_v<E>
 constexpr std::optional<E> string_to_enum(std::string_view name) {
   std::optional<E> result = std::nullopt;
-  [:expand(enumerators_of(^^E)):] >> [&] <auto e> {
+  template for (constexpr auto e :
+                define_static_array(enumerators_of(^^E))) {
     if (name == identifier_of(e)) {
       result = [:e:];
     }
-  };
+  }
   return result;
 }
 

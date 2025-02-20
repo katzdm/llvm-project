@@ -1048,6 +1048,10 @@ ExprDependence clang::computeDependence(CXXExpansionInitListSelectExpr *E) {
   return D;
 }
 
+ExprDependence clang::computeDependence(CXXIterableExpansionSelectExpr *E) {
+  return ExprDependence::Type | ExprDependence::Value;
+}
+
 ExprDependence clang::computeDependence(
         CXXDestructurableExpansionSelectExpr *E) {
   auto D = E->getRange()->getDependence() | E->getIdx()->getDependence();

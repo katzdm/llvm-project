@@ -2273,6 +2273,8 @@ CheckConstexprFunctionStmt(Sema &SemaRef, const FunctionDecl *Dcl, Stmt *S,
       return false;
     return true;
 
+  case Stmt::CXXIndeterminateExpansionStmtClass:
+  case Stmt::CXXIterableExpansionStmtClass:
   case Stmt::CXXDestructurableExpansionStmtClass:
   case Stmt::CXXInitListExpansionStmtClass: {
     CXXExpansionStmt *CS = cast<CXXExpansionStmt>(S);

@@ -202,8 +202,11 @@ void CodeGenFunction::EmitStmt(const Stmt *S, ArrayRef<const Attr *> Attrs) {
   case Stmt::CXXForRangeStmtClass:
     EmitCXXForRangeStmt(cast<CXXForRangeStmt>(*S), Attrs);
     break;
-  case Stmt::CXXInitListExpansionStmtClass:
+  case Stmt::CXXIndeterminateExpansionStmtClass:
+    llvm_unreachable("should have been replaced during instantiation");
+  case Stmt::CXXIterableExpansionStmtClass:
   case Stmt::CXXDestructurableExpansionStmtClass:
+  case Stmt::CXXInitListExpansionStmtClass:
     EmitCXXExpansionStmt(cast<CXXExpansionStmt>(*S), Attrs);
     break;
   case Stmt::SEHTryStmtClass:
@@ -1471,8 +1474,12 @@ void CodeGenFunction::EmitCXXExpansionStmt(const CXXExpansionStmt &S,
     if (auto *VD = cast<VarDecl>(DS->getSingleDecl()))
       if (auto *ESE = dyn_cast<CXXDestructurableExpansionSelectExpr>(
                                                                  VD->getInit()))
-        if (auto *DD = ESE->getDecompositionDecl())
+        if (auto *DD = ESE->getDecompositionDecl()) {
           EmitVarDecl(*DD);
+          for (auto *B : DD->bindings())
+            if (auto *H = B->getHoldingVar())
+              EmitVarDecl(*H);
+        }
 
   for (size_t Idx = 0; Idx < S.getNumInstantiations(); ++Idx) {
     const Stmt *Expansion = S.getInstantiation(Idx);

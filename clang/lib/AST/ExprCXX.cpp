@@ -2134,18 +2134,18 @@ CXXExpansionInitListExpr *CXXExpansionInitListExpr::Create(
                                           LBraceLoc, RBraceLoc);
 }
 
-CXXExpansionInitListSelectExpr::CXXExpansionInitListSelectExpr(
-        QualType ResultTy, Expr *Range, Expr *Idx)
-    : Expr(CXXExpansionInitListSelectExprClass, ResultTy, VK_PRValue,
+CXXIterableExpansionSelectExpr::CXXIterableExpansionSelectExpr(
+        QualType ResultTy, Expr *Begin, Expr *End, Expr *Idx)
+    : Expr(CXXIterableExpansionSelectExprClass, ResultTy, VK_PRValue,
            OK_Ordinary),
-      SubExprs{Range, Idx} {
+      SubExprs{Begin, End, Idx} {
   setDependence(computeDependence(this));
 }
 
-CXXExpansionInitListSelectExpr *
-CXXExpansionInitListSelectExpr::Create(const ASTContext &C, Expr *Range,
-                                       Expr *Idx) {
-  return new (C) CXXExpansionInitListSelectExpr(C.DependentTy, Range, Idx);
+CXXIterableExpansionSelectExpr *
+CXXIterableExpansionSelectExpr::Create(const ASTContext &C, Expr *Begin,
+                                       Expr *End, Expr *Idx) {
+  return new (C) CXXIterableExpansionSelectExpr(C.DependentTy, Begin, End, Idx);
 }
 
 CXXDestructurableExpansionSelectExpr::CXXDestructurableExpansionSelectExpr(
@@ -2163,6 +2163,20 @@ CXXDestructurableExpansionSelectExpr::Create(const ASTContext &C, Expr *Range,
                                              bool IsConstexpr) {
   return new (C) CXXDestructurableExpansionSelectExpr(C.DependentTy, Range, DD,
                                                       Idx, IsConstexpr);
+}
+
+CXXExpansionInitListSelectExpr::CXXExpansionInitListSelectExpr(
+        QualType ResultTy, Expr *Range, Expr *Idx)
+    : Expr(CXXExpansionInitListSelectExprClass, ResultTy, VK_PRValue,
+           OK_Ordinary),
+      SubExprs{Range, Idx} {
+  setDependence(computeDependence(this));
+}
+
+CXXExpansionInitListSelectExpr *
+CXXExpansionInitListSelectExpr::Create(const ASTContext &C, Expr *Range,
+                                       Expr *Idx) {
+  return new (C) CXXExpansionInitListSelectExpr(C.DependentTy, Range, Idx);
 }
 
 CUDAKernelCallExpr::CUDAKernelCallExpr(Expr *Fn, CallExpr *Config,
