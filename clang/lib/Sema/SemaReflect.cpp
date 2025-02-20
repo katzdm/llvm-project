@@ -203,15 +203,6 @@ public:
     return true;
   }
 
-  void BroadcastInjectedDecl(Decl *D) override {
-    DeclGroupRef DG(D);
-    S.Consumer.HandleTopLevelDecl(DG);
-  }
-
-  void AttachInitializer(VarDecl *VD, Expr *Init) override {
-    S.AddInitializerToDecl(VD, Init, true);
-  }
-
   bool HasSatisfiedConstraints(FunctionDecl *FD) override {
     bool Result = true;
     if (FD->getTrailingRequiresClause()) {
@@ -247,11 +238,6 @@ public:
     }
     TArgs = CanonicalTArgs;
     return Result;
-  }
-
-  Expr *CreateInitList(MutableArrayRef<Expr *> Inits,
-                       SourceRange Range) override {
-    return S.ActOnInitList(Range.getBegin(), Inits, Range.getEnd()).get();
   }
 
   void EnsureDeclarationOfImplicitMembers(CXXRecordDecl *RD) override {
