@@ -258,6 +258,8 @@ static_assert(!has_external_linkage(^^TFn));
 static_assert(!has_external_linkage(^^TVar));
 }  // namespace linkage
 
+int main() {}
+
 export module test_module;
 namespace linkage {
 int module_global;
@@ -280,5 +282,3 @@ static_assert(has_module_linkage(^^module_linkage_type));
 static_assert(!has_external_linkage(^^module_linkage_type));
 
 }  // namespace linkage
-
-int main() {}

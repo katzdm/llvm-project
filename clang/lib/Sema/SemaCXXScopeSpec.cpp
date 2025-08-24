@@ -138,14 +138,16 @@ DeclContext *Sema::computeDeclContext(const CXXScopeSpec &SS,
   case NestedNameSpecifier::Identifier:
     llvm_unreachable("Dependent nested-name-specifier has no DeclContext");
 
-  case NestedNameSpecifier::Namespace:
-    return NNS->getAsNamespace();
-
-  case NestedNameSpecifier::NamespaceAlias: {
-    NamespaceAliasDecl *Alias = NNS->getAsNamespaceAlias();
-    if (Alias->isDependent())
+  case NestedNameSpecifier::Namespace: {
+    NamespaceBaseDecl *NS = NNS->getAsNamespace();
+    // TODO(P2996): Now that we have a 'NamespaceBaseDecl', it probably makes
+    // sense to just define 'isDependent' there instead of casting to a
+    // namespace alias here.
+    if (auto *Alias = dyn_cast<NamespaceAliasDecl>(NS);
+        Alias && Alias->isDependent())
       return nullptr;
-    return Alias->getNamespace();
+
+    return NS->getNamespace();
   }
 
   case NestedNameSpecifier::TypeSpec: {
@@ -1004,7 +1006,6 @@ bool Sema::ShouldEnterDeclaratorScope(Scope *S, const CXXScopeSpec &SS) {
   switch (Qualifier->getKind()) {
   case NestedNameSpecifier::Global:
   case NestedNameSpecifier::Namespace:
-  case NestedNameSpecifier::NamespaceAlias:
     // These are always namespace scopes.  We never want to enter a
     // namespace scope from anything but a file context.
     return CurContext->getRedeclContext()->isFileContext();

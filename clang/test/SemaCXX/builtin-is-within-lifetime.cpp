@@ -236,10 +236,10 @@ constexpr struct NSDMI { // #NSDMI
 // expected-error@-1 {{constexpr variable 'x2' must be initialized by a constant expression}}
 //   expected-note@#NSDMI-read {{'__builtin_is_within_lifetime' cannot be called with a pointer to an object whose lifetime has not yet begun}}
 //   expected-note@-3 {{in call to 'NSDMI()'}}
-// expected-error@-4 {{call to immediate function 'NSDMI::NSDMI' is not a constant expression}}
-//   expected-note@#NSDMI {{'NSDMI' is an immediate constructor because the default initializer of 'b' contains a call to a consteval function '__builtin_is_within_lifetime' and that call is not a constant expression}}
-//   expected-note@#NSDMI-read {{'__builtin_is_within_lifetime' cannot be called with a pointer to an object whose lifetime has not yet begun}}
-//   expected-note@-7 {{in call to 'NSDMI()'}}
+// cxx20-error@-4 {{call to immediate function 'NSDMI::NSDMI' is not a constant expression}}
+//   cxx20-note@#NSDMI {{'NSDMI' is an immediate constructor because the default initializer of 'b' contains a call to a consteval function '__builtin_is_within_lifetime' and that call is not a constant expression}}
+//   cxx20-note@#NSDMI-read {{'__builtin_is_within_lifetime' cannot be called with a pointer to an object whose lifetime has not yet begun}}
+//   cxx20-note@-7 {{in call to 'NSDMI()'}}
 
 struct X3 {
   consteval X3() {
